@@ -1,7 +1,11 @@
+"""Logs scanner"""
+
 import os
 
 from colorama import Fore, Style
 
+
+# pylint: disable=missing-docstring
 
 def main():
     filenames = [x for x in os.listdir('./') if x.endswith('.log')]
@@ -10,9 +14,9 @@ def main():
     warnings = 0
     nlines = 0
     for file in filenames:
-        with open(file, encoding='utf-8') as fh:
+        with open(file, encoding='utf-8') as file_handler:
             try:
-                lines = fh.read().splitlines()
+                lines = file_handler.read().splitlines()
             except UnicodeDecodeError as ex:
                 print(Fore.RED + 'ERROR WITH LOG', file, ex)
                 continue

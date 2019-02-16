@@ -1,3 +1,5 @@
+"""File downloader for the Virtual Campus of the Valladolid Unversity."""
+
 import time
 from queue import Queue
 
@@ -5,13 +7,25 @@ from bs4 import BeautifulSoup
 
 from vcd._threading import start_workers
 from vcd.credentials import Credentials
-from vcd.downloader import Downloader
 from vcd.globals import get_logger
+from vcd.requests import Downloader
 from vcd.subject import Subject
 
 
 # noinspection PyShadowingNames
-def find_subjects(downloader, queue, condition=None, n=20):
+def find_subjects(downloader, queue, condition=None, nthreads=20):
+    """Starts finding subjects.
+
+    Args:
+        downloader (Downloader): custom session with retry control.
+        queue (Queue): queue to organize threads.
+        condition (str|None): optional filter of subjects name.
+        condition (str): optional filter of subjects name.
+        nthreads (int): number of threads to start.
+
+    Returns:
+
+    """
     logger = get_logger(__name__)
     logger.debug('Finding subjects')
 
@@ -19,19 +33,18 @@ def find_subjects(downloader, queue, condition=None, n=20):
 
     downloader.post(
         'https://campusvirtual.uva.es/login/index.php',
-        data={'anchor': '', 'username': user['username'], 'password': user['password']})
+        data={'anchor': '', 'username': user.username, 'password': user.password})
 
-    r1 = downloader.get('https://campusvirtual.uva.es/my/')
+    response = downloader.get('https://campusvirtual.uva.es/my/')
 
-    logger.debug('Returned primary response with code %d', r1.status_code)
+    logger.debug('Returned primary response with code %d', response.status_code)
 
-    login_correct = 'Vista general de cursos' in r1.text
-    logger.debug('Login correct: %s', login_correct)
+    logger.debug('Login correct: %s', 'Vista general de cursos' in response.text)
 
-    if login_correct is False:
+    if 'Vista general de cursos' in response.text is False:
         raise RuntimeError('Login not correct')
 
-    soup = BeautifulSoup(r1.content, 'html.parser')
+    soup = BeautifulSoup(response.content, 'html.parser')
     search = soup.findAll('div', {'class': 'course_title'})
 
     logger.debug('Found %d potential subjects', len(search))
@@ -49,7 +62,7 @@ def find_subjects(downloader, queue, condition=None, n=20):
 
     subjects.sort(key=lambda x: x.name)
 
-    start_workers(queue, n)
+    start_workers(queue, nthreads)
     for i, _ in enumerate(subjects):
         if condition is None:
             queue.put(subjects[i])
@@ -60,8 +73,9 @@ def find_subjects(downloader, queue, condition=None, n=20):
     return subjects
 
 
-if __name__ == '__main__':
-    t0 = time.time()
+def start():
+    """Starts the app."""
+    initial_time = time.time()
     main_logger = get_logger(__name__)
     main_logger.info('STARTING APP')
     main_logger.debug('Starting downloader')
@@ -69,13 +83,17 @@ if __name__ == '__main__':
     main_logger.debug('Starting queue')
     queue = Queue()
     condition = None
-    n = 30
+    nthreads = 30
 
     main_logger.debug('Launching subjects finder')
-    find_subjects(downloader, queue, condition, n)
+    find_subjects(downloader, queue, condition, nthreads)
 
     main_logger.debug('Waiting for queue to empty')
     queue.join()
 
-    tf = time.time() - t0
-    main_logger.info('DONE (%.2f seconds)', tf)
+    final_time = time.time() - initial_time
+    main_logger.info('DONE (%.2f seconds)', final_time)
+
+
+if __name__ == '__main__':
+    start()

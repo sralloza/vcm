@@ -1,12 +1,21 @@
+"""General used functions."""
 import logging
 import os
 import re
 
 from requests import Response
 
+PRODUCTION = False
 
-def get_logger(name, level=logging.DEBUG, rewrite=False, log_format=None, filename='vcd.log'):
+
+def get_logger(name, level=None, rewrite=False, log_format=None, filename='vcd.log'):
     """Returns a custom Logger."""
+
+    if level is None:
+        if PRODUCTION:
+            level = logging.INFO
+        else:
+            level = logging.DEBUG
 
     default_format = '[%(asctime)s] %(levelname)-8s - %(threadName)s - ' \
                      '%(name)s:%(lineno)s: %(message)s'
@@ -41,15 +50,17 @@ if os.path.isdir(ROOT_FOLDER) is False:
 
 ERROR_FOLDER = 'D:/.scripts/vcd/errors'
 
-error_logger = get_logger(__name__, filename='error.log')
+ERROR_LOGGER = get_logger(__name__, filename='error.log')
 
 
 def save_response(response: Response, name):
-    # if os.path.isdir(ERROR_FOLDER):
-    #     os.mkdir(ERROR_FOLDER)
+    """Saves a response content in case of error.
 
-    # name = os.path.join(ERROR_FOLDER, name)
-    error_logger.critical('Saving response to %r', name)
+    Args:
+        response (Response): response to save.
+        name (str): name of the file to save the response.
+    """
+    ERROR_LOGGER.critical('Saving response to %r', name)
 
-    with open(name, 'wb') as fh:
-        fh.write(response.content)
+    with open(name, 'wb') as file_handler:
+        file_handler.write(response.content)

@@ -1,14 +1,16 @@
+"""Multithreading workers for the vcd."""
+
 from queue import Queue
 from threading import Thread
 
-from vcd.links import BaseLink
-from vcd.downloader import DownloaderError
+from vcd.requests import DownloaderError
 from vcd.globals import get_logger
+from vcd.links import BaseLink
 from vcd.subject import Subject
 
 
-# noinspection PyProtectedMember
 class Worker(Thread):
+    """Special worker for vcd multithreading."""
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -19,7 +21,7 @@ class Worker(Thread):
         """Runs the thread"""
         while True:
             anything = self.queue.get()
-            self.logger.debug('%d items remaining in queue', self.queue._qsize())
+            self.logger.debug('%d items remaining in queue', self.queue.qsize())
 
             if isinstance(anything, BaseLink):
                 self.logger.debug('Found Link %r, processing', anything.name)
@@ -40,12 +42,21 @@ class Worker(Thread):
                 self.queue.task_done()
 
 
-def start_workers(queue, n=20):
+def start_workers(queue, nthreads=20):
+    """Starts the wokers.
+
+    Args:
+        queue (Queue): queue to manage the workers's tasks.
+        nthreads (int): number of trheads to start.
+
+    Returns:
+
+    """
     thread_list = []
-    for i in range(n):
-        t = Worker(queue, name=f'W-{i + 1}', daemon=True)
-        t.logger.debug('Started worker named %r', t.name)
-        t.start()
-        thread_list.append(t)
+    for i in range(nthreads):
+        thread = Worker(queue, name=f'W-{i + 1}', daemon=True)
+        thread.logger.debug('Started worker named %r', thread.name)
+        thread.start()
+        thread_list.append(thread)
 
     return thread_list

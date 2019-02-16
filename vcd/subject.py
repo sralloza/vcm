@@ -1,18 +1,30 @@
+"""Contains all related to subjects."""
+
 import os
-from queue import Queue
 from threading import Lock
 
 from bs4 import BeautifulSoup
 from requests import Response
 
-from vcd.downloader import Downloader
 from vcd.alias import Alias
-from vcd.links import BaseLink, Resource, Delivery, Forum, Folder
 from vcd.globals import get_logger, ROOT_FOLDER
+from vcd.links import BaseLink, Resource, Delivery, Forum, Folder
 
+
+# pylint: disable=too-many-instance-attributes
 
 class Subject:
-    def __init__(self, name, url, downloader: Downloader, queue: Queue):
+    """Representation of a subject."""
+
+    def __init__(self, name, url, downloader, queue):
+        """
+
+        Args:
+            name (str): name of the subject.
+            url (str): url of the subject.
+            downloader (Downloader): downloader to download files.
+            queue (Queue): queue to controll threads.
+        """
         self.name = Alias.real_to_alias(name.capitalize())
         self.url = url
         self.downloader = downloader
@@ -37,6 +49,7 @@ class Subject:
         return f'{self.name!r}'
 
     def make_request(self):
+        """Makes the primary request."""
         self.logger.debug('Making subject request')
         self.response = self.downloader.get(self.url)
         self.soup = BeautifulSoup(self.response.text, 'html.parser')
@@ -70,11 +83,12 @@ class Subject:
             self.queue.put(link)
 
     def find_links(self):
+        """Finds the links downloading the primary page."""
         self.logger.debug('Finding links of %s', self.name)
         self.make_request()
 
-        [x.extract() for x in self.soup.findAll('span', {'class': 'accesshide'})]
-        [x.extract() for x in self.soup.findAll('div', {'class': 'mod-indent'})]
+        _ = [x.extract() for x in self.soup.findAll('span', {'class': 'accesshide'})]
+        _ = [x.extract() for x in self.soup.findAll('div', {'class': 'mod-indent'})]
 
         search = self.soup.findAll('div', {'class', 'activityinstance'})
 
