@@ -3,7 +3,7 @@
 from queue import Queue
 from threading import Thread
 
-from vcd.requests import DownloaderError
+from vcd._requests import DownloaderError
 from vcd.globals import get_logger
 from vcd.links import BaseLink
 from vcd.subject import Subject

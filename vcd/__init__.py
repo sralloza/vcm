@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from vcd._threading import start_workers
 from vcd.credentials import Credentials
 from vcd.globals import get_logger
-from vcd.requests import Downloader
+from vcd._requests import Downloader
 from vcd.subject import Subject
 
 

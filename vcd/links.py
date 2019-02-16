@@ -9,7 +9,7 @@ from requests import Response
 
 from vcd.filecache import REAL_FILE_CACHE
 from vcd.globals import get_logger, FILENAME_PATTERN, ROOT_FOLDER
-from vcd.requests import Downloader
+from vcd._requests import Downloader
 from vcd.results import Results
 
 DOWNLOADS_LOGGER = get_logger(name='downloads', log_format='%(message)s', filename='downloads.log')
