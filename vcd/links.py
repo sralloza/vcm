@@ -7,9 +7,9 @@ from queue import Queue
 from bs4 import BeautifulSoup
 from requests import Response
 
+from vcd._requests import Downloader
 from vcd.filecache import REAL_FILE_CACHE
 from vcd.globals import get_logger, FILENAME_PATTERN, ROOT_FOLDER
-from vcd._requests import Downloader
 from vcd.results import Results
 
 DOWNLOADS_LOGGER = get_logger(name='downloads', log_format='%(message)s', filename='downloads.log')
@@ -44,6 +44,7 @@ class BaseLink:
         self.method = 'GET'
         self.post_data = None
         self.redirect_url = None
+        self.subfolder = None
         self.logger = get_logger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
                           self.__class__.__name__, self.name, self.url, self.subject.name)
@@ -57,6 +58,16 @@ class BaseLink:
         """
         self.logger.debug('Set post data: %r (%r)', value, self.name)
         self.post_data = value
+
+    def set_subfolder(self, value):
+        """Sets the subfolder.
+
+        Args:
+            value (str): subfolder name.
+
+        """
+        self.logger.debug('Set subfolder: %r (%r)', value, self.name)
+        self.subfolder = value
 
     @staticmethod
     def _process_filename(filepath: str):
@@ -108,6 +119,10 @@ class BaseLink:
         self.logger.debug('Response obtained (%s | %s) [%d]', self.method,
                           self.response.request.method, self.response.status_code)
 
+        if self.response.status_code == 408:
+            self.logger.warning('Received response with code 408, retrying')
+            return self.make_request()
+
     def process_request_bs4(self):
         """Parses the response with BeautifulSoup with the html parser."""
 
@@ -117,11 +132,20 @@ class BaseLink:
     def autoset_filepath(self):
         """Determines the filepath of the Link."""
 
+        if self.filepath is not None:
+            self.logger.debug('Filepath is setted, skipping (%s)', self.filepath)
+            return
+
         if self.response is None:
             raise RuntimeError('Request not launched')
 
         filename = self._process_filename(self.name) + '.' + self._get_ext_from_request()
+
+        if self.subfolder is not None:
+            filename = os.path.join(self.subfolder, filename)
+
         self.filepath = os.path.join(self.subject.name, filename)
+
         self.filepath = os.path.join(ROOT_FOLDER, self.filepath).replace('\\', '/')
 
         self.logger.debug('Set filepath: %r', self.filepath)
@@ -202,6 +226,10 @@ class Resource(BaseLink):
             self.set_resource_type('word')
             return self.save_response_content()
 
+        if 'officedocument.presentationml.slideshow' in self.response.headers['Content-Type']:
+            self.set_resource_type('power-point')
+            return self.save_response_content()
+
         if 'msword' in self.response.headers['Content-Type']:
             self.set_resource_type('word')
             return self.save_response_content()
@@ -224,6 +252,10 @@ class Resource(BaseLink):
 
         if 'application/octet-stream' in self.response.headers['Content-Type']:
             self.set_resource_type('octect-stream')
+            return self.save_response_content()
+
+        if 'image/jpeg' in self.response.headers['Content-Type']:
+            self.set_resource_type('jpeg')
             return self.save_response_content()
 
         if 'text/html' in self.response.headers['Content-Type']:
@@ -273,35 +305,34 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
+    def make_subfolder(self):
+        """Makes a subfolder to save the folder's links."""
+        folder = os.path.join(ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
+        if os.path.isdir(folder) is False:
+            self.logger.debug('Created folder: %s', folder)
+            os.mkdir(folder)
+
     def download(self):
         """Downloads the folder."""
         self.logger.debug('Downloading folder %s', self.name)
         self.make_request()
         self.process_request_bs4()
+        self.make_subfolder()
 
-        try:
-            form = self.soup.find('form', {'method': 'post'})
-            link = form['action']
-            post_id = form.find('input', {'name': 'id'})['value']
-            sesskey = form.find('input', {'name': 'sesskey'})['value']
-        except TypeError as ex:
-            random_name = str(random.randint(0, 1000))
-            self.logger.error('FOLDER ERROR (ID=%s)', random_name)
-            self.logger.exception('EXCEPTION: %s', ex, exc_info=True)
-            self.logger.error('ERROR LINK: %s', self.url)
-            self.logger.error('ERROR HEADS: %s', self.response.headers)
+        containers = self.soup.findAll('span', {'class': 'fp-filename-icon'})
 
-            with open(random_name + '.html', 'wb') as file_handler:
-                file_handler.write(self.response.content)
+        for container in containers:
+            try:
+                url = container.a['href']
+                resource = Resource(os.path.splitext(container.a.text)[0],
+                                    url, self.subject, self.downloader, self.queue)
+                resource.set_subfolder(self.name)
+                self.logger.debug('Created resource from folder: %r, %s',
+                                  resource.name, resource.url)
+                self.queue.put(resource)
 
-            return None
-
-        resource = Resource(self.name, link, self.subject, self.downloader, self.queue)
-        resource.method = 'POST'
-        self.logger.debug('Created resource from folder: %r, %s', resource.name, resource.url)
-        resource.set_post_data({'id': post_id, 'sesskey': sesskey})
-
-        return resource.download()
+            except TypeError:
+                continue
 
 
 class Forum(BaseLink):
