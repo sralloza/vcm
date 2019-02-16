@@ -1,0 +1,10 @@
+.idea/
+venv/
+vlogs/
+__pycache__/
+*.bat
+*.log
+*.cmd
+*.old
+*.json
+*.csv
