@@ -62,11 +62,12 @@ class BaseLink:
             self.response = self.downloader.get(self.redirect_url or self.url)
 
         elif self.method == 'POST':
-            self.response = self.downloader.get(self.redirect_url or self.url, data=self.post_data)
+            self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data)
         else:
             raise RuntimeError(f'Invalid method: {self.method}')
 
-        self.logger.debug('Response obtained (%s) [%d]', self.method, self.response.status_code)
+        self.logger.debug('Response obtained (%s | %s) [%d]', self.method,
+                          self.response.request.method, self.response.status_code)
 
     def process_request_bs4(self):
         self.soup = BeautifulSoup(self.response.text, 'html.parser')
