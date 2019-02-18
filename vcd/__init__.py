@@ -4,6 +4,7 @@ import time
 from queue import Queue
 
 from bs4 import BeautifulSoup
+from colorama import init
 
 from vcd._threading import start_workers
 from vcd.credentials import Credentials
@@ -75,6 +76,7 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
 
 def start():
     """Starts the app."""
+    init()
     initial_time = time.time()
     main_logger = get_logger(__name__)
     main_logger.info('STARTING APP')

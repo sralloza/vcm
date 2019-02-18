@@ -37,4 +37,4 @@ class Results:
 
         """
         with Results.print_lock:
-            print(Fore.GREEN + message)
+            print(Fore.LIGHTGREEN_EX + message)
