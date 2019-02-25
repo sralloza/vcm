@@ -226,6 +226,10 @@ class Resource(BaseLink):
             self.set_resource_type('word')
             return self.save_response_content()
 
+        if 'officedocument.spreadsheetml.sheet' in self.response.headers['Content-Type']:
+            self.set_resource_type('excel')
+            return self.save_response_content()
+
         if 'officedocument.presentationml.slideshow' in self.response.headers['Content-Type']:
             self.set_resource_type('power-point')
             return self.save_response_content()
