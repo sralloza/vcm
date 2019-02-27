@@ -4,7 +4,7 @@ from threading import Lock
 
 from colorama import Fore
 
-from vcd.globals import ROOT_FOLDER
+from .options import Options
 
 
 class Results:
@@ -15,7 +15,7 @@ class Results:
     print_list = []
 
     file_lock = Lock()
-    result_path = os.path.join(ROOT_FOLDER, 'new-files.txt').replace('\\', '/')
+    result_path = os.path.join(Options.ROOT_FOLDER, 'new-files.txt').replace('\\', '/')
 
     @staticmethod
     def add(value):

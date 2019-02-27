@@ -1,13 +1,14 @@
 """File scanner to control file version."""
 import os
 
-from vcd.globals import ROOT_FOLDER
+from .options import Options
 
 
 class FileCache:
     """File scanner to control file version."""
+
     def __init__(self):
-        self.path = ROOT_FOLDER
+        self.path = Options.ROOT_FOLDER
         self.cache = {}
 
     def __contains__(self, item):

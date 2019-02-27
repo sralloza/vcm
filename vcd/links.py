@@ -1,5 +1,5 @@
 """Contains the links that can be downloaded."""
-
+import logging
 import os
 import random
 from queue import Queue
@@ -9,15 +9,23 @@ from requests import Response
 
 from vcd._requests import Downloader
 from vcd.filecache import REAL_FILE_CACHE
-from vcd.globals import get_logger, FILENAME_PATTERN, ROOT_FOLDER
 from vcd.results import Results
-
-DOWNLOADS_LOGGER = get_logger(name='downloads', log_format='%(message)s', filename='downloads.log')
+from .options import Options
 
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-return-statements
+
+
+class DownloadsRecorder:
+    _downloads_record_path = os.path.join(Options.ROOT_FOLDER, 'downloads.log')
+
+    @staticmethod
+    def write(something: str, *args):
+        with open(DownloadsRecorder._downloads_record_path, 'at') as fh:
+            fh.write(something % args + '\n')
+
 
 class BaseLink:
     """Base class for Links."""
@@ -45,7 +53,7 @@ class BaseLink:
         self.post_data = None
         self.redirect_url = None
         self.subfolder = None
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
                           self.__class__.__name__, self.name, self.url, self.subject.name)
 
@@ -94,7 +102,7 @@ class BaseLink:
 
         """
         try:
-            return FILENAME_PATTERN.search(
+            return Options.FILENAME_PATTERN.search(
                 self.response.headers['Content-Disposition']).group(1).split('.')[-1]
         except KeyError:
             self.logger.critical('Request does not contain a file (name=%r, url=%r,headers=%r)',
@@ -109,10 +117,11 @@ class BaseLink:
         if self.method is None:
             raise NotImplementedError
         elif self.method == 'GET':
-            self.response = self.downloader.get(self.redirect_url or self.url)
+            self.response = self.downloader.get(self.redirect_url or self.url, stream=True)
 
         elif self.method == 'POST':
-            self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data)
+            self.response = self.downloader.post(self.redirect_url or self.url,
+                                                 data=self.post_data, stream=True)
         else:
             raise RuntimeError(f'Invalid method: {self.method}')
 
@@ -122,6 +131,10 @@ class BaseLink:
         if self.response.status_code == 408:
             self.logger.warning('Received response with code 408, retrying')
             return self.make_request()
+
+    def close_connection(self):
+        self.logger.debug('Closing connection')
+        self.response.close()
 
     def process_request_bs4(self):
         """Parses the response with BeautifulSoup with the html parser."""
@@ -146,7 +159,7 @@ class BaseLink:
 
         self.filepath = os.path.join(self.subject.name, filename)
 
-        self.filepath = os.path.join(ROOT_FOLDER, self.filepath).replace('\\', '/')
+        self.filepath = os.path.join(Options.ROOT_FOLDER, self.filepath).replace('\\', '/')
 
         self.logger.debug('Set filepath: %r', self.filepath)
 
@@ -154,6 +167,9 @@ class BaseLink:
         """Abstract method to download the Link. Must be overridden by subclasses."""
         self.logger.debug('Called download() but it was not implemented')
         raise NotImplementedError
+
+    def get_header_length(self):
+        return int(self.response.headers['content-length'])
 
     def save_response_content(self):
         """Saves the response content to the disk."""
@@ -163,9 +179,10 @@ class BaseLink:
         self.subject.create_folder()
 
         if self.filepath in REAL_FILE_CACHE:
-            if REAL_FILE_CACHE[self.filepath] == len(self.response.content):
+            if REAL_FILE_CACHE[self.filepath] == self.get_header_length():
                 self.logger.debug('File found in cache: Same content (%d)',
                                   len(self.response.content))
+                self.close_connection()
                 return
 
             self.logger.debug('File found in cache: Different content (%d --> %d)',
@@ -181,13 +198,14 @@ class BaseLink:
             with open(self.filepath, 'wb') as file_handler:
                 file_handler.write(self.response.content)
             self.logger.debug('File downloaded and saved: %s', self.filepath)
-            DOWNLOADS_LOGGER.info('Downloaded %s -- %s', self.subject.name,
-                                  os.path.basename(self.filepath))
+            DownloadsRecorder.write('Downloaded %s -- %s', self.subject.name,
+                                    os.path.basename(self.filepath))
         except PermissionError:
             self.logger.warning('File couldn\'t be downloaded due to permission error: %s',
                                 os.path.basename(self.filepath))
             self.logger.warning('Permission error %s -- %s', self.subject.name,
                                 os.path.basename(self.filepath))
+        self.close_connection()
 
 
 class Resource(BaseLink):
@@ -311,7 +329,7 @@ class Folder(BaseLink):
 
     def make_subfolder(self):
         """Makes a subfolder to save the folder's links."""
-        folder = os.path.join(ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
+        folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
         if os.path.isdir(folder) is False:
             self.logger.debug('Created folder: %s', folder)
             os.mkdir(folder)

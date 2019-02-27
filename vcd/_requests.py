@@ -2,9 +2,9 @@
 
 """Custom downloader with retries control."""
 
-import requests
+import logging
 
-from vcd.globals import get_logger
+import requests
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 '
                          '(KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
@@ -18,7 +18,7 @@ class Downloader(requests.Session):
     """Downloader with retries control."""
 
     def __init__(self, retries=10, silenced=False):
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
 
         if silenced is True:
             self.logger.handlers = []

@@ -1,13 +1,14 @@
 """Contains all related to subjects."""
 
+import logging
 import os
 from threading import Lock
 
 from bs4 import BeautifulSoup
 from requests import Response
 
+from .options import Options
 from vcd.alias import Alias
-from vcd.globals import get_logger, ROOT_FOLDER
 from vcd.links import BaseLink, Resource, Delivery, Forum, Folder
 
 
@@ -35,8 +36,8 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        self.foldername = os.path.join(ROOT_FOLDER, self.name)
-        self.logger = get_logger(__name__)
+        self.foldername = os.path.join(Options.ROOT_FOLDER, self.name)
+        self.logger = logging.getLogger(__name__)
 
         self.logger.debug('Created Subject(name=%r, url=%r)',
                           self.name, self.url)

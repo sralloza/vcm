@@ -1,16 +1,41 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
-
+import logging
+import os
 import time
+from logging.handlers import RotatingFileHandler
 from queue import Queue
+from threading import current_thread
 
 from bs4 import BeautifulSoup
 from colorama import init
 
-from vcd._threading import start_workers
-from vcd.credentials import Credentials
-from vcd.globals import get_logger
-from vcd._requests import Downloader
-from vcd.subject import Subject
+from ._requests import Downloader
+from ._threading import start_workers
+from .credentials import Credentials
+from .options import Options
+from .subject import Subject
+
+if os.path.isdir('logs') is False:
+    os.mkdir('logs')
+
+should_roll_over = os.path.isfile('logs/vcd.log')
+
+old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+handler = RotatingFileHandler(filename='logs/passbreaker.log', maxBytes=2_500_000,
+                              encoding='utf-8', backupCount=5)
+
+current_thread().setName('MT')
+
+if should_roll_over:
+    handler.doRollover()
+
+logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=old_reliable)
+
+logger = logging.getLogger(__name__)
+
+connectionpool = logging.getLogger('urllib3')
+connectionpool.handlers = []
+connectionpool.setLevel(logging.WARNING)
 
 
 # noinspection PyShadowingNames
@@ -27,7 +52,7 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
     Returns:
 
     """
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.debug('Finding subjects')
 
     user = Credentials.get('sralloza')
@@ -74,11 +99,15 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
     return subjects
 
 
-def start():
+def start(root_folder=None):
     """Starts the app."""
     init()
+
+    if root_folder:
+        Options.ROOT_FOLDER = root_folder
+
     initial_time = time.time()
-    main_logger = get_logger(__name__)
+    main_logger = logging.getLogger(__name__)
     main_logger.info('STARTING APP')
     main_logger.debug('Starting downloader')
     downloader = Downloader()
@@ -96,6 +125,3 @@ def start():
     final_time = time.time() - initial_time
     main_logger.info('DONE (%.2f seconds)', final_time)
 
-
-if __name__ == '__main__':
-    start()

@@ -1,20 +1,21 @@
 """Multithreading workers for the vcd."""
 
+import logging
 from queue import Queue
 from threading import Thread
 
 from vcd._requests import DownloaderError
-from vcd.globals import get_logger
 from vcd.links import BaseLink
 from vcd.subject import Subject
 
 
 class Worker(Thread):
     """Special worker for vcd multithreading."""
+
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.queue: Queue = queue
 
     def run(self):

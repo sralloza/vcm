@@ -2,7 +2,7 @@
 import json
 import os
 
-from vcd.globals import ROOT_FOLDER
+from .options import Options
 
 
 class Alias:
@@ -14,7 +14,7 @@ class Alias:
         Args:
             autosave (bool): Save aliases after every operation.
         """
-        self.alias_path = os.path.join(ROOT_FOLDER, 'alias.json')
+        self.alias_path = os.path.join(Options.ROOT_FOLDER, 'alias.json')
         self.json = {}
         self.autosave = autosave
         self.load()
