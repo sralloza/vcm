@@ -74,6 +74,7 @@ class BaseLink:
             value (str): subfolder name.
 
         """
+        value = value.strip()
         self.logger.debug('Set subfolder: %r (%r)', value, self.name)
         self.subfolder = value
 
@@ -160,6 +161,8 @@ class BaseLink:
         self.filepath = os.path.join(self.subject.name, filename)
 
         self.filepath = os.path.join(Options.ROOT_FOLDER, self.filepath).replace('\\', '/')
+
+        self.filepath = self.filepath.replace('>', ' mayor que ')
 
         self.logger.debug('Set filepath: %r', self.filepath)
 
@@ -252,6 +255,14 @@ class Resource(BaseLink):
             self.set_resource_type('power-point')
             return self.save_response_content()
 
+        if 'presentationml.presentation' in self.response.headers['Content-Type']:
+            self.set_resource_type('power-point')
+            return self.save_response_content()
+
+        if 'powerpoint' in self.response.headers['Content-Type']:
+            self.set_resource_type('power-point')
+            return self.save_response_content()
+
         if 'msword' in self.response.headers['Content-Type']:
             self.set_resource_type('word')
             return self.save_response_content()
@@ -268,6 +279,10 @@ class Resource(BaseLink):
             self.set_resource_type('7zip')
             return self.save_response_content()
 
+        if 'x-rar-compressed' in self.response.headers['Content-Type']:
+            self.set_resource_type('rar')
+            return self.save_response_content()
+
         if 'text/plain' in self.response.headers['Content-Type']:
             self.set_resource_type('plain')
             return self.save_response_content()
@@ -278,6 +293,14 @@ class Resource(BaseLink):
 
         if 'image/jpeg' in self.response.headers['Content-Type']:
             self.set_resource_type('jpeg')
+            return self.save_response_content()
+
+        if 'video/mp4' in self.response.headers['Content-Type']:
+            self.set_resource_type('mp4')
+            return self.save_response_content()
+
+        if 'video/x-ms-wm' in self.response.headers['Content-Type']:
+            self.set_resource_type('avi')
             return self.save_response_content()
 
         if 'text/html' in self.response.headers['Content-Type']:
@@ -311,6 +334,15 @@ class Resource(BaseLink):
         try:
             resource = self.soup.find('iframe', {'id': 'resourceobject'})
             resource = Resource(name, resource['src'], self.subject, self.downloader, self.queue)
+            self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
+            self.subject.queue.put(resource)
+            return
+        except TypeError:
+            pass
+
+        try:
+            resource = self.soup.find('div', {'class': 'resourceworkaround'})
+            resource = Resource(name, resource.a['href'], self.subject, self.downloader, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -397,11 +429,21 @@ class Forum(BaseLink):
 class Delivery(BaseLink):
     """Representation of a delivery link."""
 
+    def make_subfolder(self):
+        """Makes a subfolder to save the folder's links."""
+        folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
+        self.set_subfolder(folder)
+
+        if os.path.isdir(folder) is False:
+            self.logger.debug('Created folder: %s', folder)
+            os.mkdir(folder)
+
     def download(self):
         """Downloads the resources found in the delivery."""
         self.logger.debug('Downloading delivery %s', self.name)
         self.make_request()
         self.process_request_bs4()
+        self.make_subfolder()
 
         links = []
         containers = self.soup.findAll('a', {'target': '_blank'})
@@ -409,6 +451,8 @@ class Delivery(BaseLink):
         for container in containers:
             resource = Resource(os.path.splitext(container.text)[0], container['href'],
                                 self.subject, self.downloader, self.queue)
+            resource.set_subfolder(self.subfolder)
+
             self.logger.debug('Created resource from delivery: %r, %s', resource.name,
                               resource.url)
             links.append(resource)

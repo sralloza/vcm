@@ -21,7 +21,7 @@ if os.path.isdir('logs') is False:
 should_roll_over = os.path.isfile('logs/vcd.log')
 
 old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
-handler = RotatingFileHandler(filename='logs/passbreaker.log', maxBytes=2_500_000,
+handler = RotatingFileHandler(filename='logs/vcd.log', maxBytes=2_500_000,
                               encoding='utf-8', backupCount=5)
 
 current_thread().setName('MT')
@@ -124,4 +124,3 @@ def start(root_folder=None):
 
     final_time = time.time() - initial_time
     main_logger.info('DONE (%.2f seconds)', final_time)
-

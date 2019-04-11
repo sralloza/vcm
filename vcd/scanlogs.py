@@ -7,15 +7,15 @@ from colorama import Fore, Style, init
 
 # pylint: disable=missing-docstring
 
-def main():
+def scanlogs():
     init()
-    filenames = [x for x in os.listdir('../') if x.endswith('.log')]
+    filenames = [x for x in os.listdir('../logs') if x.endswith('.log')]
 
     errors = 0
     warnings = 0
     nlines = 0
     for file in filenames:
-        file = os.path.join('../', file)
+        file = os.path.join('../logs', file)
         with open(file, encoding='utf-8') as file_handler:
             try:
                 lines = file_handler.read().splitlines()
@@ -44,4 +44,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    scanlogs()
