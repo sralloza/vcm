@@ -112,6 +112,10 @@ class BaseLink:
                                  self.name, self.url, self.response.headers)
             return 'unknown'
 
+    def create_subject_folder(self):
+        """Creates the subject's principal folder."""
+        return self.subject.create_folder()
+
     def make_request(self):
         """Makes the request for the Link."""
 
@@ -362,11 +366,13 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
-    def make_subfolder(self):
+    def make_folder(self):
         """Makes a subfolder to save the folder's links."""
         folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
+        self.create_subject_folder()
+
         if os.path.isdir(folder) is False:
-            self.logger.debug('Created folder: %s', folder)
+            self.logger.debug('Created folder: %r', folder)
             os.mkdir(folder)
 
     def download(self):
@@ -374,7 +380,7 @@ class Folder(BaseLink):
         self.logger.debug('Downloading folder %s', self.name)
         self.make_request()
         self.process_request_bs4()
-        self.make_subfolder()
+        self.make_folder()
 
         containers = self.soup.findAll('span', {'class': 'fp-filename-icon'})
 
@@ -436,10 +442,13 @@ class Delivery(BaseLink):
         """Makes a subfolder to save the folder's links."""
         folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
         self.set_subfolder(folder)
+        self.create_subject_folder()
 
-        if os.path.isdir(folder) is False:
-            self.logger.debug('Created folder: %s', folder)
-            os.mkdir(folder)
+        if not os.path.isdir(self.subfolder):
+            os.mkdir(self.subfolder)
+            self.logger.debug('Created subfolder (Delivery) %r', self.subfolder)
+        else:
+            self.logger.debug('Subfolder already exists (Delivery) %r', self.subfolder)
 
     def download(self):
         """Downloads the resources found in the delivery."""

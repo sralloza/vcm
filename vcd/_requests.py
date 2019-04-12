@@ -21,7 +21,7 @@ class Downloader(requests.Session):
         self.logger = logging.getLogger(__name__)
 
         if silenced is True:
-            self.logger.handlers = []
+            self.logger.setLevel(logging.CRITICAL)
 
         self._retries = retries
         super().__init__()

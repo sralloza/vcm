@@ -18,24 +18,23 @@ from .subject import Subject
 if os.path.isdir('logs') is False:
     os.mkdir('logs')
 
-should_roll_over = os.path.isfile('logs/vcd.log')
+if os.environ.get('TESTING') is None:
+    should_roll_over = os.path.isfile('logs/vcd.log')
 
-old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
-handler = RotatingFileHandler(filename='logs/vcd.log', maxBytes=2_500_000,
-                              encoding='utf-8', backupCount=5)
+    old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+    handler = RotatingFileHandler(filename='logs/vcd.log', maxBytes=2_500_000,
+                                  encoding='utf-8', backupCount=5)
 
-current_thread().setName('MT')
+    current_thread().setName('MT')
 
-if should_roll_over:
-    handler.doRollover()
+    if should_roll_over:
+        handler.doRollover()
 
-logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=old_reliable)
+    logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=old_reliable)
+
+logging.getLogger('urllib3').setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
-
-connectionpool = logging.getLogger('urllib3')
-connectionpool.handlers = []
-connectionpool.setLevel(logging.WARNING)
 
 
 # noinspection PyShadowingNames
@@ -123,4 +122,4 @@ def start(root_folder=None):
     queue.join()
 
     final_time = time.time() - initial_time
-    main_logger.info('DONE (%.2f seconds)', final_time)
+    main_logger.info('Vcd executed in %.2f s', final_time)

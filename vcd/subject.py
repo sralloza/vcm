@@ -100,19 +100,19 @@ class Subject:
                 url = find.a['href']
 
                 if 'resource' in url:
-                    self.logger.debug('Created resource (subject search): %r, %s', name, url)
+                    self.logger.debug('Created Resource (subject search): %r, %s', name, url)
                     self.add_link(
                         Resource(name, url, self, self.downloader, self.queue))
                 elif 'folder' in url:
-                    self.logger.debug('Created folder (subject search): %r, %s', name, url)
+                    self.logger.debug('Created Folder (subject search): %r, %s', name, url)
                     self.add_link(
                         Folder(name, url, self, self.downloader, self.queue))
                 elif 'forum' in url:
-                    self.logger.debug('Created forum (subject search): %r, %s', name, url)
+                    self.logger.debug('Created Forum (subject search): %r, %s', name, url)
                     self.add_link(
                         Forum(name, url, self, self.downloader, self.queue))
                 elif 'assign' in url:
-                    self.logger.debug('Created delivery (subject search): %r, %s', name, url)
+                    self.logger.debug('Created Delivery (subject search): %r, %s', name, url)
                     self.add_link(
                         Delivery(name, url, self, self.downloader, self.queue))
 
