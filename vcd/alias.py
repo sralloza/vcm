@@ -15,6 +15,7 @@ class AliasNotFoundError(Exception):
 
 
 class Events:
+    """Contains events to control the multithreading version of Alias."""
     free = Event()
     free.set()
 
@@ -65,6 +66,14 @@ class Alias:
             json.dump(res_list, file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
     def _increment(self, something):
+        """Changes the filename if it already exists in the database.
+
+        Examples:
+            Alias._increment("file") -> "file.1"
+            Alias._increment("file.txt") -> "file.1.txt"
+            Alias._increment("some.file.txt") -> "some.file.1.txt"
+
+        """
         index = 0
         while True:
             index += 1
@@ -81,6 +90,14 @@ class Alias:
 
     @staticmethod
     def _create_name(template: str, index: int):
+        """Given a filename and an index, creates the filename.
+
+        Examples
+            Alias._createname("file", 5) -> "file.5"
+            Alias._createname("file.txt", 5) -> "file.5.txt"
+            Alias._createname("some.file.txt", 5) -> "some.file.5.txt"
+        """
+
         splitted = template.split('.')
         if len(splitted) == 1:
             return f'{splitted[0]}.{index}'
@@ -141,7 +158,18 @@ class Alias:
 
     @staticmethod
     def alias_to_real(alias):
+        """Returns the real name given the alias.
 
+        Args:
+            alias (str): alias.
+
+        Returns:
+            str: the real name if the alias is found in the alias database.
+
+        Raises
+            AliasNotFoundError: if the alias is not in the database.
+
+        """
         self = Alias.__new__(Alias)
         self.__init__()
 
@@ -153,6 +181,18 @@ class Alias:
 
     @staticmethod
     def get_real_from_id(id_):
+        """Returns the real name given the id.
+
+        Args:
+            id_ (str | int): id.
+
+        Returns:
+            str: the real name if the id is found in the alias database.
+
+        Raises
+            IdError: if the id is not in the database.
+
+        """
         self = Alias.__new__(Alias)
         self.__init__()
 
