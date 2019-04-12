@@ -2,12 +2,14 @@
 import logging
 import os
 import random
+from _sha1 import sha1
 from queue import Queue
 
 from bs4 import BeautifulSoup
 from requests import Response
 
 from vcd._requests import Downloader
+from vcd.alias import Alias
 from vcd.filecache import REAL_FILE_CACHE
 from vcd.results import Results
 from .options import Options
@@ -162,7 +164,8 @@ class BaseLink:
 
         self.filepath = os.path.join(Options.ROOT_FOLDER, self.filepath).replace('\\', '/')
 
-        self.filepath = self.filepath.replace('>', ' mayor que ')
+        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
+                                            self.filepath.replace('>', ' mayor que '))
 
         self.logger.debug('Set filepath: %r', self.filepath)
 

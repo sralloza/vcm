@@ -2,6 +2,7 @@
 
 import logging
 import os
+from _sha1 import sha1
 from threading import Lock
 
 from bs4 import BeautifulSoup
@@ -26,7 +27,7 @@ class Subject:
             downloader (Downloader): downloader to download files.
             queue (Queue): queue to controll threads.
         """
-        self.name = Alias.real_to_alias(name.capitalize())
+        self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name.capitalize())
         self.url = url
         self.downloader = downloader
         self.queue = queue
