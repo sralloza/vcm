@@ -27,12 +27,21 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     
     <script>
         var clock = document.getElementById("content");
-    
-        setInterval(() => {
+        var alerted = false;
+
+        var interval = setInterval(() => {
             fetch("/feed")
             .then(response => {
                     response.text().then(t => {clock.innerHTML = t})
-                });
+                }).catch(function(){
+                    document.title = "Ejecución terminada";
+                    clearInterval(interval);
+                    if (alerted == false) {
+                        alerted = true;
+                        alert("VCD ha terminado la ejecución");
+                        }
+                    }
+                );
             }, 1000);
     </script>
     """
