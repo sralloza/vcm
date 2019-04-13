@@ -36,6 +36,9 @@ class Downloader(requests.Session):
             except requests.exceptions.ConnectionError:
                 retries -= 1
                 self.logger.warning('Connection error in GET, retries=%s', retries)
+            except requests.exceptions.ReadTimeout:
+                retries -= 1
+                self.logger.warning('Timeout error in GET, retries=%s', retries)
 
         self.logger.critical('Download error in GET %r', url)
         raise DownloaderError('max retries failed.')
@@ -50,6 +53,9 @@ class Downloader(requests.Session):
             except requests.exceptions.ConnectionError:
                 retries -= 1
                 self.logger.warning('Connection error in POST, retries=%s', retries)
+            except requests.exceptions.ReadTimeout:
+                retries -= 1
+                self.logger.warning('Timeout error in POST, retries=%s', retries)
 
         self.logger.critical('Download error in POST %r', url)
         raise DownloaderError('max retries failed.')

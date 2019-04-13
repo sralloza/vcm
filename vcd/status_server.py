@@ -50,7 +50,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     def info_feed():
         def feed():
             status = '<title>VCD STATUS</title>'
-            status += f'Execution time: {seconds_to_str(time.time() - t0)}<br>'
+            status += f'Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>'
 
             # noinspection PyUnresolvedReferences
             status += f'Unfinished tasks: {queue.unfinished_tasks}<br>'
@@ -59,7 +59,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             idle = 0
             working = 0
             for thread in threadlist:
-                thread_status += f'\t-{thread.to_log()}<br>'
+                thread_status += f'\t-{thread.to_log(integer=True)}<br>'
 
                 if thread.status == 'working':
                     working += 1

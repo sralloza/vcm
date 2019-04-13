@@ -10,6 +10,7 @@ from .links import BaseLink
 from .subject import Subject
 from .time_operations import seconds_to_str
 
+
 class Worker(Thread):
     """Special worker for vcd multithreading."""
 
@@ -22,7 +23,7 @@ class Worker(Thread):
         self.timestamp = None
         self.current_object = None
 
-    def to_log(self):
+    def to_log(self, integer=False):
         color = 'black'
         exec_time = 0
 
@@ -39,7 +40,7 @@ class Worker(Thread):
         status = f'<font color="{color}">{self.name}: {self.status} - '
 
         if exec_time > 90:
-            status += f'[{seconds_to_str(exec_time)}] '
+            status += f'[{seconds_to_str(exec_time, integer=integer)}] '
 
         if isinstance(self.current_object, BaseLink):
             status += f'{self.current_object.subject.name} → {self.current_object.name}'

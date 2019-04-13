@@ -2,6 +2,7 @@
 import logging
 import os
 import random
+import warnings
 from _sha1 import sha1
 from queue import Queue
 
@@ -124,11 +125,13 @@ class BaseLink:
         if self.method is None:
             raise NotImplementedError
         elif self.method == 'GET':
-            self.response = self.downloader.get(self.redirect_url or self.url, stream=True)
+            self.response = self.downloader.get(self.redirect_url or self.url, timeout=30)
+            self.logger.debug('GET Done')  # todo remove
 
         elif self.method == 'POST':
-            self.response = self.downloader.post(self.redirect_url or self.url,
-                                                 data=self.post_data, stream=True)
+            self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data,
+                                                 timeout=30)
+            self.logger.debug('POST Done')  # todo remove
         else:
             raise RuntimeError(f'Invalid method: {self.method}')
 
@@ -140,6 +143,8 @@ class BaseLink:
             return self.make_request()
 
     def close_connection(self):
+        warnings.warn('Since streams are not used, this method should not be called',
+                      DeprecationWarning)
         self.logger.debug('Closing connection')
         self.response.close()
 
@@ -191,16 +196,20 @@ class BaseLink:
         self.logger.debug('filepath in REAL_FILE_CACHE: %s', self.filepath in REAL_FILE_CACHE)
 
         if self.filepath in REAL_FILE_CACHE:
+            self.logger.debug('checkpoint: self.filepath in REAL_CACHE_FILE')  # todo remove
+
             if REAL_FILE_CACHE[self.filepath] == self.get_header_length():
                 self.logger.debug('File found in cache: Same content (%d)',
                                   len(self.response.content))
-                self.close_connection()
+                # self.close_connection()
                 return
 
             self.logger.debug('File found in cache: Different content (%d --> %d)',
                               REAL_FILE_CACHE[self.filepath], len(self.response.content))
             Results.print_updated(f'File updated: {self.filepath}')
         else:
+            self.logger.debug('checkpoint: self.filepath not in REAL_CACHE_FILE')  # todo remove
+
             self.logger.debug('File added to cache: %s [%d]', self.filepath,
                               len(self.response.content))
             REAL_FILE_CACHE[self.filepath] = len(self.response.content)
@@ -217,7 +226,7 @@ class BaseLink:
                                 os.path.basename(self.filepath))
             self.logger.warning('Permission error %s -- %s', self.subject.name,
                                 os.path.basename(self.filepath))
-        self.close_connection()
+        # self.close_connection()
 
 
 class Resource(BaseLink):

@@ -9,13 +9,13 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init
 
-from .status_server import runserver
-from .time_operations import seconds_to_str
 from ._requests import Downloader
 from ._threading import start_workers
 from .credentials import Credentials
 from .options import Options
+from .status_server import runserver
 from .subject import Subject
+from .time_operations import seconds_to_str
 
 if os.path.isdir('logs') is False:
     os.mkdir('logs')
@@ -40,14 +40,12 @@ logger = logging.getLogger(__name__)
 
 
 # noinspection PyShadowingNames
-def find_subjects(downloader, queue, condition=None, nthreads=20):
+def find_subjects(downloader, queue, nthreads=20):
     """Starts finding subjects.
 
     Args:
         downloader (Downloader): custom session with retry control.
         queue (Queue): queue to organize threads.
-        condition (str|None): optional filter of subjects name.
-        condition (str): optional filter of subjects name.
         nthreads (int): number of threads to start.
 
     Returns:
@@ -92,18 +90,13 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
 
     subjects.sort(key=lambda x: x.name)
 
-
     for i, _ in enumerate(subjects):
-        if condition is None:
-            queue.put(subjects[i])
-        else:
-            if condition in subjects[i].name.lower():
-                queue.put(subjects[i])
+        queue.put(subjects[i])
 
     return subjects
 
 
-def start(root_folder=None):
+def start(root_folder=None, nthreads=50):
     """Starts the app."""
     init()
 
@@ -117,11 +110,9 @@ def start(root_folder=None):
     downloader = Downloader()
     main_logger.debug('Starting queue')
     queue = Queue()
-    condition = None
-    nthreads = 30
 
     main_logger.debug('Launching subjects finder')
-    find_subjects(downloader, queue, condition, nthreads)
+    find_subjects(downloader, queue, nthreads)
 
     main_logger.debug('Waiting for queue to empty')
     queue.join()
