@@ -43,5 +43,20 @@ def scanlogs():
             print(Fore.LIGHTYELLOW_EX + f'{warnings} warnings found ({nlines} lines)')
 
 
+def detect_guilty(nthreads=30):
+    print(Style.RESET_ALL)
+
+    with open('../logs/vcd.log', encoding='utf-8') as fh:
+        content = fh.read().splitlines()
+
+    for n in range(nthreads):
+        name = f'W-{n + 1:02d}'
+        name_plus_dot = name + '.'
+        thread_lines = [x for x in content if name_plus_dot in x]
+        if 'ready to continue working' not in thread_lines[-1]:
+            print(f'GUILTY :: {name} :: {thread_lines[-1]}')
+
+
 if __name__ == '__main__':
     scanlogs()
+    detect_guilty()

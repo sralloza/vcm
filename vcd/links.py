@@ -146,8 +146,9 @@ class BaseLink:
     def process_request_bs4(self):
         """Parses the response with BeautifulSoup with the html parser."""
 
+        self.logger.debug('Parsing response (bs4)')
         self.soup = BeautifulSoup(self.response.text, 'html.parser')
-        self.logger.debug('Response parsed')
+        self.logger.debug('Response parsed (bs4)')
 
     def autoset_filepath(self):
         """Determines the filepath of the Link."""

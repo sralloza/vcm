@@ -17,13 +17,19 @@ class Worker(Thread):
 
         self.logger = logging.getLogger(__name__)
         self.queue: Queue = queue
+        self.status = 'idle'
 
+    # noinspection PyUnresolvedReferences
     def run(self):
         """Runs the thread"""
         while True:
+            self.status = 'idle'
+            self.logger.info('Worker %r ready to continue working', self.name)
             anything = self.queue.get()
-            self.logger.debug('%d items remaining in queue', self.queue.qsize())
+            self.logger.debug('%d items left in queue (%d unfinished tasks)', self.queue.qsize(),
+                              self.queue.unfinished_tasks)
 
+            self.status = 'working'
             if isinstance(anything, BaseLink):
                 self.logger.debug('Found Link %r, processing', anything.name)
                 try:
@@ -32,6 +38,8 @@ class Worker(Thread):
                     self.logger.exception('FileNotFoundError in url %s (%r)', anything.url, ex)
                 except DownloaderError as ex:
                     self.logger.exception('DownloaderError in url %s (%r)', anything.url, ex)
+
+                self.logger.info('Worker %r completed work of Link %r', self.name, anything.name)
                 self.queue.task_done()
 
             elif isinstance(anything, Subject):
@@ -40,7 +48,11 @@ class Worker(Thread):
                     anything.find_links()
                 except DownloaderError as ex:
                     self.logger.exception('DownloaderError in subject %s (%r)', anything.name, ex)
+
+                self.logger.info('Worker %r completed work of Subject %r', self.name, anything.name)
                 self.queue.task_done()
+
+            self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
 
 
 def start_workers(queue, nthreads=20):
@@ -55,7 +67,7 @@ def start_workers(queue, nthreads=20):
     """
     thread_list = []
     for i in range(nthreads):
-        thread = Worker(queue, name=f'W-{i + 1}', daemon=True)
+        thread = Worker(queue, name=f'W-{i + 1:02d}', daemon=True)
         thread.logger.debug('Started worker named %r', thread.name)
         thread.start()
         thread_list.append(thread)

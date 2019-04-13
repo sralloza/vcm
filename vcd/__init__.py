@@ -9,6 +9,8 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init
 
+from tests.status import runserver
+from vcd.time_operations import seconds_to_str
 from ._requests import Downloader
 from ._threading import start_workers
 from .credentials import Credentials
@@ -87,7 +89,9 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
 
     subjects.sort(key=lambda x: x.name)
 
-    start_workers(queue, nthreads)
+    threads = start_workers(queue, nthreads)
+    runserver(queue, threads)
+
     for i, _ in enumerate(subjects):
         if condition is None:
             queue.put(subjects[i])
@@ -122,4 +126,4 @@ def start(root_folder=None):
     queue.join()
 
     final_time = time.time() - initial_time
-    main_logger.info('Vcd executed in %.2f s', final_time)
+    main_logger.info('VCD executed in %s', seconds_to_str(final_time))
