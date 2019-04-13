@@ -1,13 +1,14 @@
 """Multithreading workers for the vcd."""
 
 import logging
+import time
 from queue import Queue
 from threading import Thread
 
-from vcd._requests import DownloaderError
-from vcd.links import BaseLink
-from vcd.subject import Subject
-
+from ._requests import DownloaderError
+from .links import BaseLink
+from .subject import Subject
+from .time_operations import seconds_to_str
 
 class Worker(Thread):
     """Special worker for vcd multithreading."""
@@ -18,6 +19,38 @@ class Worker(Thread):
         self.logger = logging.getLogger(__name__)
         self.queue: Queue = queue
         self.status = 'idle'
+        self.timestamp = None
+        self.current_object = None
+
+    def to_log(self):
+        color = 'black'
+        exec_time = 0
+
+        if self.timestamp is not None:
+            exec_time = time.time() - self.timestamp
+
+            if exec_time < 30:
+                color = 'green'
+            elif 30 < exec_time < 60:
+                color = "orange"
+            else:
+                color = "red"
+
+        status = f'<font color="{color}">{self.name}: {self.status} - '
+
+        if exec_time > 90:
+            status += f'[{seconds_to_str(exec_time)}] '
+
+        if isinstance(self.current_object, BaseLink):
+            status += f'{self.current_object.subject.name} → {self.current_object.name}'
+        elif isinstance(self.current_object, Subject):
+            status += f'{self.current_object.name}'
+        else:
+            status += 'None'
+
+        status += '</font>'
+
+        return status
 
     # noinspection PyUnresolvedReferences
     def run(self):
@@ -26,10 +59,13 @@ class Worker(Thread):
             self.status = 'idle'
             self.logger.info('Worker %r ready to continue working', self.name)
             anything = self.queue.get()
+            self.timestamp = time.time()
             self.logger.debug('%d items left in queue (%d unfinished tasks)', self.queue.qsize(),
                               self.queue.unfinished_tasks)
 
             self.status = 'working'
+            self.current_object = anything
+
             if isinstance(anything, BaseLink):
                 self.logger.debug('Found Link %r, processing', anything.name)
                 try:
@@ -53,6 +89,8 @@ class Worker(Thread):
                 self.queue.task_done()
 
             self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
+            self.current_object = None
+            self.timestamp = None
 
 
 def start_workers(queue, nthreads=20):

@@ -59,4 +59,4 @@ def detect_guilty(nthreads=30):
 
 if __name__ == '__main__':
     scanlogs()
-    detect_guilty()
+    # detect_guilty()

@@ -1,7 +1,7 @@
 """Alias manager for signatures."""
 import json
 import os
-from threading import Event
+from threading import Semaphore
 
 from .options import Options
 
@@ -14,31 +14,45 @@ class AliasNotFoundError(Exception):
     """Alias not found error."""
 
 
+class AliasFatalError(Exception):
+    """Alias fatal error."""
+
+
 class Events:
     """Contains events to control the multithreading version of Alias."""
-    free = Event()
-    free.set()
+    access = Semaphore()
+
+    @staticmethod
+    def acquire():
+        Events.access.acquire()
+
+    @staticmethod
+    def release():
+        Events.access.release()
 
 
 class Alias:
     """Class designed to declare aliases"""
 
     def __init__(self):
-        Events.free.wait()
         self.alias_path = os.path.join(Options.ROOT_FOLDER, 'alias.json')
         self.json = []
         self.load()
 
     def load(self):
         """Loads the alias configuration."""
+
         if os.path.isfile(self.alias_path) is False:
             self.json = []
             return
         try:
+            Events.acquire()
             with open(self.alias_path, encoding='utf-8') as file_handler:
                 self.json = json.load(file_handler) or []
-        except json.JSONDecodeError:
-            self.json = []
+        except json.JSONDecodeError as ex:
+            raise AliasFatalError('Raised JSONDecodeError') from ex
+        except UnicodeDecodeError as ex:
+            raise AliasFatalError('Raised UnicodeDecodeError') from ex
 
         if not isinstance(self.json, list):
             raise TypeError(f'alias file invalid ({type(self.json).__name__})')
@@ -46,6 +60,8 @@ class Alias:
         for alias in self.json:
             if 'id' not in alias or 'new' not in alias or 'old' not in alias or 'type' not in alias:
                 raise TypeError(f'alias file invalid: {alias!r}')
+
+        Events.release()
 
     def save(self):
         """Saves alias configuration to the file."""
@@ -122,13 +138,11 @@ class Alias:
 
         self = Alias.__new__(Alias)
         self.__init__()
-        Events.free.wait()
-
-        Events.free.clear()
+        Events.acquire()
 
         for file in self.json:
             if file['id'] == id_:
-                Events.free.set()
+                Events.release()
 
                 if file['old'] == real:
                     return file['new']
@@ -150,10 +164,9 @@ class Alias:
                 break
 
         self.json.append({'id': id_, 'old': real, 'new': new, 'type': type_})
-
         self.save()
 
-        Events.free.set()
+        Events.release()
         return new
 
     @staticmethod

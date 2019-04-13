@@ -187,7 +187,8 @@ class BaseLink:
         if self.filepath is None:
             self.autoset_filepath()
 
-        self.subject.create_folder()
+        self.create_subject_folder()
+        self.logger.debug('filepath in REAL_FILE_CACHE: %s', self.filepath in REAL_FILE_CACHE)
 
         if self.filepath in REAL_FILE_CACHE:
             if REAL_FILE_CACHE[self.filepath] == self.get_header_length():

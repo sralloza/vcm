@@ -67,6 +67,8 @@ class Subject:
                 if os.path.isdir(self.foldername) is False:
                     os.mkdir(self.foldername)
             self.hasfolder = True
+        else:
+            self.logger.debug('Folder already exists: %r', self.name)
 
     def add_link(self, url: BaseLink):
         """Adds a note url to the list."""

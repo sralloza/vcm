@@ -1,4 +1,3 @@
-import logging
 import os
 from threading import Thread
 
@@ -101,8 +100,6 @@ class TestRealToAlias:
             Alias.real_to_alias(100, 'other')
 
     def test_alias_multithreading(self):
-        logger = logging.getLogger(__name__)
-        logger.debug('----------------------------------------------')
 
         class Worker(Thread):
             def __init__(self, data):
@@ -120,9 +117,16 @@ class TestRealToAlias:
         data1 = []
         data2 = []
         test_length = 50
+
+        expected = []
         for i, j in zip(range(test_length), range(test_length, 2 * test_length)):
             data1.append((i, f'data1-{i:03d}.txt'))
-            data2.append((j, f'data2-{i:03d}.txt'))
+            data2.append((j, f'data2-{j:03d}.txt'))
+            expected.append(
+                {'id': i, 'new': f'data1-{i:03d}.txt', 'old': f'data1-{i:03d}.txt', 'type': '?'})
+            expected.append(
+                {'id': j, 'new': f'data2-{j:03d}.txt', 'old': f'data2-{j:03d}.txt', 'type': '?'})
+            print(f'data2-{i:03d}.txt')
 
         t1 = Worker(data1)
         t2 = Worker(data2)
@@ -134,6 +138,12 @@ class TestRealToAlias:
         t2.join()
 
         json = Alias().json
+        json.sort(key=lambda x: x['new'])
+        expected.sort(key=lambda x: x['new'])
+
+        for element in expected:
+            assert element in json
+
         assert len(json) == 2 * test_length
 
 

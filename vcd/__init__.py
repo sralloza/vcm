@@ -9,8 +9,8 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init
 
-from tests.status import runserver
-from vcd.time_operations import seconds_to_str
+from .status_server import runserver
+from .time_operations import seconds_to_str
 from ._requests import Downloader
 from ._threading import start_workers
 from .credentials import Credentials
@@ -56,6 +56,9 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
     logger = logging.getLogger(__name__)
     logger.debug('Finding subjects')
 
+    threads = start_workers(queue, nthreads)
+    runserver(queue, threads)
+
     user = Credentials.get('sralloza')
 
     downloader.post(
@@ -89,8 +92,6 @@ def find_subjects(downloader, queue, condition=None, nthreads=20):
 
     subjects.sort(key=lambda x: x.name)
 
-    threads = start_workers(queue, nthreads)
-    runserver(queue, threads)
 
     for i, _ in enumerate(subjects):
         if condition is None:
