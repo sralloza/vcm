@@ -11,3 +11,4 @@ logs/
 *.old
 *.json
 *.csv
+*.ini

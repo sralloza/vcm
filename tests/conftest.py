@@ -5,6 +5,8 @@ from threading import current_thread
 
 import pytest
 
+from vcd import Credentials
+
 
 def pytest_configure():
     os.environ['TESTING'] = '1'
@@ -24,7 +26,18 @@ def pytest_configure():
 @pytest.fixture(scope='session', autouse=True)
 def teardown_everything():
     yield
-    shutil.rmtree('temp_tests')
+
+    if os.path.isdir('temp_tests'):
+        shutil.rmtree('temp_tests')
 
     logging.shutdown()
-    os.remove('testing.log')
+
+    if os.path.isfile('testing.log'):
+        os.remove('testing.log')
+
+    if os.path.isfile(Credentials.path):
+        os.remove(Credentials.path)
+
+    assert not os.path.isdir('temp_tests')
+    assert not os.path.isfile('testing.log')
+    assert not os.path.isfile(Credentials.path)

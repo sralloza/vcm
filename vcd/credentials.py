@@ -1,10 +1,14 @@
 """Credentials manager for the web page of the University of Valladolid."""
-import json
 import os
+from configparser import ConfigParser
 
 
-class CredentialError(BaseException):
+class CredentialError(Exception):
     """Credential error."""
+
+
+class NoCredentialsFoundError(Exception):
+    """No credentials found error"""
 
 
 class StudentCredentials:
@@ -16,7 +20,7 @@ class StudentCredentials:
         self.password = password
 
     def __str__(self):
-        return f'{self.__class__.__name__}(alias={self.alias})'
+        return f'{self.__class__.__name__}(alias={self.alias!r})'
 
     def to_json(self):
         """Returns self json serialized."""
@@ -25,31 +29,32 @@ class StudentCredentials:
 
 class Credentials:
     """Credentials manager."""
-    def __init__(self):
-        self.path = 'credentials.json'
+    path = 'credentials.ini'
+
+    def __init__(self, _auto=False):
+        self._auto = _auto
         self.credentials = []
         self.load()
 
     def load(self):
         """Loads the credentials configuration."""
         if not os.path.isfile(self.path):
+            if self._auto:
+                return
+
             self.make_example()
             self.save()
-            raise RuntimeError('File not found, created sample')
+            raise NoCredentialsFoundError('File not found, created sample')
 
-        try:
-            with open(self.path, encoding='utf-8') as file_handler:
-                raw_data = json.load(file_handler)
-        except json.JSONDecodeError:
-            raise RuntimeError('Credential json decode error')
+        raw_data = ConfigParser()
+        raw_data.read(self.path, encoding='utf-8')
 
         for student in raw_data:
-            student_data = dict(**student)
+            if student == 'DEFAULT':
+                continue
+            student_data = dict(raw_data[student])
 
-            try:
-                alias = student_data.pop('alias')
-            except KeyError:
-                raise CredentialError('alias not found')
+            alias = student
 
             try:
                 username = student_data.pop('username')
@@ -68,16 +73,19 @@ class Credentials:
 
     def save(self):
         """Saves the credentials to the file."""
-        serial = [x.to_json() for x in self.credentials]
-        with open(self.path, 'wt', encoding='utf-8') as file_handler:
-            json.dump(serial, file_handler, indent=4, ensure_ascii=False)
+        config = ConfigParser()
+        for person in self.credentials:
+            config[person.alias] = {'username': person.username, 'password': person.password}
+
+        with open(self.path, 'wt', encoding='utf-8') as fh:
+            config.write(fh)
 
     @staticmethod
-    def get(alias):
+    def get(alias: str) -> StudentCredentials:
         """Gets the credentials from the alias.
 
         Args:
-            alias (str): alias
+            alias (str): alias of the user.
 
         Returns:
              StudentCredentials: with alias 'alias'.
@@ -94,9 +102,27 @@ class Credentials:
 
     def make_example(self):
         """Makes a dummy Student with field description."""
-        user = StudentCredentials('real name or alias to use in code',
+        user = StudentCredentials('insert alias',
                                   'username of the virtual campus',
                                   'password of the virtual campus')
 
+        self.credentials.append(user)
+        self.save()
+
+    @staticmethod
+    def add(alias: str, username: str, password: str):
+        """Adds new credentials.
+
+        Args:
+            alias (str): alias of the user.
+            username (str): username of the user.
+            password (str): password of the user.
+
+        """
+
+        self = Credentials.__new__(Credentials)
+        self.__init__(_auto=True)
+
+        user = StudentCredentials(alias, username, password)
         self.credentials.append(user)
         self.save()
