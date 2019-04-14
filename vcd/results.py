@@ -9,19 +9,10 @@ from .options import Options
 
 class Results:
     """Class to manage information."""
-    list_lock = Lock()
-
     print_lock = Lock()
-    print_list = []
 
     file_lock = Lock()
     result_path = os.path.join(Options.ROOT_FOLDER, 'new-files.txt').replace('\\', '/')
-
-    @staticmethod
-    def add(value):
-        """Adds anything to the print list."""
-        with Results.list_lock:
-            Results.print_list.append(value)
 
     @staticmethod
     def print_updated(message):
@@ -45,7 +36,7 @@ class Results:
 
         """
         with Results.print_lock:
-            print(Fore.LIGHTGREEN_EX + message)
+            print(repr(Fore.LIGHTGREEN_EX + message))
 
         Results.add_to_result_file(message)
 
