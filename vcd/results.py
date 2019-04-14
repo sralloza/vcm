@@ -36,7 +36,7 @@ class Results:
 
         """
         with Results.print_lock:
-            print(repr(Fore.LIGHTGREEN_EX + message))
+            print(Fore.LIGHTGREEN_EX + message)
 
         Results.add_to_result_file(message)
 

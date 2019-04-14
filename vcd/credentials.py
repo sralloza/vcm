@@ -98,7 +98,7 @@ class Credentials:
             if user.alias == alias:
                 return user
 
-        raise RuntimeError('User not found')
+        raise RuntimeError(f'User not found: {alias}')
 
     def make_example(self):
         """Makes a dummy Student with field description."""
