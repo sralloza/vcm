@@ -52,8 +52,9 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             status = '<title>VCD STATUS</title>'
             status += f'Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>'
 
+            status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
             # noinspection PyUnresolvedReferences
-            status += f'Unfinished tasks: {queue.unfinished_tasks}<br>'
+            status += f'tasks</a>: {queue.unfinished_tasks}<br>'
             status += f'Items left: {queue.qsize()}<br><br>'
             thread_status = 'Threads:<br>'
             idle = 0
