@@ -88,6 +88,12 @@ class Worker(Thread):
 
                 self.logger.info('Worker %r completed work of Subject %r', self.name, anything.name)
                 self.queue.task_done()
+            elif anything is None:
+                self.logger.info('Closing thread, received None')
+                self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
+                self.current_object = None
+                self.timestamp = None
+                return
 
             self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
             self.current_object = None
