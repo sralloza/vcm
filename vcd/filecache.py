@@ -4,11 +4,15 @@ import os
 from .options import Options
 
 
+class FileCacheError(Exception):
+    """File cache error."""
+
+
 class FileCache:
     """File scanner to control file version."""
+    path = Options.ROOT_FOLDER
 
     def __init__(self):
-        self.path = Options.ROOT_FOLDER
         self.cache = {}
 
     def __contains__(self, item):
@@ -20,8 +24,15 @@ class FileCache:
     def __setitem__(self, key, value):
         self.cache[key] = value
 
-    def load(self):
+    def __len__(self):
+        return len(self.cache)
+
+    def load(self, _auto=False):
         """Starts the scanner."""
+
+        if not _auto:
+            raise FileCacheError('Use REAL_FILE_CACHE instead')
+
         filenames = []
         for elem in os.walk(self.path):
             folder = elem[0]
@@ -42,4 +53,4 @@ class FileCache:
 
 
 REAL_FILE_CACHE = FileCache()
-REAL_FILE_CACHE.load()
+REAL_FILE_CACHE.load(_auto=True)
