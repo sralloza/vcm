@@ -3,7 +3,21 @@ from threading import Thread
 
 import pytest
 
-from vcd.alias import Alias, IdError
+from vcd.alias import Alias, IdError, AliasNotFoundError, AliasFatalError
+
+
+class TestAliasExceptions:
+    def test_id_error(self):
+        with pytest.raises(IdError):
+            raise IdError
+
+    def test_alias_not_found_error(self):
+        with pytest.raises(AliasNotFoundError):
+            raise AliasNotFoundError
+
+    def test_alias_fatal_error(self):
+        with pytest.raises(AliasFatalError):
+            raise AliasFatalError
 
 
 def test_load():
@@ -155,24 +169,48 @@ class TestAliasToReal:
         assert Alias.real_to_alias(2, 'aaa.bbb.ccc') == 'aaa.bbb.1.ccc'
         assert Alias.real_to_alias(3, 'aaa.bbb.ccc') == 'aaa.bbb.2.ccc'
         assert Alias.real_to_alias(4, 'aaa.bbb.ccc') == 'aaa.bbb.3.ccc'
+        assert Alias.real_to_alias(5, 'aaa.bbb.ccc') == 'aaa.bbb.4.ccc'
 
         assert Alias.alias_to_real('aaa.bbb.ccc') == 'aaa.bbb.ccc'
         assert Alias.alias_to_real('aaa.bbb.1.ccc') == 'aaa.bbb.ccc'
         assert Alias.alias_to_real('aaa.bbb.2.ccc') == 'aaa.bbb.ccc'
         assert Alias.alias_to_real('aaa.bbb.3.ccc') == 'aaa.bbb.ccc'
 
+    def test_alias_to_real_not_found(self):
+        assert Alias.real_to_alias(1, 'First') == 'First'
+        assert Alias.real_to_alias(2, 'Second') == 'Second'
 
-def test_g():
-    assert len(Alias().json) == 0
-    assert Alias.real_to_alias(1, 'aaa.bbb.ccc') == 'aaa.bbb.ccc'
-    assert Alias.real_to_alias(2, 'aaa.bbb.ccc') == 'aaa.bbb.1.ccc'
-    assert Alias.real_to_alias(3, 'aaa.bbb.ccc') == 'aaa.bbb.2.ccc'
-    assert Alias.real_to_alias(4, 'aaa.bbb.ccc') == 'aaa.bbb.3.ccc'
+        with pytest.raises(AliasNotFoundError):
+            assert Alias.alias_to_real('Third') == 'Third'
 
-    assert Alias.get_real_from_id(1) == 'aaa.bbb.ccc'
-    assert Alias.get_real_from_id(2) == 'aaa.bbb.ccc'
-    assert Alias.get_real_from_id(3) == 'aaa.bbb.ccc'
-    assert Alias.get_real_from_id(4) == 'aaa.bbb.ccc'
+        assert Alias.real_to_alias(3, 'Third') == 'Third'
+        assert Alias.alias_to_real('Third') == 'Third'
+
+
+class TestGetRealFromId:
+    # noinspection PyDeprecation
+    def test_get_real_from_id_0(self):
+        assert len(Alias().json) == 0
+        assert Alias.real_to_alias(1, 'aaa.bbb.ccc') == 'aaa.bbb.ccc'
+        assert Alias.real_to_alias(2, 'aaa.bbb.ccc') == 'aaa.bbb.1.ccc'
+        assert Alias.real_to_alias(3, 'aaa.bbb.ccc') == 'aaa.bbb.2.ccc'
+        assert Alias.real_to_alias(4, 'aaa.bbb.ccc') == 'aaa.bbb.3.ccc'
+        assert Alias.real_to_alias(5, 'aaa.bbb.ccc') == 'aaa.bbb.4.ccc'
+
+        assert Alias.get_real_from_id(1) == 'aaa.bbb.ccc'
+        assert Alias.get_real_from_id(2) == 'aaa.bbb.ccc'
+        assert Alias.get_real_from_id(3) == 'aaa.bbb.ccc'
+        assert Alias.get_real_from_id(4) == 'aaa.bbb.ccc'
+
+    def test_alias_to_real_not_found(self):
+        assert Alias.real_to_alias(1, 'First') == 'First'
+        assert Alias.real_to_alias(2, 'Second') == 'Second'
+
+        with pytest.raises(IdError):
+            assert Alias.get_real_from_id(3) == 'Third'
+
+        assert Alias.real_to_alias(3, 'Third') == 'Third'
+        assert Alias.get_real_from_id(3) == 'Third'
 
 
 @pytest.fixture(scope='function', autouse=True)

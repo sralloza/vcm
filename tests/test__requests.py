@@ -10,6 +10,11 @@ def test_headers(d):
     assert r.json()['user-agent'] == HEADERS['User-Agent']
 
 
+def test_downloader_error():
+    with pytest.raises(DownloaderError):
+        raise DownloaderError
+
+
 def test_get(d):
     r = d.get('http://httpbin.org/get?arg1=value1&arg2=value2&test=pytest')
     assert r.json()['args'] == {'arg1': 'value1', 'arg2': 'value2', 'test': 'pytest'}

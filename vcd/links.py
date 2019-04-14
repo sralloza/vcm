@@ -248,6 +248,13 @@ class Resource(BaseLink):
         if self.resource_type == 'html':
             self.process_request_bs4()
 
+    @property
+    def content_type(self):
+        if 'Content-Type' in self.response.headers:
+            return self.response.headers['Content-Type']
+
+        return None
+
     def download(self):
         """Downloads the resource."""
         self.logger.debug('Downloading resource %s', self.name)
@@ -257,71 +264,71 @@ class Resource(BaseLink):
             self.logger.error('status code of 404 in url %r [%r]', self.url, self.name)
             return None
 
-        if 'application/pdf' in self.response.headers['Content-Type']:
+        if 'application/pdf' in self.content_type:
             self.set_resource_type('pdf')
             return self.save_response_content()
 
-        if 'officedocument.wordprocessingml.document' in self.response.headers['Content-Type']:
+        if 'officedocument.wordprocessingml.document' in self.content_type:
             self.set_resource_type('word')
             return self.save_response_content()
 
-        if 'officedocument.spreadsheetml.sheet' in self.response.headers['Content-Type']:
+        if 'officedocument.spreadsheetml.sheet' in self.content_type:
             self.set_resource_type('excel')
             return self.save_response_content()
 
-        if 'officedocument.presentationml.slideshow' in self.response.headers['Content-Type']:
+        if 'officedocument.presentationml.slideshow' in self.content_type:
             self.set_resource_type('power-point')
             return self.save_response_content()
 
-        if 'presentationml.presentation' in self.response.headers['Content-Type']:
+        if 'presentationml.presentation' in self.content_type:
             self.set_resource_type('power-point')
             return self.save_response_content()
 
-        if 'powerpoint' in self.response.headers['Content-Type']:
+        if 'powerpoint' in self.content_type:
             self.set_resource_type('power-point')
             return self.save_response_content()
 
-        if 'msword' in self.response.headers['Content-Type']:
+        if 'msword' in self.content_type:
             self.set_resource_type('word')
             return self.save_response_content()
 
-        if 'application/zip' in self.response.headers['Content-Type']:
+        if 'application/zip' in self.content_type:
             self.set_resource_type('zip')
             return self.save_response_content()
 
-        if 'application/g-zip' in self.response.headers['Content-Type']:
+        if 'application/g-zip' in self.content_type:
             self.set_resource_type('gzip')
             return self.save_response_content()
 
-        if 'application/x-7z-compressed' in self.response.headers['Content-Type']:
+        if 'application/x-7z-compressed' in self.content_type:
             self.set_resource_type('7zip')
             return self.save_response_content()
 
-        if 'x-rar-compressed' in self.response.headers['Content-Type']:
+        if 'x-rar-compressed' in self.content_type:
             self.set_resource_type('rar')
             return self.save_response_content()
 
-        if 'text/plain' in self.response.headers['Content-Type']:
+        if 'text/plain' in self.content_type:
             self.set_resource_type('plain')
             return self.save_response_content()
 
-        if 'application/octet-stream' in self.response.headers['Content-Type']:
+        if 'application/octet-stream' in self.content_type:
             self.set_resource_type('octect-stream')
             return self.save_response_content()
 
-        if 'image/jpeg' in self.response.headers['Content-Type']:
+        if 'image/jpeg' in self.content_type:
             self.set_resource_type('jpeg')
             return self.save_response_content()
 
-        if 'video/mp4' in self.response.headers['Content-Type']:
+        if 'video/mp4' in self.content_type:
             self.set_resource_type('mp4')
             return self.save_response_content()
 
-        if 'video/x-ms-wm' in self.response.headers['Content-Type']:
+        if 'video/x-ms-wm' in self.content_type:
             self.set_resource_type('avi')
             return self.save_response_content()
 
-        if 'text/html' in self.response.headers['Content-Type']:
+        if 'text/html' in self.content_type:
             self.set_resource_type('html')
             return self.parse_html()
 
