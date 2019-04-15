@@ -68,6 +68,10 @@ class BaseLink:
 
         """
         self.logger.debug('Set post data: %r (%r)', value, self.name)
+
+        if not isinstance(value, dict):
+            raise TypeError(f'Expected dict, not {type(value).__name__}')
+
         self.post_data = value
 
     def set_subfolder(self, value):
@@ -77,8 +81,13 @@ class BaseLink:
             value (str): subfolder name.
 
         """
+
+        if not isinstance(value, str):
+            raise TypeError(f'Expected str, not {type(value).__name__}')
+
         value = value.strip()
         self.logger.debug('Set subfolder: %r (%r)', value, self.name)
+
         self.subfolder = value
 
     @staticmethod
@@ -92,7 +101,22 @@ class BaseLink:
             str: filepath processed.
 
         """
-        return filepath.replace(':', '').replace('"', '').replace('/', '-').strip()
+        filepath = filepath.strip()
+        filepath = filepath.replace(':', '')
+        filepath = filepath.replace('?', '')
+        filepath = filepath.replace('*', '')
+        filepath = filepath.replace('|', '')
+        filepath = filepath.replace('"', '')
+        filepath = filepath.replace("'", '')
+        filepath = filepath.replace('/', '-')
+        filepath = filepath.replace('\\', '-')
+
+        filepath = filepath.strip()
+
+        filepath = filepath.replace('>', ' mayor que ')
+        filepath = filepath.replace('<', ' menor que ')
+
+        return filepath
 
     def _get_ext_from_request(self):
         """Returns the extension of the filename of the response, got from the Content-Dispotition
@@ -187,6 +211,13 @@ class BaseLink:
     def get_header_length(self):
         return int(self.response.headers['content-length'])
 
+    @property
+    def content_type(self):
+        if 'Content-Type' in self.response.headers:
+            return self.response.headers['Content-Type']
+
+        return None
+
     def save_response_content(self):
         """Saves the response content to the disk."""
         if self.filepath is None:
@@ -247,13 +278,6 @@ class Resource(BaseLink):
 
         if self.resource_type == 'html':
             self.process_request_bs4()
-
-    @property
-    def content_type(self):
-        if 'Content-Type' in self.response.headers:
-            return self.response.headers['Content-Type']
-
-        return None
 
     def download(self):
         """Downloads the resource."""
