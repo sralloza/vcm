@@ -92,6 +92,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
         return output
 
     t = threading.Thread(name='vcd-status', target=waitress.serve, daemon=True, args=(app,),
-                     kwargs={'port': 80, 'host': '0.0.0.0', '_quiet': True})
+                         kwargs={'port': 80, 'host': '0.0.0.0', '_quiet': True,
+                                 'clear_untrusted_proxy_headers': True})
     t.start()
     return t
