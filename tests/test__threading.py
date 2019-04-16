@@ -38,7 +38,7 @@ class TestWorker:
         self.t1.queue.put(subject)
         time.sleep(.2)
 
-        assert self.t1.to_log() == '<font color="green">test-1: working - Dummy</font>'
+        assert self.t1.to_log() == '<font color="green">test-1: working - dummy</font>'
 
 
 def test_start_workers(close_threads):

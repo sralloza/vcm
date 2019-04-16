@@ -68,13 +68,3 @@ class TestCredentials:
 def clear_credentials():
     if os.path.isfile(Credentials.path):
         os.remove(Credentials.path)
-
-
-@pytest.fixture(autouse=True, scope='module')
-def set_path():
-    Credentials.path = 'test.' + Credentials.path
-
-    yield
-
-    os.remove(Credentials.path)
-    assert not os.path.isfile(Credentials.path)

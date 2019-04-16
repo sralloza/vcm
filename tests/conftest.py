@@ -13,6 +13,8 @@ def pytest_configure():
 
     from vcd import Options
     Options.set_root_folder('temp_tests')
+    Credentials.path = 'test.' + Credentials.path
+
 
     old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
     handler = logging.FileHandler(filename='testing.log', encoding='utf-8')

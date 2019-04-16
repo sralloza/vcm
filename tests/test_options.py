@@ -8,7 +8,7 @@ def test_filename_pattern():
     assert pat.search('filename="federico.txt"').group(1) == 'federico.txt'
     assert pat.search('filename="a la meca.rar"').group(1) == 'a la meca.rar'
     assert pat.search('filename="dummy.txt').group(1) == 'dummy.txt'
-    assert pat.search('filename=dummy.txt"').group(1) == 'dummpy.txt'
+    assert pat.search('filename=dummy.txt"').group(1) == 'dummy.txt'
 
 
 def test_set_root_folder():
