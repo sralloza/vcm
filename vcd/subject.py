@@ -52,7 +52,7 @@ class Subject:
             f'{len(self.notes_links)} notes links)'
 
     def __str__(self):
-        return f'{self.name!r}'
+        return f'{self.name}'
 
     def make_request(self):
         """Makes the primary request."""
