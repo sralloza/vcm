@@ -4,7 +4,7 @@ import re
 
 class Options:
     PRODUCTION = False
-    FILENAME_PATTERN = re.compile('filename="(.*)"')
+    FILENAME_PATTERN = re.compile('filename=\"?([\w. ]*)\"?')
     ROOT_FOLDER = 'D:/sistema/desktop/virtual_ittade3'
 
     @staticmethod
