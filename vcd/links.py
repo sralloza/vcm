@@ -92,6 +92,21 @@ class BaseLink:
 
         self.subfolder = value
 
+    def create_subfolder(self):
+        """Creates the subfolder, if it is configured."""
+        if self.subfolder is None:
+            return
+
+        self.create_subject_folder()
+        folder = os.path.join(
+            Options.ROOT_FOLDER, self.subject.name, self.subfolder).replace('\\', '/')
+
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+            self.logger.debug('Created subfolder %r', folder)
+        else:
+            self.logger.debug('Subfolder already exists %r', folder)
+
     @staticmethod
     def _process_filename(filepath: str):
         """Quits some characters from the filename that can not be in a filepath.
@@ -123,9 +138,11 @@ class BaseLink:
     @staticmethod
     def _filename_to_ext(filename):
         """Returns the extension given a filename."""
+        if filename.count('.') == 0:
+            return 'ukn'
         return filename.split('.')[-1]
 
-    def _get_ext_from_request(self):
+    def _get_ext_from_response(self):
         """Returns the extension of the filename of the response, got from the Content-Dispotition
         HTTP header.
 
@@ -133,6 +150,7 @@ class BaseLink:
             str: the extension.
 
         """
+
         if self.response_name is not None:
             return self._filename_to_ext(self.response_name)
 
@@ -144,11 +162,7 @@ class BaseLink:
             pass
 
         self.response_name = os.path.basename(self.url)
-        return self._filename_to_ext(self.response_name)
-
-        # self.logger.critical('Request does not contain a file (name=%r, url=%r, headers=%r)',
-        #                      self.name, self.url, self.response.headers)
-        # return 'unknown'
+        return self._filename_to_ext(self.response_name) or 'ukn'
 
     def create_subject_folder(self):
         """Creates the subject's principal folder."""
@@ -164,12 +178,10 @@ class BaseLink:
         elif self.method == 'GET':
             self.response = self.downloader.get(self.redirect_url or self.url,
                                                 timeout=Options.TIMEOUT)
-            self.logger.debug('GET Done')  # todo remove
 
         elif self.method == 'POST':
             self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data,
                                                  timeout=Options.TIMEOUT)
-            self.logger.debug('POST Done')  # todo remove
         else:
             raise RuntimeError(f'Invalid method: {self.method}')
 
@@ -203,7 +215,7 @@ class BaseLink:
         if self.response is None:
             raise RuntimeError('Request not launched')
 
-        filename = self._process_filename(self.name) + '.' + self._get_ext_from_request()
+        filename = self._process_filename(self.name) + '.' + self._get_ext_from_response()
 
         if self.subfolder is not None:
             filename = os.path.join(self.subfolder, filename)
@@ -222,7 +234,10 @@ class BaseLink:
         raise NotImplementedError
 
     def get_header_length(self):
-        return int(self.response.headers['content-length'])
+        try:
+            return int(self.response.headers['Content-Length'])
+        except KeyError:
+            return len(self.response.content)
 
     @property
     def content_type(self):
@@ -237,11 +252,10 @@ class BaseLink:
             self.autoset_filepath()
 
         self.create_subject_folder()
+        self.create_subfolder()
         self.logger.debug('filepath in REAL_FILE_CACHE: %s', self.filepath in REAL_FILE_CACHE)
 
         if self.filepath in REAL_FILE_CACHE:
-            self.logger.debug('checkpoint: self.filepath in REAL_CACHE_FILE')  # todo remove
-
             if REAL_FILE_CACHE[self.filepath] == self.get_header_length():
                 self.logger.debug('File found in cache: Same content (%d)',
                                   len(self.response.content))
@@ -252,8 +266,6 @@ class BaseLink:
                               REAL_FILE_CACHE[self.filepath], len(self.response.content))
             Results.print_updated(f'File updated: {self.filepath}')
         else:
-            self.logger.debug('checkpoint: self.filepath not in REAL_CACHE_FILE')  # todo remove
-
             self.logger.debug('File added to cache: %s [%d]', self.filepath,
                               len(self.response.content))
             REAL_FILE_CACHE[self.filepath] = len(self.response.content)
@@ -349,12 +361,20 @@ class Resource(BaseLink):
             self.set_resource_type('plain')
             return self.save_response_content()
 
+        if 'application/json' in self.content_type:
+            self.set_resource_type('json')
+            return self.save_response_content()
+
         if 'application/octet-stream' in self.content_type:
             self.set_resource_type('octect-stream')
             return self.save_response_content()
 
         if 'image/jpeg' in self.content_type:
             self.set_resource_type('jpeg')
+            return self.save_response_content()
+
+        if 'image/png' in self.content_type:
+            self.set_resource_type('png')
             return self.save_response_content()
 
         if 'video/mp4' in self.content_type:
@@ -423,12 +443,9 @@ class Folder(BaseLink):
 
     def make_folder(self):
         """Makes a subfolder to save the folder's links."""
-        folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
+        self.set_subfolder(self.name)
         self.create_subject_folder()
-
-        if os.path.isdir(folder) is False:
-            self.logger.debug('Created folder: %r', folder)
-            os.mkdir(folder)
+        self.create_subfolder()
 
     def download(self):
         """Downloads the folder."""
@@ -495,15 +512,9 @@ class Delivery(BaseLink):
 
     def make_subfolder(self):
         """Makes a subfolder to save the folder's links."""
-        folder = os.path.join(Options.ROOT_FOLDER, self.subject.name, self.name).replace('\\', '/')
-        self.set_subfolder(folder)
+        self.set_subfolder(self.name)
         self.create_subject_folder()
-
-        if not os.path.isdir(self.subfolder):
-            os.mkdir(self.subfolder)
-            self.logger.debug('Created subfolder (Delivery) %r', self.subfolder)
-        else:
-            self.logger.debug('Subfolder already exists (Delivery) %r', self.subfolder)
+        self.create_subfolder()
 
     def download(self):
         """Downloads the resources found in the delivery."""
