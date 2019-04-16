@@ -39,6 +39,9 @@ class Alias:
         self.json = []
         self.load()
 
+    def __len__(self):
+        return len(self.json)
+
     def load(self):
         """Loads the alias configuration."""
 
@@ -62,6 +65,21 @@ class Alias:
                 raise TypeError(f'alias file invalid: {alias!r}')
 
         Events.release()
+
+    @staticmethod
+    def destroy():
+        """Destroys the alias database."""
+
+        self = Alias.__new__(Alias)
+        self.__init__()
+        Events.acquire()
+
+        self.json = []
+        with open(self.alias_path, 'wt', encoding='utf-8') as file_handler:
+            json.dump([], file_handler, indent=4, sort_keys=True, ensure_ascii=False)
+
+        Events.release()
+        return
 
     def save(self):
         """Saves alias configuration to the file."""

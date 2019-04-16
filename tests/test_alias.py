@@ -213,6 +213,32 @@ class TestGetRealFromId:
         assert Alias.get_real_from_id(3) == 'Third'
 
 
+def test_destroy():
+    assert Alias.real_to_alias(1, '1') == '1'
+    assert Alias.real_to_alias(2, '2') == '2'
+    assert Alias.real_to_alias(3, '3') == '3'
+    assert Alias.real_to_alias(4, '4') == '4'
+    assert Alias.real_to_alias(5, '5') == '5'
+    assert Alias.real_to_alias(6, '6') == '6'
+    assert Alias.real_to_alias(7, '7') == '7'
+    assert Alias.real_to_alias(8, '8') == '8'
+    assert Alias.real_to_alias(9, '9') == '9'
+    assert Alias.real_to_alias(10, '10') == '10'
+    assert Alias.real_to_alias(11, '11') == '11'
+    assert Alias.real_to_alias(12, '12') == '12'
+    assert Alias.real_to_alias(13, '13') == '13'
+    assert Alias.real_to_alias(14, '14') == '14'
+    assert Alias.real_to_alias(15, '15') == '15'
+    assert Alias.real_to_alias(16, '16') == '16'
+    assert Alias.real_to_alias(17, '17') == '17'
+    assert Alias.real_to_alias(18, '18') == '18'
+    assert Alias.real_to_alias(19, '19') == '19'
+    assert Alias.real_to_alias(20, '20') == '20'
+
+    assert len(Alias()) == 20
+    Alias.destroy()
+    assert len(Alias()) == 0
+
 @pytest.fixture(scope='function', autouse=True)
 def delete_alias_json():
     if os.path.isfile(Alias().alias_path):
