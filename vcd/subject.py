@@ -27,7 +27,11 @@ class Subject:
             downloader (Downloader): downloader to download files.
             queue (Queue): queue to controll threads.
         """
-        self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name.capitalize())
+
+        if ' ' in name:
+            name = name.capitalize()
+
+        self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
         self.downloader = downloader
         self.queue = queue
