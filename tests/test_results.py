@@ -15,7 +15,7 @@ def test_print_updated(capsys):
 
     out, err = capsys.readouterr()
     assert err == ''
-    assert out == Fore.LIGHTYELLOW_EX + 'Updated: something-1\n'
+    assert out == Fore.LIGHTYELLOW_EX + 'Updated: something-1' + Fore.RESET + '\n'
 
 
 def test_print_new(capsys):
@@ -23,7 +23,7 @@ def test_print_new(capsys):
 
     out, err = capsys.readouterr()
     assert err == ''
-    assert out == Fore.LIGHTGREEN_EX + 'New: something-2\n'
+    assert out == Fore.LIGHTGREEN_EX + 'New: something-2' + Fore.RESET + '\n'
 
 
 def test_add_to_result_file():

@@ -23,7 +23,7 @@ class Results:
 
         """
         with Results.print_lock:
-            print(Fore.LIGHTYELLOW_EX + message)
+            print(Fore.LIGHTYELLOW_EX + message + Fore.RESET)
 
         Results.add_to_result_file(message)
 
@@ -36,7 +36,7 @@ class Results:
 
         """
         with Results.print_lock:
-            print(Fore.LIGHTGREEN_EX + message)
+            print(Fore.LIGHTGREEN_EX + message + Fore.RESET)
 
         Results.add_to_result_file(message)
 
