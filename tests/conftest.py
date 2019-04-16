@@ -5,16 +5,13 @@ from threading import current_thread
 
 import pytest
 
-from vcd import Credentials
-
 
 def pytest_configure():
     os.environ['TESTING'] = '1'
 
-    from vcd import Options
+    from vcd import Options, Credentials
     Options.set_root_folder('temp_tests')
     Credentials.path = 'test.' + Credentials.path
-
 
     old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
     handler = logging.FileHandler(filename='testing.log', encoding='utf-8')
@@ -28,6 +25,8 @@ def pytest_configure():
 @pytest.fixture(scope='session', autouse=True)
 def teardown_everything():
     yield
+
+    from vcd import Credentials
 
     if os.path.isdir('temp_tests'):
         shutil.rmtree('temp_tests')
