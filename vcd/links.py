@@ -56,6 +56,8 @@ class BaseLink:
         self.post_data = None
         self.redirect_url = None
         self.subfolder = None
+        self.response_name = None
+
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
                           self.__class__.__name__, self.name, self.url, self.subject.name)
@@ -118,6 +120,11 @@ class BaseLink:
 
         return filepath
 
+    @staticmethod
+    def _filename_to_ext(filename):
+        """Returns the extension given a filename."""
+        return filename.split('.')[-1]
+
     def _get_ext_from_request(self):
         """Returns the extension of the filename of the response, got from the Content-Dispotition
         HTTP header.
@@ -125,17 +132,23 @@ class BaseLink:
         Returns:
             str: the extension.
 
-        Raises:
-            KeyError. if the request does not contain a file (no Content-Diposition header).
-
         """
+        if self.response_name is not None:
+            return self._filename_to_ext(self.response_name)
+
         try:
-            return Options.FILENAME_PATTERN.search(
-                self.response.headers['Content-Disposition']).group(1).split('.')[-1]
+            self.response_name = Options.FILENAME_PATTERN.search(
+                self.response.headers['Content-Disposition']).group(1)
+            return self._filename_to_ext(self.response_name)
         except KeyError:
-            self.logger.critical('Request does not contain a file (name=%r, url=%r,headers=%r)',
-                                 self.name, self.url, self.response.headers)
-            return 'unknown'
+            pass
+
+        self.response_name = os.path.basename(self.url)
+        return self._filename_to_ext(self.response_name)
+
+        # self.logger.critical('Request does not contain a file (name=%r, url=%r, headers=%r)',
+        #                      self.name, self.url, self.response.headers)
+        # return 'unknown'
 
     def create_subject_folder(self):
         """Creates the subject's principal folder."""
@@ -149,12 +162,13 @@ class BaseLink:
         if self.method is None:
             raise NotImplementedError
         elif self.method == 'GET':
-            self.response = self.downloader.get(self.redirect_url or self.url, timeout=30)
+            self.response = self.downloader.get(self.redirect_url or self.url,
+                                                timeout=Options.TIMEOUT)
             self.logger.debug('GET Done')  # todo remove
 
         elif self.method == 'POST':
             self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data,
-                                                 timeout=30)
+                                                 timeout=Options.TIMEOUT)
             self.logger.debug('POST Done')  # todo remove
         else:
             raise RuntimeError(f'Invalid method: {self.method}')
@@ -198,8 +212,7 @@ class BaseLink:
 
         self.filepath = os.path.join(Options.ROOT_FOLDER, self.filepath).replace('\\', '/')
 
-        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
-                                            self.filepath.replace('>', ' mayor que '))
+        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(), self.filepath)
 
         self.logger.debug('Set filepath: %r', self.filepath)
 

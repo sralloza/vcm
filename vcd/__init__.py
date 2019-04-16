@@ -96,12 +96,15 @@ def find_subjects(downloader, queue, nthreads=20):
     return subjects
 
 
-def start(root_folder=None, nthreads=50):
+def start(root_folder=None, nthreads=50, timeout=None):
     """Starts the app."""
     init()
 
     if root_folder:
-        Options.ROOT_FOLDER = root_folder
+        Options.set_root_folder(root_folder)
+
+    if timeout:
+        Options.set_timeout(timeout)
 
     initial_time = time.time()
     main_logger = logging.getLogger(__name__)
