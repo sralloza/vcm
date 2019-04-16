@@ -1,6 +1,7 @@
 """Credentials manager for the web page of the University of Valladolid."""
 import os
 from configparser import ConfigParser
+from getpass import getpass
 
 
 class CredentialError(Exception):
@@ -46,7 +47,7 @@ class Credentials:
             self.save()
             raise NoCredentialsFoundError('File not found, created sample')
 
-        raw_data = ConfigParser()
+        raw_data = ConfigParser(allow_no_value=True)
         raw_data.read(self.path, encoding='utf-8')
 
         for student in raw_data:
@@ -63,6 +64,8 @@ class Credentials:
 
             try:
                 password = student_data.pop('password')
+                if password is None:
+                    password = getpass(f'Insert password for user {username!r}: ')
             except KeyError:
                 raise CredentialError('password not found')
 

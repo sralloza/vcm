@@ -69,8 +69,8 @@ def find_subjects(downloader, queue, nthreads=20):
 
     logger.debug('Login correct: %s', 'Vista general de cursos' in response.text)
 
-    if 'Vista general de cursos' in response.text is False:
-        raise RuntimeError('Login not correct')
+    if 'Vista general de cursos' not in response.text:
+        exit('ERROR: Login not correct')
 
     soup = BeautifulSoup(response.content, 'html.parser')
     search = soup.findAll('div', {'class': 'course_title'})
