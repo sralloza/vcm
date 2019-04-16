@@ -3,6 +3,8 @@ import os
 from configparser import ConfigParser
 from getpass import getpass
 
+from colorama import Fore
+
 
 class CredentialError(Exception):
     """Credential error."""
@@ -30,7 +32,7 @@ class StudentCredentials:
 
 class Credentials:
     """Credentials manager."""
-    path = 'credentials.ini'
+    path = os.path.expanduser("~") + '/vcd-credentials.ini'
 
     def __init__(self, _auto=False):
         self._auto = _auto
@@ -45,7 +47,8 @@ class Credentials:
 
             self.make_example()
             self.save()
-            raise NoCredentialsFoundError('File not found, created sample')
+            return exit(
+                Fore.RED + f'Credentials file not found, created sample ({self.path})' + Fore.RESET)
 
         raw_data = ConfigParser(allow_no_value=True)
         raw_data.read(self.path, encoding='utf-8')
@@ -84,7 +87,7 @@ class Credentials:
             config.write(fh)
 
     @staticmethod
-    def get(alias: str) -> StudentCredentials:
+    def get(alias: str = None) -> StudentCredentials:
         """Gets the credentials from the alias.
 
         Args:
@@ -98,10 +101,10 @@ class Credentials:
         self.__init__()
 
         for user in self.credentials:
-            if user.alias == alias:
+            if user.alias == alias or alias is None:
                 return user
 
-        raise RuntimeError(f'User not found: {alias}')
+        return exit(Fore.RED + f'User not found: {alias}' + Fore.RESET)
 
     def make_example(self):
         """Makes a dummy Student with field description."""

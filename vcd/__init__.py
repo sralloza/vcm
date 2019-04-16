@@ -7,7 +7,7 @@ from queue import Queue
 from threading import current_thread
 
 from bs4 import BeautifulSoup
-from colorama import init
+from colorama import init, Fore
 
 from ._requests import Downloader
 from ._threading import start_workers
@@ -57,7 +57,7 @@ def find_subjects(downloader, queue, nthreads=20):
     threads = start_workers(queue, nthreads)
     runserver(queue, threads)
 
-    user = Credentials.get('sralloza')
+    user = Credentials.get()
 
     downloader.post(
         'https://campusvirtual.uva.es/login/index.php',
@@ -70,7 +70,7 @@ def find_subjects(downloader, queue, nthreads=20):
     logger.debug('Login correct: %s', 'Vista general de cursos' in response.text)
 
     if 'Vista general de cursos' not in response.text:
-        exit('ERROR: Login not correct')
+        exit(Fore.RED + 'Login not correct' + Fore.RESET)
 
     soup = BeautifulSoup(response.content, 'html.parser')
     search = soup.findAll('div', {'class': 'course_title'})

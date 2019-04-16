@@ -2,12 +2,17 @@ import os
 import re
 from configparser import ConfigParser, NoSectionError
 
+from colorama import Fore, init
+
+init()
+
 
 class OptionError(Exception):
     """Option error."""
 
 
 class Options:
+    _CONFIG_PATH = os.path.expanduser('~') + '/vcd-config.ini'
     PRODUCTION = False
     FILENAME_PATTERN = re.compile('filename=\"?([\w. ]*)\"?')
     ROOT_FOLDER = 'D:/sistema/desktop/virtual_ittade3'
@@ -33,16 +38,16 @@ class Options:
     @staticmethod
     def load_config():
         config = ConfigParser()
-        config.read('vcd-config.ini')
+        config.read(Options._CONFIG_PATH)
         try:
             root_folder = config.get('OPTIONS', 'ROOT_FOLDER')
             timeout = config.get('OPTIONS', 'TIMEOUT')
         except NoSectionError:
             config['OPTIONS'] = {'ROOT_FOLDER': 'ROOT_FOLDER_PATH', 'TIMEOUT': 30}
-            with open('vcd-config.ini', 'wt', encoding='utf-8') as fh:
+            with open(Options._CONFIG_PATH, 'wt', encoding='utf-8') as fh:
                 config.write(fh)
 
-            return exit('ERROR: Invalid Options')
+            return exit(Fore.RED + 'Invalid Options' + Fore.RESET)
 
         Options.set_root_folder(root_folder)
         Options.set_timeout(int(timeout))
