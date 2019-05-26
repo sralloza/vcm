@@ -2,16 +2,19 @@
 
 import logging
 import time
-from queue import Queue
-from threading import Thread
+import threading
 
+from queue import Queue
+
+
+from ._getch import getch
 from ._requests import DownloaderError
 from .links import BaseLink
 from .subject import Subject
 from .time_operations import seconds_to_str
 
 
-class Worker(Thread):
+class Worker(threading.Thread):
     """Special worker for vcd multithreading."""
 
     def __init__(self, queue, *args, **kwargs):
@@ -22,6 +25,7 @@ class Worker(Thread):
         self.status = 'idle'
         self.timestamp = None
         self.current_object = None
+        self.active = True
 
     def to_log(self, integer=False):
         color = 'black'
@@ -56,7 +60,7 @@ class Worker(Thread):
     # noinspection PyUnresolvedReferences
     def run(self):
         """Runs the thread"""
-        while True:
+        while self.active:
             self.status = 'idle'
             self.logger.info('Worker %r ready to continue working', self.name)
             anything = self.queue.get()
@@ -100,6 +104,40 @@ class Worker(Thread):
             self.timestamp = None
 
 
+class Killer(threading.Thread):
+    def __init__(self, queue):
+        super().__init__(name='Killer', daemon=True)
+        self.queue = queue
+
+    def to_log(self, *args, **kwargs):
+        return f'<font color="blue">{self.name}: working'
+
+    def run(self):
+        print('ready')
+        while True:
+            try:
+                char = getch()
+                real = char.decode().lower()
+            except UnicodeError:
+                continue
+
+            if real == 'q':
+                print('KILLING')
+
+                self.queue.mutex.acquire()
+                self.queue.queue.clear()
+                # self.queue.all_tasks_done.notify_all()
+                self.queue.unfinished_tasks = 0
+                self.queue.mutex.release()
+
+                for thread in threading.enumerate():
+                    if isinstance(thread, Worker):
+                        thread.active = False
+                        thread.status = 'killed'
+
+                exit(1)
+
+
 def start_workers(queue, nthreads=20):
     """Starts the wokers.
 
@@ -110,7 +148,13 @@ def start_workers(queue, nthreads=20):
     Returns:
 
     """
+
     thread_list = []
+
+    killer = Killer(queue)
+    killer.start()
+    thread_list.append(killer)
+
     for i in range(nthreads):
         thread = Worker(queue, name=f'W-{i + 1:02d}', daemon=True)
         thread.logger.debug('Started worker named %r', thread.name)
