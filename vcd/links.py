@@ -159,8 +159,7 @@ class BaseLink:
 
         self.response = self.downloader.get(self.redirect_url or self.url, timeout=Options.TIMEOUT)
 
-        self.logger.debug('Response obtained (%s | %s) [%d]', self.method,
-                          self.response.request.method, self.response.status_code)
+        self.logger.debug('Response obtained [%d]', self.response.status_code)
 
         if self.response.status_code == 408:
             self.logger.warning('Received response with code 408, retrying')
