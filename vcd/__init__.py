@@ -7,7 +7,7 @@ from queue import Queue
 from threading import current_thread
 
 from bs4 import BeautifulSoup
-from colorama import init, Fore
+from colorama import init as init_colorama, Fore
 
 from ._requests import Downloader
 from ._threading import start_workers
@@ -23,7 +23,7 @@ if os.path.isdir('logs') is False:
 if os.environ.get('TESTING') is None:
     should_roll_over = os.path.isfile('logs/vcd.log')
 
-    old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+    fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
     handler = RotatingFileHandler(filename='logs/vcd.log', maxBytes=2_500_000,
                                   encoding='utf-8', backupCount=5)
 
@@ -32,7 +32,7 @@ if os.environ.get('TESTING') is None:
     if should_roll_over:
         handler.doRollover()
 
-    logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=old_reliable)
+    logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=fmt)
 
 logging.getLogger('urllib3').setLevel(logging.ERROR)
 
@@ -98,7 +98,7 @@ def find_subjects(downloader, queue, nthreads=20):
 
 def start(root_folder=None, nthreads=50, timeout=None):
     """Starts the app."""
-    init()
+    init_colorama()
 
     if root_folder:
         Options.set_root_folder(root_folder)
