@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 # noinspection PyShadowingNames
-def find_subjects(downloader, queue, nthreads=20):
+def find_subjects(downloader, queue, nthreads=20, no_killer=False):
     """Starts finding subjects.
 
     Args:
@@ -54,7 +54,7 @@ def find_subjects(downloader, queue, nthreads=20):
     logger = logging.getLogger(__name__)
     logger.debug('Finding subjects')
 
-    threads = start_workers(queue, nthreads)
+    threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
     user = Credentials.get()
@@ -96,9 +96,12 @@ def find_subjects(downloader, queue, nthreads=20):
     return subjects
 
 
-def start(root_folder=None, nthreads=50, timeout=None):
+def start(root_folder=None, nthreads=None, timeout=None, no_killer=False):
     """Starts the app."""
     init_colorama()
+
+    if not nthreads:
+        nthreads = 50
 
     if root_folder:
         Options.set_root_folder(root_folder)
@@ -115,7 +118,7 @@ def start(root_folder=None, nthreads=50, timeout=None):
     queue = Queue()
 
     main_logger.debug('Launching subjects finder')
-    find_subjects(downloader, queue, nthreads)
+    find_subjects(downloader, queue, nthreads, no_killer)
 
     main_logger.debug('Waiting for queue to empty')
     queue.join()
