@@ -6,7 +6,6 @@ import threading
 
 from queue import Queue
 
-
 from ._getch import getch
 from ._requests import DownloaderError
 from .links import BaseLink
@@ -50,6 +49,8 @@ class Worker(threading.Thread):
             status += f'{self.current_object.subject.name} → {self.current_object.name}'
         elif isinstance(self.current_object, Subject):
             status += f'{self.current_object.name}'
+        elif isinstance(self.current_object, str):
+            status += self.current_object
         else:
             status += 'None'
 
@@ -103,6 +104,15 @@ class Worker(threading.Thread):
             self.current_object = None
             self.timestamp = None
 
+        if self.status == 'killed':
+            self.timestamp = None
+            self.current_object = 'Dead thread'
+            while True:
+                foo = self.queue.get()
+                if not foo:
+                    break
+                self.queue.task_done()
+
 
 class Killer(threading.Thread):
     def __init__(self, queue):
@@ -113,7 +123,7 @@ class Killer(threading.Thread):
         return f'<font color="blue">{self.name}: working'
 
     def run(self):
-        print('ready')
+        print('Starting')
         while True:
             try:
                 char = getch()
@@ -122,23 +132,18 @@ class Killer(threading.Thread):
                 continue
 
             if real == 'q':
-                print('KILLING')
-
-                self.queue.mutex.acquire()
-                self.queue.queue.clear()
-                # self.queue.all_tasks_done.notify_all()
-                self.queue.unfinished_tasks = 0
-                self.queue.mutex.release()
+                print('Exiting')
 
                 for thread in threading.enumerate():
                     if isinstance(thread, Worker):
                         thread.active = False
                         thread.status = 'killed'
 
+                print('done:', self.queue.unfinished_tasks, self.queue.qsize())
                 exit(1)
 
 
-def start_workers(queue, nthreads=20):
+def start_workers(queue, nthreads=20, no_killer=False):
     """Starts the wokers.
 
     Args:
@@ -152,7 +157,12 @@ def start_workers(queue, nthreads=20):
     thread_list = []
 
     killer = Killer(queue)
-    killer.start()
+
+    if no_killer is False:
+        killer.start()
+    else:
+        print('Killer not started')
+
     thread_list.append(killer)
 
     for i in range(nthreads):
