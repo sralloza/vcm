@@ -52,8 +52,6 @@ class BaseLink:
         self.response: Response = None
         self.soup: BeautifulSoup = None
         self.filepath: str = None
-        self.method = 'GET'
-        self.post_data = None
         self.redirect_url = None
         self.subfolder = None
         self.response_name = None
@@ -61,20 +59,6 @@ class BaseLink:
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
                           self.__class__.__name__, self.name, self.url, self.subject.name)
-
-    def set_post_data(self, value):
-        """Sets the post data.
-
-        Args:
-            value (dict): post data.
-
-        """
-        self.logger.debug('Set post data: %r (%r)', value, self.name)
-
-        if not isinstance(value, dict):
-            raise TypeError(f'Expected dict, not {type(value).__name__}')
-
-        self.post_data = value
 
     def set_subfolder(self, value):
         """Sets the subfolder.
@@ -173,17 +157,7 @@ class BaseLink:
 
         self.logger.debug('Making request')
 
-        if self.method is None:
-            raise NotImplementedError
-        elif self.method == 'GET':
-            self.response = self.downloader.get(self.redirect_url or self.url,
-                                                timeout=Options.TIMEOUT)
-
-        elif self.method == 'POST':
-            self.response = self.downloader.post(self.redirect_url or self.url, data=self.post_data,
-                                                 timeout=Options.TIMEOUT)
-        else:
-            raise RuntimeError(f'Invalid method: {self.method}')
+        self.response = self.downloader.get(self.redirect_url or self.url, timeout=Options.TIMEOUT)
 
         self.logger.debug('Response obtained (%s | %s) [%d]', self.method,
                           self.response.request.method, self.response.status_code)
