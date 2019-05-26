@@ -24,7 +24,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     @app.route('/')
     def index():
         return """<p id="content">Here will be content</p>
-    
+
     <script>
         var clock = document.getElementById("content");
         var alerted = false;
@@ -62,10 +62,13 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             for thread in threadlist:
                 thread_status += f'\t-{thread.to_log(integer=True)}<br>'
 
-                if thread.status == 'working':
-                    working += 1
-                if thread.status == 'idle':
-                    idle += 1
+                try:
+                    if thread.status == 'working':
+                        working += 1
+                    if thread.status == 'idle':
+                        idle += 1
+                except AttributeError:
+                    pass
 
             status += f'Threads working: {working}<br>'
             status += f'Threads idle: {idle}<br><br>'
