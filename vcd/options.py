@@ -1,8 +1,9 @@
 import os
 import re
-from configparser import ConfigParser, NoSectionError
 
 from colorama import Fore, init
+from configparser import ConfigParser, NoSectionError, NoOptionError
+
 
 init()
 
@@ -13,16 +14,30 @@ class OptionError(Exception):
 
 class Options:
     _CONFIG_PATH = os.path.expanduser('~') + '/vcd-config.ini'
+
     PRODUCTION = False
     FILENAME_PATTERN = re.compile(
         'filename=\"?([\w\s\-\!\$\?\%\^\&\(\)\_\+\~\=\`\{\}\[\]\.\;\'\,]+)\"?')
     ROOT_FOLDER = 'D:/sistema/desktop/ittade-files'
+
+    LOGS_FOLDER = os.path.expanduser('~').replace('\\', '/') + '/logs/'
+    LOG_PATH = os.path.join(LOGS_FOLDER, 'vcd.log').replace('\\', '/')
     TIMEOUT = 30
 
     @staticmethod
     def create_root_folder():
         if os.path.isdir(Options.ROOT_FOLDER) is False:
             os.mkdir(Options.ROOT_FOLDER)
+
+    @staticmethod
+    def create_logs_folder():
+        if os.path.isdir(Options.LOGS_FOLDER) is False:
+            os.mkdir(Options.LOGS_FOLDER)
+
+    @staticmethod
+    def set_logs_folder(logs_folder):
+        Options.LOGS_FOLDER = logs_folder
+        Options.create_logs_folder()
 
     @staticmethod
     def set_root_folder(root_folder):
@@ -43,8 +58,12 @@ class Options:
         try:
             root_folder = config.get('OPTIONS', 'ROOT_FOLDER')
             timeout = config.get('OPTIONS', 'TIMEOUT')
-        except NoSectionError:
-            config['OPTIONS'] = {'ROOT_FOLDER': 'ROOT_FOLDER_PATH', 'TIMEOUT': 30}
+            logs_folder = config.get('OPTIONS', 'LOG_FOLDER')
+        except (NoSectionError, NoOptionError):
+            config['OPTIONS'] = {
+                'ROOT_FOLDER': Options.ROOT_FOLDER,
+                'TIMEOUT': 30, 'LOG_FOLDER': Options.LOGS_FOLDER
+            }
             with open(Options._CONFIG_PATH, 'wt', encoding='utf-8') as fh:
                 config.write(fh)
 
@@ -52,6 +71,7 @@ class Options:
 
         Options.set_root_folder(root_folder)
         Options.set_timeout(int(timeout))
+        Options.set_logs_folder(logs_folder)
 
 
 Options.load_config()

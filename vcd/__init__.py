@@ -17,14 +17,12 @@ from .status_server import runserver
 from .subject import Subject
 from .time_operations import seconds_to_str
 
-if os.path.isdir('logs') is False:
-    os.mkdir('logs')
 
 if os.environ.get('TESTING') is None:
-    should_roll_over = os.path.isfile('logs/vcd.log')
+    should_roll_over = os.path.isfile(Options.LOG_PATH)
 
     fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
-    handler = RotatingFileHandler(filename='logs/vcd.log', maxBytes=2_500_000,
+    handler = RotatingFileHandler(filename=Options.LOG_PATH, maxBytes=2_500_000,
                                   encoding='utf-8', backupCount=5)
 
     current_thread().setName('MT')
