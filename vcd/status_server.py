@@ -21,6 +21,10 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
     app = flask.Flask(__name__)
 
+    @app.errorhandler(404)
+    def back_to_index(error):
+        return flask.redirect(flask.url_for('index'))
+
     @app.route('/')
     def index():
         return """<p id="content">Here will be content</p>
