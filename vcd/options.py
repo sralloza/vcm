@@ -14,7 +14,8 @@ class OptionError(Exception):
 class Options:
     _CONFIG_PATH = os.path.expanduser('~') + '/vcd-config.ini'
     PRODUCTION = False
-    FILENAME_PATTERN = re.compile('filename=\"?([\w. ]*)\"?')
+    FILENAME_PATTERN = re.compile(
+        'filename=\"?([\w\s\-\!\$\?\%\^\&\(\)\_\+\~\=\`\{\}\[\]\.\;\'\,]+)\"?')
     ROOT_FOLDER = 'D:/sistema/desktop/ittade-files'
     TIMEOUT = 30
 
