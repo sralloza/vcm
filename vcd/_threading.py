@@ -99,19 +99,31 @@ class Worker(threading.Thread):
                 self.current_object = None
                 self.timestamp = None
                 return
+            elif anything == 'killed':
+                self.status = 'killed'
+                break
 
             self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
             self.current_object = None
             self.timestamp = None
 
-        if self.status == 'killed':
-            self.timestamp = None
-            self.current_object = 'Dead thread'
-            while True:
-                foo = self.queue.get()
-                if not foo:
-                    break
-                self.queue.task_done()
+        # if self.status == 'killed':
+        self.timestamp = None
+        self.current_object = 'Dead thread'
+
+        for thread in threading.enumerate():
+            if isinstance(thread, Worker):
+                self.queue.put('killed')
+                thread.status = 'killed'
+                thread.active = 0
+
+        while True:
+            foo = self.queue.get()
+            if not foo:
+                break
+            self.queue.task_done()
+
+        exit()
 
 
 class Killer(threading.Thread):
