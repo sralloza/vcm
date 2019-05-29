@@ -2,23 +2,20 @@
 import logging
 import os
 import random
+import unidecode
 import warnings
+
 from _sha1 import sha1
 from queue import Queue
 
 from bs4 import BeautifulSoup
 from requests import Response
 
-from vcd._requests import Downloader
-from vcd.alias import Alias
-from vcd.filecache import REAL_FILE_CACHE
-from vcd.results import Results
+from ._requests import Downloader
+from .alias import Alias
+from .filecache import REAL_FILE_CACHE
 from .options import Options
-
-
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-return-statements
+from .results import Results
 
 
 class DownloadsRecorder:
@@ -59,6 +56,13 @@ class BaseLink:
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
                           self.__class__.__name__, self.name, self.url, self.subject.name)
+
+    @property
+    def content_disposition(self):
+        if self.response is None:
+            raise RuntimeError('Response not made yet')
+
+        return unidecode.unidecode(self.response.headers['Content-Disposition'])
 
     def set_subfolder(self, value):
         """Sets the subfolder.
@@ -119,8 +123,8 @@ class BaseLink:
 
         return filepath
 
-    @staticmethod
-    def _filename_to_ext(filename):
+    # @staticmethod
+    def _filename_to_ext(self, filename):
         """Returns the extension given a filename."""
         if filename.count('.') == 0:
             return 'ukn'
@@ -139,8 +143,8 @@ class BaseLink:
             return self._filename_to_ext(self.response_name)
 
         try:
-            self.response_name = Options.FILENAME_PATTERN.search(
-                self.response.headers['Content-Disposition']).group(1)
+            # unidecode.unidecode is used to remove accents.
+            self.response_name = Options.FILENAME_PATTERN.search(self.content_disposition).group(1)
             return self._filename_to_ext(self.response_name)
         except KeyError:
             pass
