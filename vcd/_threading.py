@@ -139,7 +139,6 @@ class Killer(threading.Thread):
                         thread.active = False
                         thread.status = 'killed'
 
-                print('done:', self.queue.unfinished_tasks, self.queue.qsize())
                 exit(1)
 
 
