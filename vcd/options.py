@@ -1,4 +1,5 @@
 import os
+import logging
 import re
 
 from colorama import Fore, init
@@ -23,16 +24,21 @@ class Options:
     LOGS_FOLDER = os.path.expanduser('~').replace('\\', '/') + '/logs/'
     LOG_PATH = os.path.join(LOGS_FOLDER, 'vcd.log').replace('\\', '/')
     TIMEOUT = 30
+    LOGGING_LEVEL = logging.DEBUG
+
+    # Creators
 
     @staticmethod
     def create_root_folder():
         if os.path.isdir(Options.ROOT_FOLDER) is False:
-            os.mkdir(Options.ROOT_FOLDER)
+            os.makedirs(Options.ROOT_FOLDER)
 
     @staticmethod
     def create_logs_folder():
         if os.path.isdir(Options.LOGS_FOLDER) is False:
-            os.mkdir(Options.LOGS_FOLDER)
+            os.makedirs(Options.LOGS_FOLDER)
+
+    # Setters
 
     @staticmethod
     def set_logs_folder(logs_folder):
@@ -52,6 +58,14 @@ class Options:
         Options.TIMEOUT = timeout
 
     @staticmethod
+    def set_logging_level(logging_level):
+        logging_level = logging.getLevelName(logging_level.upper())
+        if not isinstance(logging_level, int):
+            raise ValueError(f'Invalid log level: {logging_level!r}')
+
+        Options.LOGGING_LEVEL = logging_level
+
+    @staticmethod
     def load_config():
         config = ConfigParser()
         config.read(Options._CONFIG_PATH)
@@ -59,10 +73,13 @@ class Options:
             root_folder = config.get('OPTIONS', 'ROOT_FOLDER')
             timeout = config.get('OPTIONS', 'TIMEOUT')
             logs_folder = config.get('OPTIONS', 'LOG_FOLDER')
+            logging_level = config.get('OPTIONS', 'LOGGING_LEVEL')
+
         except (NoSectionError, NoOptionError):
             config['OPTIONS'] = {
                 'ROOT_FOLDER': Options.ROOT_FOLDER,
-                'TIMEOUT': 30, 'LOG_FOLDER': Options.LOGS_FOLDER
+                'TIMEOUT': 30, 'LOG_FOLDER': Options.LOGS_FOLDER,
+                'LOGGING_LEVEL': logging.getLevelName(Options.LOGGING_LEVEL)
             }
             with open(Options._CONFIG_PATH, 'wt', encoding='utf-8') as fh:
                 config.write(fh)
@@ -72,6 +89,7 @@ class Options:
         Options.set_root_folder(root_folder)
         Options.set_timeout(int(timeout))
         Options.set_logs_folder(logs_folder)
+        Options.set_logging_level(logging_level)
 
 
 Options.load_config()
