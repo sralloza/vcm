@@ -16,6 +16,7 @@ from .alias import Alias
 from .filecache import REAL_FILE_CACHE
 from .options import Options
 from .results import Results
+from .utils import secure_filename
 
 
 class DownloadsRecorder:
@@ -40,7 +41,7 @@ class BaseLink:
             queue (Queue): queue to controll threads.
         """
 
-        self.name = name
+        self.name = name.strip()
         self.url = url
         self.subject = subject
         self.downloader = downloader
@@ -75,7 +76,7 @@ class BaseLink:
         if not isinstance(value, str):
             raise TypeError(f'Expected str, not {type(value).__name__}')
 
-        value = value.strip()
+        value = secure_filename(value)
         self.logger.debug('Set subfolder: %r (%r)', value, self.name)
 
         self.subfolder = value
@@ -86,11 +87,11 @@ class BaseLink:
             return
 
         self.create_subject_folder()
-        folder = os.path.join(
-            Options.ROOT_FOLDER, self.subject.name, self.subfolder).replace('\\', '/')
+        folder = os.path.normpath(
+            os.path.join(Options.ROOT_FOLDER, self.subject.folder, self.subfolder))
 
         if not os.path.isdir(folder):
-            os.mkdir(folder)
+            os.makedirs(folder, exist_ok=True)
             self.logger.debug('Created subfolder %r', folder)
         else:
             self.logger.debug('Subfolder already exists %r', folder)
@@ -106,17 +107,6 @@ class BaseLink:
             str: filepath processed.
 
         """
-        filepath = filepath.strip()
-        filepath = filepath.replace(':', '')
-        filepath = filepath.replace('?', '')
-        filepath = filepath.replace('*', '')
-        filepath = filepath.replace('|', '')
-        filepath = filepath.replace('"', '')
-        filepath = filepath.replace("'", '')
-        filepath = filepath.replace('/', '-')
-        filepath = filepath.replace('\\', '-')
-
-        filepath = filepath.strip()
 
         filepath = filepath.replace('>', ' mayor que ')
         filepath = filepath.replace('<', ' menor que ')
@@ -193,13 +183,14 @@ class BaseLink:
             raise RuntimeError('Request not launched')
 
         filename = self._process_filename(self.name) + '.' + self._get_ext_from_response()
+        filename = secure_filename(filename)
 
         if self.subfolder is not None:
             filename = os.path.join(self.subfolder, filename)
 
-        self.filepath = os.path.join(self.subject.name, filename)
+        self.filepath = os.path.join(self.subject.folder, filename)
 
-        self.filepath = os.path.join(Options.ROOT_FOLDER, self.filepath).replace('\\', '/')
+        self.filepath = os.path.normpath(os.path.join(Options.ROOT_FOLDER, self.filepath))
 
         self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(), self.filepath)
 
@@ -455,6 +446,7 @@ class Forum(BaseLink):
         self.logger.debug('Downloading forum %s', self.name)
         self.make_request()
         self.process_request_bs4()
+        # self.set_subfolder(self.name)
 
         if 'view.php' in self.url:
             self.logger.debug('Forum is type list of themes')
@@ -474,6 +466,8 @@ class Forum(BaseLink):
                 try:
                     resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
                                         self.subject, self.downloader, self.queue)
+                    if Options.FORUMS_SUBFOLDERS:
+                        resource.set_subfolder(self.subfolder)
                     self.logger.debug('Created resource from forum: %r, %s', resource.name,
                                       resource.url)
                     self.queue.put(resource)

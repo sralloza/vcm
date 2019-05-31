@@ -8,9 +8,10 @@ from threading import Lock
 from bs4 import BeautifulSoup
 from requests import Response
 
+from .alias import Alias
+from .links import BaseLink, Resource, Delivery, Forum, Folder
 from .options import Options
-from vcd.alias import Alias
-from vcd.links import BaseLink, Resource, Delivery, Forum, Folder
+from .utils import secure_filename
 
 
 # pylint: disable=too-many-instance-attributes
@@ -41,7 +42,7 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        self.foldername = os.path.join(Options.ROOT_FOLDER, self.name)
+        self.folder = os.path.join(Options.ROOT_FOLDER, secure_filename(self.name))
         self.logger = logging.getLogger(__name__)
 
         self.logger.debug('Created Subject(name=%r, url=%r)',
@@ -68,8 +69,8 @@ class Subject:
         if self.hasfolder is False:
             self.logger.debug('Creating folder %r', self.name)
             with self.folder_lock:
-                if os.path.isdir(self.foldername) is False:
-                    os.mkdir(self.foldername)
+                if os.path.isdir(self.folder) is False:
+                    os.makedirs(self.folder)
             self.hasfolder = True
         else:
             self.logger.debug('Folder already exists: %r', self.name)

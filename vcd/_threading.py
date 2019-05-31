@@ -1,16 +1,16 @@
 """Multithreading workers for the vcd."""
 
 import logging
-import time
 import threading
+import time
 
 from queue import Queue
 
-from ._getch import getch
 from ._requests import DownloaderError
 from .links import BaseLink
 from .subject import Subject
 from .time_operations import seconds_to_str
+from .utils import getch
 
 
 class Worker(threading.Thread):
