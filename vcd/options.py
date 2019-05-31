@@ -27,6 +27,8 @@ class Options:
     TIMEOUT = 30
     LOGGING_LEVEL = logging.DEBUG
 
+    FORUMS_SUBFOLDERS = True
+
     # Creators
 
     @staticmethod
@@ -64,6 +66,14 @@ class Options:
         Options.LOGGING_LEVEL = logging_level
 
     @staticmethod
+    def set_forums_subfolders(forums_subfolders):
+        if not isinstance(forums_subfolders, bool):
+            raise TypeError(
+                f'forums_subfolders must be bool, not {type(forums_subfolders).__name__}')
+
+        Options.FORUMS_SUBFOLDERS = forums_subfolders
+
+    @staticmethod
     def load_config():
         config = ConfigParser()
         config.read(Options._CONFIG_PATH)
@@ -72,12 +82,14 @@ class Options:
             Options.set_timeout(config.get('options', 'timeout'))
             Options.set_logs_folder(config.get('options', 'log_folder'))
             Options.set_logging_level(config.get('options', 'logging_level'))
+            Options.set_forums_subfolders(config.getboolean('options', 'forums_subfolders'))
 
         except (NoSectionError, NoOptionError):
             config['options'] = {
                 'root_folder': Options.ROOT_FOLDER,
                 'timeout': '30', 'log_folder': Options.LOGS_FOLDER,
                 'logging_level': logging.getLevelName(Options.LOGGING_LEVEL),
+                'forums_subfolders': Options.FORUMS_SUBFOLDERS
             }
             with open(Options._CONFIG_PATH, 'wt', encoding='utf-8') as fh:
                 config.write(fh)
