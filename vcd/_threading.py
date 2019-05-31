@@ -3,6 +3,7 @@
 import logging
 import threading
 import time
+import webbrowser
 
 from queue import Queue
 
@@ -130,9 +131,10 @@ class Killer(threading.Thread):
     def __init__(self, queue):
         super().__init__(name='Killer', daemon=True)
         self.queue = queue
+        self.status = 'online'
 
     def to_log(self, *args, **kwargs):
-        return f'<font color="blue">{self.name}: working'
+        return f'<font color="blue">{self.name}: {self.status}'
 
     def run(self):
         print('Starting')
@@ -143,7 +145,7 @@ class Killer(threading.Thread):
             except UnicodeError:
                 continue
 
-            if real == 'q':
+            if real in ('q', 'k'):
                 print('Exiting')
 
                 for thread in threading.enumerate():
@@ -151,7 +153,12 @@ class Killer(threading.Thread):
                         thread.active = False
                         thread.status = 'killed'
 
+                self.status = 'commited suicide'
                 exit(1)
+
+            if real in ('w', 'o'):
+                chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
+                webbrowser.get(chrome_path).open_new('localhost')
 
 
 def start_workers(queue, nthreads=20, no_killer=False):
