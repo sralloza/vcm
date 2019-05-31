@@ -227,7 +227,6 @@ class BaseLink:
             if REAL_FILE_CACHE[self.filepath] == self.get_header_length():
                 self.logger.debug('File found in cache: Same content (%d)',
                                   len(self.response.content))
-                # self.close_connection()
                 return
 
             self.logger.debug('File found in cache: Different content (%d --> %d)',
@@ -250,7 +249,6 @@ class BaseLink:
                                 os.path.basename(self.filepath))
             self.logger.warning('Permission error %s -- %s', self.subject.name,
                                 os.path.basename(self.filepath))
-        # self.close_connection()
 
 
 class Resource(BaseLink):

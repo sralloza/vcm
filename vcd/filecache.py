@@ -39,7 +39,7 @@ class FileCache:
             files = elem[2]
 
             for file in files:
-                filenames.append(os.path.join(folder, file).replace('\\', '/'))
+                filenames.append(os.path.normpath(os.path.join(folder, file)))
 
         for file in filenames:
             self._get_file_length(file)
