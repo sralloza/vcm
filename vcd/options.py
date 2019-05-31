@@ -14,15 +14,16 @@ class OptionError(Exception):
 
 
 class Options:
-    _CONFIG_PATH = os.path.expanduser('~') + '/vcd-config.ini'
+    _CONFIG_PATH = os.path.normpath(os.path.join(os.path.expanduser('~'), 'vcd-config.ini'))
 
     PRODUCTION = False
     FILENAME_PATTERN = re.compile(
         'filename=\"?([\w\s\-\!\$\?\%\^\&\(\)\_\+\~\=\`\{\}\[\]\.\;\'\,]+)\"?')
-    ROOT_FOLDER = 'D:/sistema/desktop/ittade-files'
+    ROOT_FOLDER = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'default_root_folder'))
 
-    LOGS_FOLDER = os.path.expanduser('~').replace('\\', '/') + '/logs/'
-    LOG_PATH = os.path.join(LOGS_FOLDER, 'vcd.log').replace('\\', '/')
+    LOGS_FOLDER = os.path.normpath(os.path.join(os.path.expanduser('~'), 'logs'))
+    LOG_PATH = os.path.normpath(os.path.join(LOGS_FOLDER, 'vcd.log'))
     TIMEOUT = 30
     LOGGING_LEVEL = logging.DEBUG
 
@@ -52,10 +53,7 @@ class Options:
 
     @staticmethod
     def set_timeout(timeout: int):
-        if not isinstance(timeout, int):
-            raise TypeError(f'Timeout must be int, not {type(timeout).__name__}')
-
-        Options.TIMEOUT = timeout
+        Options.TIMEOUT = int(timeout)
 
     @staticmethod
     def set_logging_level(logging_level):
@@ -70,26 +68,21 @@ class Options:
         config = ConfigParser()
         config.read(Options._CONFIG_PATH)
         try:
-            root_folder = config.get('OPTIONS', 'ROOT_FOLDER')
-            timeout = config.get('OPTIONS', 'TIMEOUT')
-            logs_folder = config.get('OPTIONS', 'LOG_FOLDER')
-            logging_level = config.get('OPTIONS', 'LOGGING_LEVEL')
+            Options.set_root_folder(config.get('options', 'root_folder'))
+            Options.set_timeout(config.get('options', 'timeout'))
+            Options.set_logs_folder(config.get('options', 'log_folder'))
+            Options.set_logging_level(config.get('options', 'logging_level'))
 
         except (NoSectionError, NoOptionError):
-            config['OPTIONS'] = {
-                'ROOT_FOLDER': Options.ROOT_FOLDER,
-                'TIMEOUT': 30, 'LOG_FOLDER': Options.LOGS_FOLDER,
-                'LOGGING_LEVEL': logging.getLevelName(Options.LOGGING_LEVEL)
+            config['options'] = {
+                'root_folder': Options.ROOT_FOLDER,
+                'timeout': '30', 'log_folder': Options.LOGS_FOLDER,
+                'logging_level': logging.getLevelName(Options.LOGGING_LEVEL),
             }
             with open(Options._CONFIG_PATH, 'wt', encoding='utf-8') as fh:
                 config.write(fh)
 
             return exit(Fore.RED + 'Invalid Options' + Fore.RESET)
-
-        Options.set_root_folder(root_folder)
-        Options.set_timeout(int(timeout))
-        Options.set_logs_folder(logs_folder)
-        Options.set_logging_level(logging_level)
 
 
 Options.load_config()
