@@ -439,16 +439,12 @@ class Folder(BaseLink):
 class Forum(BaseLink):
     """Representation of a Forum link."""
 
-    def set_subfolder_forum(self):
-        subfolder = os.path.normpath(os.path.join('foros', self.name))
-        self.set_subfolder(subfolder)
-
     def download(self):
         """Downloads the resources found in the forum hierarchy."""
         self.logger.debug('Downloading forum %s', self.name)
         self.make_request()
         self.process_request_bs4()
-        self.set_subfolder_forum()
+        # self.set_subfolder(self.name)
 
         if 'view.php' in self.url:
             self.logger.debug('Forum is type list of themes')
@@ -463,11 +459,9 @@ class Forum(BaseLink):
         elif 'discuss.php' in self.url:
             self.logger.debug('Forum is a theme discussion')
             attachments = self.soup.findAll('div', {'class': 'attachments'})
-            images = self.soup.findAll('div', {'class': 'attachedimages'})
 
             for attachment in attachments:
                 try:
-                    # TODO PROBABLY FIXME, LIKE IMAGES
                     resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
                                         self.subject, self.downloader, self.queue)
                     if Options.FORUMS_SUBFOLDERS:
@@ -476,36 +470,7 @@ class Forum(BaseLink):
                                       resource.url)
                     self.queue.put(resource)
                 except TypeError:
-                    pass
-
-            for image_container in images:
-                real_images = image_container.findAll('img')
-                for image in real_images:
-                    # try:
-                    # TODO FIXME
-                    try:
-                        url = image['href']
-                    except KeyError:
-                        url = image['src']
-
-                    resource = Resource(
-                        os.path.splitext(url.split('/')[-1])[0],
-                        url, self.subject, self.downloader, self.queue)
-
-                    if Options.FORUMS_SUBFOLDERS:
-                        resource.set_subfolder(self.subfolder)
-                    self.logger.debug('Created resource (image) from forum: %r, %s',
-                                      resource.name, resource.url)
-                    self.queue.put(resource)
-
-                    # except TypeError as ex:
-                    #     print('ImageFailed [TE]', repr(ex), image,
-                    #           self.subject.name, self.url, sep=' :: ')
-                    #     continue
-                    # except KeyError as ex:
-                    #     print('ImageFailed [KE]', repr(ex), image,
-                    #           self.subject.name, self.url, sep=' :: ')
-                    #     continue
+                    continue
         else:
             self.logger.critical('Unkown url for forum %r. Vars: %r', self.url, vars())
             raise RuntimeError(f'Unknown url for forum: {self.url}')
