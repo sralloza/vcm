@@ -61,10 +61,21 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             status += f'tasks</a>: {queue.unfinished_tasks}<br>'
             status += f'Items left: {queue.qsize()}<br><br>'
             thread_status = 'Threads:<br>'
+
             idle = 0
             working = 0
+
+            colors = {'orange': 0, 'red': 0, 'green': 0}
+
             for thread in threadlist:
-                thread_status += f'\t-{thread.to_log(integer=True)}<br>'
+                temp_status = thread.to_log(integer=True)
+                if '"red"' in temp_status:
+                    colors['red'] += 1
+                elif '"green"' in temp_status:
+                    colors['green'] += 1
+                elif '"orange"' in temp_status:
+                    colors['orange'] += 1
+                thread_status += f'\t-{temp_status}<br>'
 
                 try:
                     if thread.status == 'working':
@@ -74,8 +85,13 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                 except AttributeError:
                     pass
 
+            colors = list(colors.items())
+            colors.sort(key=lambda x: x[-1], reverse=True)
+
             status += f'Threads working: {working}<br>'
             status += f'Threads idle: {idle}<br><br>'
+            status += f'Codes:<br>'
+            status += '<br>'.join([f'-{x[0]}: {x[1]}' for x in colors]) + '<br><br>'
             status += thread_status
 
             yield status
@@ -84,7 +100,8 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
     @app.route('/queue')
     def view_queue():
-        output = '<title>Queue content</title><h1>Queue</h1>'
+        output = f'<title>Queue content ({len(queue.queue)} remaining)</title>'
+        output += f'<h1>Queue content ({len(queue.queue)} remaining)</h1>'
         # noinspection PyUnresolvedReferences
         for i, elem in enumerate(list(queue.queue)):
             if isinstance(elem, BaseLink):
@@ -94,7 +111,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             else:
                 status = 'None'
 
-            output += str(i + 1) + ' → ' + status + '<br>'
+            output += f'{i+1:03d} → {status}<br>'
 
         return output
 
