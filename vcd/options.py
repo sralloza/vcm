@@ -14,6 +14,7 @@ class OptionError(Exception):
 
 
 class Options:
+    _LOADED = False
     _CONFIG_PATH = os.path.normpath(os.path.join(os.path.expanduser('~'), 'vcd-config.ini'))
 
     PRODUCTION = False
@@ -75,6 +76,10 @@ class Options:
 
     @staticmethod
     def load_config():
+        if Options._LOADED:
+            return
+
+        Options._LOADED = True
         config = ConfigParser()
         config.read(Options._CONFIG_PATH)
         try:

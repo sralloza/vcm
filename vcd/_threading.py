@@ -137,7 +137,7 @@ class Killer(threading.Thread):
         return f'<font color="blue">{self.name}: {self.status}'
 
     def run(self):
-        print('Starting')
+        print('Killer ready')
         while True:
             try:
                 char = getch()
@@ -157,6 +157,7 @@ class Killer(threading.Thread):
                 exit(1)
 
             if real in ('w', 'o'):
+                print('Opening status server')
                 chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
                 webbrowser.get(chrome_path).open_new('localhost')
 
@@ -174,14 +175,12 @@ def start_workers(queue, nthreads=20, no_killer=False):
 
     thread_list = []
 
-    killer = Killer(queue)
-
     if no_killer is False:
+        killer = Killer(queue)
         killer.start()
+        thread_list.append(killer)
     else:
         print('Killer not started')
-
-    thread_list.append(killer)
 
     for i in range(nthreads):
         thread = Worker(queue, name=f'W-{i + 1:02d}', daemon=True)

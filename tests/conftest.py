@@ -13,12 +13,12 @@ def pytest_configure():
     Options.set_root_folder('temp_tests')
     Credentials.path = 'test.' + Credentials.path
 
-    old_reliable = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+    fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
     handler = logging.FileHandler(filename='testing.log', encoding='utf-8')
 
     current_thread().setName('MT')
 
-    logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=old_reliable)
+    logging.basicConfig(handlers=[handler, ], level=logging.DEBUG, format=fmt)
     logging.getLogger('urllib3').setLevel(logging.ERROR)
 
 

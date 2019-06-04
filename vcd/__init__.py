@@ -45,8 +45,7 @@ def find_subjects(downloader, queue, nthreads=20, no_killer=False):
         downloader (Downloader): custom session with retry control.
         queue (Queue): queue to organize threads.
         nthreads (int): number of threads to start.
-
-    Returns:
+        no_killer (bool): desactivate Killer thread.
 
     """
     logger = logging.getLogger(__name__)
@@ -95,7 +94,15 @@ def find_subjects(downloader, queue, nthreads=20, no_killer=False):
 
 
 def start(root_folder=None, nthreads=None, timeout=None, no_killer=False):
-    """Starts the app."""
+    """Starts the app.
+
+    Args:
+        root_folder (str): folder where files will be downloaded.
+        nthreads (int): number of threads to start.
+        timeout (int): number of seconds before discarting TCP connection.
+        no_killer (bool): desactivate Killer thread.
+    """
+
     init_colorama()
 
     if not nthreads:
