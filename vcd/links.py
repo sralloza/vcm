@@ -53,6 +53,7 @@ class BaseLink:
         self.redirect_url = None
         self.subfolder = None
         self.response_name = None
+        self.extra_subfolders = []
 
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
@@ -187,6 +188,9 @@ class BaseLink:
 
         if self.subfolder is not None:
             filename = os.path.join(self.subfolder, filename)
+
+        if self.extra_subfolders:
+            filename = os.path.join(*self.extra_subfolders, filename)
 
         self.filepath = os.path.join(self.subject.folder, filename)
 
