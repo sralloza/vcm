@@ -91,7 +91,8 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             status += f'Threads working: {working}<br>'
             status += f'Threads idle: {idle}<br><br>'
             status += f'Codes:<br>'
-            status += '<br>'.join([f'-{x[0]}: {x[1]}' for x in colors]) + '<br><br>'
+            status += '<br>'.join(
+                [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]) + '<br><br>'
             status += thread_status
 
             yield status
