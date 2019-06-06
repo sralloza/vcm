@@ -42,7 +42,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                     clearInterval(interval);
                     if (alerted == false) {
                         alerted = true;
-                        alert("VCD ha terminado la ejecución");
+                        //alert("VCD ha terminado la ejecución");
                         }
                     }
                 );
@@ -65,16 +65,19 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             idle = 0
             working = 0
 
-            colors = {'orange': 0, 'red': 0, 'green': 0}
+            colors = {'orange': 0, 'red': 0, 'green': 0, 'magenta': 0}
 
             for thread in threadlist:
-                temp_status = thread.to_log(integer=True)
-                if '"red"' in temp_status:
+                temp_status, status_code = thread.to_log(integer=True)
+
+                if status_code == 4:
+                    colors['magenta'] += 1
+                if status_code == 3:
                     colors['red'] += 1
-                elif '"green"' in temp_status:
-                    colors['green'] += 1
-                elif '"orange"' in temp_status:
+                elif status_code == 2:
                     colors['orange'] += 1
+                elif status_code == 1:
+                    colors['green'] += 1
                 thread_status += f'\t-{temp_status}<br>'
 
                 try:

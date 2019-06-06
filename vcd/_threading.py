@@ -30,20 +30,27 @@ class Worker(threading.Thread):
     def to_log(self, integer=False):
         color = 'black'
         exec_time = 0
+        status_code = 0
 
         if self.timestamp is not None:
             exec_time = time.time() - self.timestamp
 
             if exec_time < 30:
                 color = 'green'
-            elif 30 < exec_time < 60:
+                status_code = 1
+            elif 30 <= exec_time < 60:
                 color = "orange"
-            else:
+                status_code = 2
+            elif 60 <= exec_time < 90:
                 color = "red"
+                status_code = 3
+            else:
+                color = "magenta"
+                status_code = 4
 
         status = f'<font color="{color}">{self.name}: {self.status} - '
 
-        if exec_time > 90:
+        if status_code == 4:
             status += f'[{seconds_to_str(exec_time, integer=integer)}] '
 
         if isinstance(self.current_object, BaseLink):
@@ -57,7 +64,7 @@ class Worker(threading.Thread):
 
         status += '</font>'
 
-        return status
+        return (status, status_code)
 
     # noinspection PyUnresolvedReferences
     def run(self):
@@ -134,7 +141,8 @@ class Killer(threading.Thread):
         self.status = 'online'
 
     def to_log(self, *args, **kwargs):
-        return f'<font color="blue">{self.name}: {self.status}'
+        output = f'<font color="blue">{self.name}: {self.status}'
+        return (output, 0)
 
     def run(self):
         print('Killer ready')
