@@ -51,9 +51,8 @@ class BaseLink:
         self.soup: BeautifulSoup = None
         self.filepath: str = None
         self.redirect_url = None
-        self.subfolder = None
         self.response_name = None
-        self.extra_subfolders = []
+        self.subfolders = []
 
         self.logger = logging.getLogger(__name__)
         self.logger.debug('Created %s(name=%r, url=%r, subject=%r)',
@@ -66,30 +65,24 @@ class BaseLink:
 
         return unidecode.unidecode(self.response.headers['Content-Disposition'])
 
-    def set_subfolder(self, value):
-        """Sets the subfolder.
+    def append_subfolder(self, dirname):
+        dirname = secure_filename(dirname)
+        return self.subfolders.append(dirname)
 
-        Args:
-            value (str): subfolder name.
-
-        """
-
-        if not isinstance(value, str):
-            raise TypeError(f'Expected str, not {type(value).__name__}')
-
-        value = secure_filename(value)
-        self.logger.debug('Set subfolder: %r (%r)', value, self.name)
-
-        self.subfolder = value
+    def insert_subfolder(self, index, dirname):
+        dirname = secure_filename(dirname)
+        return self.subfolders.insert(index, dirname)
 
     def create_subfolder(self):
         """Creates the subfolder, if it is configured."""
-        if self.subfolder is None:
-            return
-
         self.create_subject_folder()
-        folder = os.path.normpath(
-            os.path.join(Options.ROOT_FOLDER, self.subject.folder, self.subfolder))
+
+        if not self.filepath:
+            self.autoset_filepath()
+
+        folder = os.path.normpath(os.path.dirname(self.filepath))
+        # print(len(self.subfolders), self.subfolders)
+        # print(folder)
 
         if not os.path.isdir(folder):
             os.makedirs(folder, exist_ok=True)
@@ -186,11 +179,11 @@ class BaseLink:
         filename = self._process_filename(self.name) + '.' + self._get_ext_from_response()
         filename = secure_filename(filename)
 
-        if self.subfolder is not None:
-            filename = os.path.join(self.subfolder, filename)
+        # if self.subfolder is not None:
+        #     filename = os.path.join(self.subfolder, filename)
 
-        if self.extra_subfolders:
-            filename = os.path.join(*self.extra_subfolders, filename)
+        if self.subfolders:
+            filename = os.path.join(*self.subfolders, filename)
 
         self.filepath = os.path.join(self.subject.folder, filename)
 
@@ -220,11 +213,15 @@ class BaseLink:
 
     def save_response_content(self):
         """Saves the response content to the disk."""
+        # print(0, self.name, self.subfolders)
         if self.filepath is None:
             self.autoset_filepath()
 
+        # print(1, self.name, self.subfolders)
         self.create_subject_folder()
+        # print(2, self.name, self.subfolders)
         self.create_subfolder()
+        # print(3, self.name, self.subfolders)
         self.logger.debug('filepath in REAL_FILE_CACHE: %s', self.filepath in REAL_FILE_CACHE)
 
         if self.filepath in REAL_FILE_CACHE:
@@ -277,7 +274,9 @@ class Resource(BaseLink):
     def download(self):
         """Downloads the resource."""
         self.logger.debug('Downloading resource %s', self.name)
+        # print(10, self.name, self.subfolders)
         self.make_request()
+        # print(11, self.name, self.subfolders)
 
         if self.response.status_code == 404:
             self.logger.error('status code of 404 in url %r [%r]', self.url, self.name)
@@ -413,7 +412,7 @@ class Folder(BaseLink):
 
     def make_folder(self):
         """Makes a subfolder to save the folder's links."""
-        self.set_subfolder(self.name)
+        self.append_subfolder(self.name)
         self.create_subject_folder()
         self.create_subfolder()
 
@@ -431,7 +430,8 @@ class Folder(BaseLink):
                 url = container.a['href']
                 resource = Resource(os.path.splitext(container.a.text)[0],
                                     url, self.subject, self.downloader, self.queue)
-                resource.set_subfolder(self.name)
+                resource.subfolders = self.subfolders
+
                 self.logger.debug('Created resource from folder: %r, %s',
                                   resource.name, resource.url)
                 self.queue.put(resource)
@@ -443,12 +443,17 @@ class Folder(BaseLink):
 class Forum(BaseLink):
     """Representation of a Forum link."""
 
+    BASE_DIR = 'foros'
+
     def download(self):
         """Downloads the resources found in the forum hierarchy."""
         self.logger.debug('Downloading forum %s', self.name)
         self.make_request()
         self.process_request_bs4()
-        # self.set_subfolder(self.name)
+
+        if len(self.subfolders) == 0 and Options.FORUMS_SUBFOLDERS:
+            self.append_subfolder('foros')
+        self.append_subfolder(self.name)
 
         if 'view.php' in self.url:
             self.logger.debug('Forum is type list of themes')
@@ -457,24 +462,45 @@ class Forum(BaseLink):
             for theme in themes:
                 forum = Forum(theme.text, theme.a['href'], self.subject, self.downloader,
                               self.queue)
+
                 self.logger.debug('Created forum from forum: %r, %s', forum.name, forum.url)
                 self.queue.put(forum)
 
         elif 'discuss.php' in self.url:
             self.logger.debug('Forum is a theme discussion')
             attachments = self.soup.findAll('div', {'class': 'attachments'})
+            images = self.soup.findAll('div', {'class': 'attachedimages'})
 
             for attachment in attachments:
                 try:
+                    # TODO PROBABLY FIXME, LIKE IMAGES
                     resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
                                         self.subject, self.downloader, self.queue)
-                    if Options.FORUMS_SUBFOLDERS:
-                        resource.set_subfolder(self.subfolder)
+                    resource.subfolders = self.subfolders
+
                     self.logger.debug('Created resource from forum: %r, %s', resource.name,
                                       resource.url)
                     self.queue.put(resource)
                 except TypeError:
-                    continue
+                    pass
+
+            for image_container in images:
+                real_images = image_container.findAll('img')
+                for image in real_images:
+                    try:
+                        url = image['href']
+                    except KeyError:
+                        url = image['src']
+
+                    resource = Resource(
+                        os.path.splitext(url.split('/')[-1])[0],
+                        url, self.subject, self.downloader, self.queue)
+                    resource.subfolders = self.subfolders
+
+                    self.logger.debug('Created resource (image) from forum: %r, %s',
+                                      resource.name, resource.url)
+                    self.queue.put(resource)
+
         else:
             self.logger.critical('Unkown url for forum %r. Vars: %r', self.url, vars())
             raise RuntimeError(f'Unknown url for forum: {self.url}')
@@ -485,7 +511,7 @@ class Delivery(BaseLink):
 
     def make_subfolder(self):
         """Makes a subfolder to save the folder's links."""
-        self.set_subfolder(self.name)
+        self.append_subfolder(self.name)
         self.create_subject_folder()
         self.create_subfolder()
 
@@ -502,7 +528,7 @@ class Delivery(BaseLink):
         for container in containers:
             resource = Resource(os.path.splitext(container.text)[0], container['href'],
                                 self.subject, self.downloader, self.queue)
-            resource.set_subfolder(self.subfolder)
+            resource.subfolders = self.subfolders
 
             self.logger.debug('Created resource from delivery: %r, %s', resource.name,
                               resource.url)
