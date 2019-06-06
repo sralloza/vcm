@@ -81,8 +81,6 @@ class BaseLink:
             self.autoset_filepath()
 
         folder = os.path.normpath(os.path.dirname(self.filepath))
-        # print(len(self.subfolders), self.subfolders)
-        # print(folder)
 
         if not os.path.isdir(folder):
             os.makedirs(folder, exist_ok=True)
@@ -213,15 +211,12 @@ class BaseLink:
 
     def save_response_content(self):
         """Saves the response content to the disk."""
-        # print(0, self.name, self.subfolders)
         if self.filepath is None:
             self.autoset_filepath()
 
-        # print(1, self.name, self.subfolders)
         self.create_subject_folder()
-        # print(2, self.name, self.subfolders)
         self.create_subfolder()
-        # print(3, self.name, self.subfolders)
+
         self.logger.debug('filepath in REAL_FILE_CACHE: %s', self.filepath in REAL_FILE_CACHE)
 
         if self.filepath in REAL_FILE_CACHE:
@@ -274,9 +269,7 @@ class Resource(BaseLink):
     def download(self):
         """Downloads the resource."""
         self.logger.debug('Downloading resource %s', self.name)
-        # print(10, self.name, self.subfolders)
         self.make_request()
-        # print(11, self.name, self.subfolders)
 
         if self.response.status_code == 404:
             self.logger.error('status code of 404 in url %r [%r]', self.url, self.name)

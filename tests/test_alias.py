@@ -140,7 +140,6 @@ class TestRealToAlias:
                 {'id': i, 'new': f'data1-{i:03d}.txt', 'old': f'data1-{i:03d}.txt', 'type': '?'})
             expected.append(
                 {'id': j, 'new': f'data2-{j:03d}.txt', 'old': f'data2-{j:03d}.txt', 'type': '?'})
-            print(f'data2-{i:03d}.txt')
 
         t1 = Worker(data1)
         t2 = Worker(data2)
