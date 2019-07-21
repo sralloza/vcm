@@ -1,5 +1,3 @@
-class InvalidLanguageError(Exception):
-    """Invalid language error."""
 
 
 ALPHABET = {

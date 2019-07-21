@@ -48,3 +48,12 @@ class BaseFileCacheError(BaseVCDException):
 
 class FileCacheError(BaseFileCacheError):
     pass
+
+
+# Time operations exceptions
+class BaseTimeOperationExceptions(BaseVCDException):
+    pass
+
+
+class InvalidLanguageError(BaseTimeOperationExceptions):
+    pass
