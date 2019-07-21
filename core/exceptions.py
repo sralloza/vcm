@@ -1,10 +1,41 @@
-class CredentialError(Exception):
-    """Credential error."""
+class BaseVCDException(Exception):
+    pass
 
 
-class DownloaderError(Exception):
-    """Error while downloading."""
+# Downloader exceptions
+class BaseDownloaderError(BaseVCDException):
+    pass
 
 
-class NoCredentialsFoundError(Exception):
-    """No credentials found error"""
+class DownloaderError(BaseDownloaderError):
+    pass
+
+
+# Credentials exceptions
+class BaseCredentialError(BaseVCDException):
+    pass
+
+
+class CredentialError(BaseCredentialError):
+    pass
+
+
+class NoCredentialsFoundError(BaseCredentialError):
+    pass
+
+
+class IdError(BaseCredentialError):
+    pass
+
+
+# Alias exceptions
+class BaseAliasError(BaseVCDException):
+    pass
+
+
+class AliasNotFoundError(BaseAliasError):
+    pass
+
+
+class AliasFatalError(BaseAliasError):
+    pass
