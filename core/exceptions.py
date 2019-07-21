@@ -51,11 +51,11 @@ class FileCacheError(BaseFileCacheError):
 
 
 # Time operations exceptions
-class BaseTimeOperationExceptions(BaseVCDException):
+class BaseTimeOperationError(BaseVCDException):
     pass
 
 
-class InvalidLanguageError(BaseTimeOperationExceptions):
+class InvalidLanguageError(BaseTimeOperationError):
     pass
 
 
