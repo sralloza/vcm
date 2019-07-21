@@ -39,3 +39,12 @@ class AliasNotFoundError(BaseAliasError):
 
 class AliasFatalError(BaseAliasError):
     pass
+
+
+# Filecache exceptions
+class BaseFileCacheError(BaseVCDException):
+    pass
+
+
+class FileCacheError(BaseFileCacheError):
+    pass

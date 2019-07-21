@@ -4,9 +4,6 @@ import os
 from .options import Options
 
 
-class FileCacheError(Exception):
-    """File cache error."""
-
 
 class FileCache:
     """File scanner to control file version."""
