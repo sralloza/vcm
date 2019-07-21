@@ -1,6 +1,6 @@
 import argparse
 
-from vcd import start
+from core import start
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('vcd')
