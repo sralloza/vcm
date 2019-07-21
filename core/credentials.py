@@ -5,13 +5,7 @@ from getpass import getpass
 
 from colorama import Fore
 
-
-class CredentialError(Exception):
-    """Credential error."""
-
-
-class NoCredentialsFoundError(Exception):
-    """No credentials found error"""
+from .exceptions import CredentialError
 
 
 class StudentCredentials:
