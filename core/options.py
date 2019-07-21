@@ -9,9 +9,6 @@ from configparser import ConfigParser, NoSectionError, NoOptionError
 init()
 
 
-class OptionError(Exception):
-    """Option error."""
-
 
 class Options:
     _LOADED = False

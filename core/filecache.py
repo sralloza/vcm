@@ -1,11 +1,9 @@
 """File scanner to control file version."""
 import os
 
+from .exceptions import FileCacheError
 from .options import Options
 
-
-class FileCacheError(Exception):
-    """File cache error."""
 
 
 class FileCache:

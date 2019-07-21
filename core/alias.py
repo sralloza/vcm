@@ -3,19 +3,10 @@ import json
 import os
 from threading import Semaphore
 
+from .exceptions import AliasFatalError, IdError, AliasNotFoundError
 from .options import Options
 
 
-class IdError(Exception):
-    """Error with ids."""
-
-
-class AliasNotFoundError(Exception):
-    """Alias not found error."""
-
-
-class AliasFatalError(Exception):
-    """Alias fatal error."""
 
 
 class Events:

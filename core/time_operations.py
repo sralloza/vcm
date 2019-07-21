@@ -1,6 +1,4 @@
-class InvalidLanguageError(Exception):
-    """Invalid language error."""
-
+from .exceptions import InvalidLanguageError
 
 ALPHABET = {
     'abbr': {
