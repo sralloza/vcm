@@ -57,3 +57,12 @@ class BaseTimeOperationExceptions(BaseVCDException):
 
 class InvalidLanguageError(BaseTimeOperationExceptions):
     pass
+
+
+# Option exceptions
+class BaseOptionError(BaseVCDException):
+    pass
+
+
+class OptionError(BaseOptionError):
+    pass
