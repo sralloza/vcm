@@ -3,6 +3,7 @@ import json
 import os
 from threading import Semaphore
 
+from .exceptions import AliasFatalError, IdError, AliasNotFoundError
 from .options import Options
 
 

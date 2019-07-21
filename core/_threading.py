@@ -64,7 +64,7 @@ class Worker(threading.Thread):
 
         status += '</font>'
 
-        return (status, status_code)
+        return status, status_code
 
     # noinspection PyUnresolvedReferences
     def run(self):
