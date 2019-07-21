@@ -2,7 +2,6 @@ import pytest
 
 
 class TestDownloadsRecorder:
-
     @pytest.mark.skip
     def test_attributes(self):
         pass
@@ -13,7 +12,6 @@ class TestDownloadsRecorder:
 
 
 class TestBaseLink:
-
     @pytest.mark.skip
     def test_attributes(self):
         pass
