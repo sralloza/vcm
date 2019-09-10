@@ -15,8 +15,7 @@ class Options:
     _CONFIG_PATH = os.path.normpath(os.path.join(os.path.expanduser('~'), 'vcd-config.ini'))
 
     PRODUCTION = False
-    FILENAME_PATTERN = re.compile(
-        'filename=\"?([\w\s\-\!\$\?\%\^\&\(\)\_\+\~\=\`\{\}\[\]\.\;\'\,]+)\"?')
+    FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
     ROOT_FOLDER = os.path.normpath(
         os.path.join(os.path.dirname(os.path.dirname(__file__)), 'default_root_folder'))
 
