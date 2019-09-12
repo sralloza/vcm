@@ -37,11 +37,11 @@ logging.getLogger('urllib3').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-def find_subjects(downloader, queue, nthreads=20, no_killer=False):
+def find_subjects(connection, queue, nthreads=20, no_killer=False):
     """Starts finding subjects.
 
     Args:
-        downloader (Downloader): custom session with retry control.
+        connection (Connection): custom session with retry control.
         queue (Queue): queue to organize threads.
         nthreads (int): number of threads to start.
         no_killer (bool): desactivate Killer thread.
@@ -53,36 +53,7 @@ def find_subjects(downloader, queue, nthreads=20, no_killer=False):
     threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
-    response_1 = downloader.get('https://campusvirtual.uva.es/login/index.php')
-    soup_1 = BeautifulSoup(response_1.text, 'html.parser')
-
-    login_token = soup_1.find('input', {'type': 'hidden', 'name': 'logintoken'})['value']
-    logger.debug('Login token: %s', login_token)
-
-    del response_1
-    del soup_1
-
-    user = Credentials.get()
-
-    downloader.post(
-        'https://campusvirtual.uva.es/login/index.php',
-        data={
-            'anchor': '', 'username': user.username, 'password': user.password,
-            'logintoken': login_token
-        })
-
-    response = downloader.get('https://campusvirtual.uva.es/my/')
-    Path('D:/sistema/desktop/a.html').write_bytes(response.content)
-
-    logger.debug('Returned primary response with code %d', response.status_code)
-
-    login_correct = 'Vista general de curso' in response.text
-    logger.debug('Login correct: %s', login_correct)
-
-    if not login_correct:
-        exit(Fore.RED + 'Login not correct' + Fore.RESET)
-
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(connection._login_response.content, 'html.parser')
     search = soup.findAll('div', {'class': 'card dashboard-card'})
 
     logger.debug('Found %d potential subjects', len(search))
