@@ -20,6 +20,11 @@ class Connection:
         self._downloader = Downloader()
         self._logout_response = None
         self._login_response = None
+        self._sesskey = None
+
+    @property
+    def sesskey(self):
+        return self._sesskey
 
     def __enter__(self):
         self.login()
@@ -29,12 +34,9 @@ class Connection:
         self.logout()
 
     def logout(self):
-        response = self.get('https://campusvirtual.uva.es')
-        soup = BeautifulSoup(response.text, 'html.parser')
-        sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
-
-        self._logout_response = self.post('https://campusvirtual.uva.es/login/logout.php?sesskey=%s' % sesskey,
-                             data={'sesskey': sesskey})
+        self._logout_response = self.post(
+            'https://campusvirtual.uva.es/login/logout.php?sesskey=%s' % self.sesskey,
+            data={'sesskey': self.sesskey})
 
         if 'Usted no se ha identificado' not in self._logout_response.text:
             raise LogoutError
@@ -54,6 +56,9 @@ class Connection:
                 'anchor': '', 'username': user.username, 'password': user.password,
                 'logintoken': login_token
             })
+
+        soup = BeautifulSoup(self._login_response.text, 'html.parser')
+        self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
 
         if 'Usted se ha identificado' not in self._login_response.text:
             raise LoginError
