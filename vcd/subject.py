@@ -19,13 +19,13 @@ from .utils import secure_filename
 class Subject:
     """Representation of a subject."""
 
-    def __init__(self, name, url, downloader, queue):
+    def __init__(self, name, url, connection, queue):
         """
 
         Args:
             name (str): name of the subject.
             url (str): url of the subject.
-            downloader (Downloader): downloader to download files.
+            connection (Connection): connection to download files.
             queue (Queue): queue to controll threads.
         """
 
@@ -34,7 +34,7 @@ class Subject:
 
         self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
-        self.downloader = downloader
+        self.connection = connection
         self.queue = queue
 
         self.response: Response = None
@@ -42,7 +42,7 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        self.folder = os.path.join(Options.ROOT_FOLDER, secure_filename(self.name))
+        self.folder = Options.ROOT_FOLDER / secure_filename(self.name)
         self.logger = logging.getLogger(__name__)
 
         self.logger.debug('Created Subject(name=%r, url=%r)',
@@ -58,7 +58,7 @@ class Subject:
     def make_request(self):
         """Makes the primary request."""
         self.logger.debug('Making subject request')
-        self.response = self.downloader.get(self.url)
+        self.response = self.connection.get(self.url)
         self.soup = BeautifulSoup(self.response.text, 'html.parser')
 
         self.logger.debug('Response obtained [%d]', self.response.status_code)

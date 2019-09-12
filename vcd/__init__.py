@@ -3,7 +3,6 @@ import logging
 import os
 import time
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 from queue import Queue
 from threading import current_thread
 
@@ -68,7 +67,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
             continue
 
         logger.debug('Assembling subject %r', name)
-        subjects.append(Subject(name, subject_url, downloader, queue))
+        subjects.append(Subject(name, subject_url, connection, queue))
 
     subjects.sort(key=lambda x: x.name)
 
