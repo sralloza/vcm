@@ -98,10 +98,15 @@ def start(nthreads=None, no_killer=False):
     queue = Queue()
 
     main_logger.debug('Launching subjects finder')
-    find_subjects(downloader, queue, nthreads, no_killer)
 
-    main_logger.debug('Waiting for queue to empty')
-    queue.join()
+    try:
+        with Connection() as connection:
+            find_subjects(connection, queue, nthreads, no_killer)
+
+            main_logger.debug('Waiting for queue to empty')
+            queue.join()
+    except LoginError:
+        exit(Fore.RED + 'Login not correct' + Fore.RESET)
 
     final_time = time.time() - initial_time
     main_logger.info('VCD executed in %s', seconds_to_str(final_time))
