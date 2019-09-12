@@ -31,20 +31,20 @@ class DownloadsRecorder:
 class BaseLink:
     """Base class for Links."""
 
-    def __init__(self, name, url, subject, downloader, queue):
+    def __init__(self, name, url, subject, connection, queue):
         """
         Args:
             name (str): name of the url.
             url (str): URL of the url.
             subject (vcd.subject.Subject): subject of the url.
-            downloader (vcd.requests.Downloader): downloader to download resources.
+            connection (vcd.requests.Downloader): connection to download resources.
             queue (Queue): queue to controll threads.
         """
 
         self.name = name.strip()
         self.url = url
         self.subject = subject
-        self.downloader = downloader
+        self.connection = connection
         self.queue = queue
 
         self.response: Response = None
@@ -143,7 +143,7 @@ class BaseLink:
 
         self.logger.debug('Making request')
 
-        self.response = self.downloader.get(self.redirect_url or self.url, timeout=Options.TIMEOUT)
+        self.response = self.connection.get(self.redirect_url or self.url, timeout=Options.TIMEOUT)
 
         self.logger.debug('Response obtained [%d]', self.response.status_code)
 
@@ -250,8 +250,8 @@ class BaseLink:
 class Resource(BaseLink):
     """Representation of a resource."""
 
-    def __init__(self, name, url, subject, downloader: Downloader, queue: Queue):
-        super().__init__(name, url, subject, downloader, queue)
+    def __init__(self, name, url, subject, connection: Downloader, queue: Queue):
+        super().__init__(name, url, subject, connection, queue)
         self.resource_type = 'unknown'
 
     def set_resource_type(self, new):
@@ -368,7 +368,7 @@ class Resource(BaseLink):
         name = self.soup.find('div', {'role': 'main'}).h2.text
 
         try:
-            resource = Resource(name, resource['data'], self.subject, self.downloader, self.queue)
+            resource = Resource(name, resource['data'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -377,7 +377,7 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('iframe', {'id': 'resourceobject'})
-            resource = Resource(name, resource['src'], self.subject, self.downloader, self.queue)
+            resource = Resource(name, resource['src'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -386,7 +386,7 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('div', {'class': 'resourceworkaround'})
-            resource = Resource(name, resource.a['href'], self.subject, self.downloader, self.queue)
+            resource = Resource(name, resource.a['href'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -422,7 +422,7 @@ class Folder(BaseLink):
             try:
                 url = container.a['href']
                 resource = Resource(os.path.splitext(container.a.text)[0],
-                                    url, self.subject, self.downloader, self.queue)
+                                    url, self.subject, self.connection, self.queue)
                 resource.subfolders = self.subfolders
 
                 self.logger.debug('Created resource from folder: %r, %s',
@@ -453,7 +453,7 @@ class Forum(BaseLink):
             themes = self.soup.findAll('td', {'class': 'topic starter'})
 
             for theme in themes:
-                forum = Forum(theme.text, theme.a['href'], self.subject, self.downloader,
+                forum = Forum(theme.text, theme.a['href'], self.subject, self.connection,
                               self.queue)
 
                 self.logger.debug('Created forum from forum: %r, %s', forum.name, forum.url)
@@ -468,7 +468,7 @@ class Forum(BaseLink):
                 try:
                     # TODO PROBABLY FIXME, LIKE IMAGES
                     resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
-                                        self.subject, self.downloader, self.queue)
+                                        self.subject, self.connection, self.queue)
                     resource.subfolders = self.subfolders
 
                     self.logger.debug('Created resource from forum: %r, %s', resource.name,
@@ -487,7 +487,7 @@ class Forum(BaseLink):
 
                     resource = Resource(
                         os.path.splitext(url.split('/')[-1])[0],
-                        url, self.subject, self.downloader, self.queue)
+                        url, self.subject, self.connection, self.queue)
                     resource.subfolders = self.subfolders
 
                     self.logger.debug('Created resource (image) from forum: %r, %s',
@@ -520,7 +520,7 @@ class Delivery(BaseLink):
 
         for container in containers:
             resource = Resource(os.path.splitext(container.text)[0], container['href'],
-                                self.subject, self.downloader, self.queue)
+                                self.subject, self.connection, self.queue)
             resource.subfolders = self.subfolders
 
             self.logger.debug('Created resource from delivery: %r, %s', resource.name,

@@ -109,19 +109,19 @@ class Subject:
                 if 'resource' in url:
                     self.logger.debug('Created Resource (subject search): %r, %s', name, url)
                     self.add_link(
-                        Resource(name, url, self, self.downloader, self.queue))
+                        Resource(name, url, self, self.connection, self.queue))
                 elif 'folder' in url:
                     self.logger.debug('Created Folder (subject search): %r, %s', name, url)
                     self.add_link(
-                        Folder(name, url, self, self.downloader, self.queue))
+                        Folder(name, url, self, self.connection, self.queue))
                 elif 'forum' in url:
                     self.logger.debug('Created Forum (subject search): %r, %s', name, url)
                     self.add_link(
-                        Forum(name, url, self, self.downloader, self.queue))
+                        Forum(name, url, self, self.connection, self.queue))
                 elif 'assign' in url:
                     self.logger.debug('Created Delivery (subject search): %r, %s', name, url)
                     self.add_link(
-                        Delivery(name, url, self, self.downloader, self.queue))
+                        Delivery(name, url, self, self.connection, self.queue))
 
             except AttributeError:
                 pass
