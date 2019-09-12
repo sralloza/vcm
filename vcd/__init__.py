@@ -10,7 +10,8 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama, Fore
 
-from ._requests import Downloader
+from vcd.exceptions import LoginError
+from ._requests import Downloader, Connection
 from ._threading import start_workers
 from .credentials import Credentials
 from .options import Options
@@ -77,13 +78,11 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     return subjects
 
 
-def start(root_folder=None, nthreads=None, timeout=None, no_killer=False):
+def start(nthreads=None, no_killer=False):
     """Starts the app.
 
     Args:
-        root_folder (str): folder where files will be downloaded.
         nthreads (int): number of threads to start.
-        timeout (int): number of seconds before discarting TCP connection.
         no_killer (bool): desactivate Killer thread.
     """
 
@@ -92,17 +91,9 @@ def start(root_folder=None, nthreads=None, timeout=None, no_killer=False):
     if not nthreads:
         nthreads = 50
 
-    if root_folder:
-        Options.set_root_folder(root_folder)
-
-    if timeout:
-        Options.set_timeout(timeout)
-
     initial_time = time.time()
     main_logger = logging.getLogger(__name__)
     main_logger.info('STARTING APP')
-    main_logger.debug('Starting downloader')
-    downloader = Downloader()
     main_logger.debug('Starting queue')
     queue = Queue()
 
