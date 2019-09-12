@@ -1,68 +1,46 @@
-class BaseVCDException(Exception):
-    pass
+class VcdError(Exception):
+    """Vcd error."""
 
 
-# Downloader exceptions
-class BaseDownloaderError(BaseVCDException):
-    pass
+class LoginError(VcdError):
+    """Login error."""
 
 
-class DownloaderError(BaseDownloaderError):
-    pass
+class LogoutError(VcdError):
+    """Logout error."""
 
 
-# Credentials exceptions
-class BaseCredentialError(BaseVCDException):
-    pass
+class DownloaderError(VcdError):
+    "Downloader error."
 
 
-class CredentialError(BaseCredentialError):
-    pass
+class CredentialError(VcdError):
+    """Credential error."""
 
 
-class NoCredentialsFoundError(BaseCredentialError):
-    pass
+class NoCredentialsFoundError(VcdError):
+    """No credentials found error."""
 
 
-class IdError(BaseCredentialError):
-    pass
+class IdError(VcdError):
+    """Id error."""
 
 
-# Alias exceptions
-class BaseAliasError(BaseVCDException):
-    pass
+class AliasNotFoundError(VcdError):
+    """Alias not found error."""
 
 
-class AliasNotFoundError(BaseAliasError):
-    pass
+class AliasFatalError(VcdError):
+    """Alias fatal error."""
 
 
-class AliasFatalError(BaseAliasError):
-    pass
+class FileCacheError(VcdError):
+    """File cache error."""
 
 
-# Filecache exceptions
-class BaseFileCacheError(BaseVCDException):
-    pass
+class InvalidLanguageError(VcdError):
+    """Invalid language error."""
 
 
-class FileCacheError(BaseFileCacheError):
-    pass
-
-
-# Time operations exceptions
-class BaseTimeOperationError(BaseVCDException):
-    pass
-
-
-class InvalidLanguageError(BaseTimeOperationError):
-    pass
-
-
-# Option exceptions
-class BaseOptionError(BaseVCDException):
-    pass
-
-
-class OptionError(BaseOptionError):
-    pass
+class OptionError(VcdError):
+    """Option error."""
