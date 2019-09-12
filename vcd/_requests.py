@@ -3,13 +3,66 @@
 """Custom downloader with retries control."""
 
 import logging
+from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 
+from .credentials import Credentials
 from .exceptions import DownloaderError
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 '
                          '(KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+logger = logging.getLogger(__name__)
+
+
+class Connection:
+    def __init__(self):
+        self._downloader = Downloader()
+
+    def __enter__(self):
+        self.login()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logout()
+
+    def logout(self):
+        response = self.get('https://campusvirtual.uva.es')
+        soup = BeautifulSoup(response.text, 'html.parser')
+        '< input type = "hidden" name = "sesskey" value = "yUKqGZ9NkC" >'
+        sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
+
+        response = self.post('https://campusvirtual.uva.es/login/logout.php?sesskey=%s' % sesskey,
+                             data={'sesskey': sesskey})
+        Path('D:/after-logout.html').write_bytes(response.content)
+
+    def login(self):
+        response = self.get('https://campusvirtual.uva.es/login/index.php')
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        login_token = soup.find('input', {'type': 'hidden', 'name': 'logintoken'})['value']
+        logger.debug('Login token: %s', login_token)
+
+        user = Credentials.get()
+
+        response = self.post(
+            'https://campusvirtual.uva.es/login/index.php',
+            data={
+                'anchor': '', 'username': user.username, 'password': user.password,
+                'logintoken': login_token
+            })
+
+        Path('D:/after-login.html').write_bytes(response.content)
+
+    def get(self, url, **kwargs):
+        return self._downloader.get(url, **kwargs)
+
+    def post(self, url, data=None, json=None, **kwargs):
+        return self._downloader.post(url, data=data, json=json, **kwargs)
+
+    def delete(self, url, **kwargs):
+        return self._downloader.delete(url, **kwargs)
 
 
 class Downloader(requests.Session):

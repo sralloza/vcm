@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from queue import Queue
 from threading import current_thread
 
@@ -16,7 +17,6 @@ from .options import Options
 from .status_server import runserver
 from .subject import Subject
 from .time_operations import seconds_to_str
-
 
 if os.environ.get('TESTING') is None:
     should_roll_over = os.path.isfile(Options.LOG_PATH)
@@ -37,7 +37,6 @@ logging.getLogger('urllib3').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyShadowingNames
 def find_subjects(downloader, queue, nthreads=20, no_killer=False):
     """Starts finding subjects.
 
@@ -54,29 +53,43 @@ def find_subjects(downloader, queue, nthreads=20, no_killer=False):
     threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
+    response_1 = downloader.get('https://campusvirtual.uva.es/login/index.php')
+    soup_1 = BeautifulSoup(response_1.text, 'html.parser')
+
+    login_token = soup_1.find('input', {'type': 'hidden', 'name': 'logintoken'})['value']
+    logger.debug('Login token: %s', login_token)
+
+    del response_1
+    del soup_1
+
     user = Credentials.get()
 
     downloader.post(
         'https://campusvirtual.uva.es/login/index.php',
-        data={'anchor': '', 'username': user.username, 'password': user.password})
+        data={
+            'anchor': '', 'username': user.username, 'password': user.password,
+            'logintoken': login_token
+        })
 
     response = downloader.get('https://campusvirtual.uva.es/my/')
+    Path('D:/sistema/desktop/a.html').write_bytes(response.content)
 
     logger.debug('Returned primary response with code %d', response.status_code)
 
-    logger.debug('Login correct: %s', 'Vista general de cursos' in response.text)
+    login_correct = 'Vista general de curso' in response.text
+    logger.debug('Login correct: %s', login_correct)
 
-    if 'Vista general de cursos' not in response.text:
+    if not login_correct:
         exit(Fore.RED + 'Login not correct' + Fore.RESET)
 
     soup = BeautifulSoup(response.content, 'html.parser')
-    search = soup.findAll('div', {'class': 'course_title'})
+    search = soup.findAll('div', {'class': 'card dashboard-card'})
 
     logger.debug('Found %d potential subjects', len(search))
     subjects = []
 
     for find in search:
-        name = find.h2.a['title'].split(' (')[0]
+        name = find.find('span', class_='multiline').text
         subject_url = find.h2.a['href']
 
         if 'grado' in name.lower():

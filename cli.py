@@ -1,6 +1,7 @@
 import argparse
 
-from core import start
+from vcd import start
+from vcd._requests import Connection
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
