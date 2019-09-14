@@ -18,13 +18,18 @@ logger = logging.getLogger(__name__)
 class Connection:
     def __init__(self):
         self._downloader = Downloader()
-        self._logout_response = None
-        self._login_response = None
-        self._sesskey = None
+        self._logout_response: requests.Response = None
+        self._login_response: requests.Response = None
+        self._sesskey: str = None
+        self._user_url: str = None
 
     @property
     def sesskey(self):
         return self._sesskey
+
+    @property
+    def user_url(self):
+        return self._user_url
 
     def __enter__(self):
         self.login()
@@ -59,6 +64,9 @@ class Connection:
 
         soup = BeautifulSoup(self._login_response.text, 'html.parser')
         self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
+
+        self._user_url = soup.find('span', id='actionmenuaction-2').parent[
+                            'href'] + '&showallcourses=1'
 
         if 'Usted se ha identificado' not in self._login_response.text:
             raise LoginError
