@@ -2,12 +2,12 @@
 import logging
 import os
 import random
-import unidecode
 import warnings
-
 from _sha1 import sha1
+from pathlib import Path
 from queue import Queue
 
+import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
@@ -20,11 +20,11 @@ from .utils import secure_filename
 
 
 class DownloadsRecorder:
-    _downloads_record_path = os.path.join(Options.ROOT_FOLDER, 'downloads.log')
+    _downloads_record_path = Options.ROOT_FOLDER / 'downloads.log'
 
     @staticmethod
     def write(something: str, *args):
-        with open(DownloadsRecorder._downloads_record_path, 'at') as fh:
+        with DownloadsRecorder._downloads_record_path.open('at')as fh:
             fh.write(something % args + '\n')
 
 
@@ -108,9 +108,7 @@ class BaseLink:
     # @staticmethod
     def _filename_to_ext(self, filename):
         """Returns the extension given a filename."""
-        if filename.count('.') == 0:
-            return 'ukn'
-        return filename.split('.')[-1].lower()
+        return Path(filename).suffix[1:]
 
     def _get_ext_from_response(self):
         """Returns the extension of the filename of the response, got from the Content-Dispotition
@@ -187,7 +185,10 @@ class BaseLink:
 
         self.filepath = os.path.normpath(os.path.join(Options.ROOT_FOLDER, self.filepath))
 
-        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(), self.filepath)
+        self.filepath = Options.ROOT_FOLDER.joinpath()
+
+        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
+                                            self.filepath.as_posix())
 
         self.logger.debug('Set filepath: %r', self.filepath)
 
