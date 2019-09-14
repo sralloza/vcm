@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup
 from .credentials import Credentials
 from .exceptions import DownloaderError, LoginError, LogoutError
 
-HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 '
-                         '(KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 logger = logging.getLogger(__name__)
 
 
@@ -37,6 +35,27 @@ class Connection:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
+
+    @staticmethod
+    def _fix_headers(**kwargs):
+        user_agent = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
+                     '(KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36'
+        headers = kwargs.pop('headers', dict())
+        headers['User-Agent'] = user_agent
+        kwargs['headers'] = headers
+        return kwargs
+
+    def get(self, url, **kwargs):
+        kwargs = self._fix_headers(**kwargs)
+        return self._downloader.get(url, **kwargs)
+
+    def post(self, url, data=None, json=None, **kwargs):
+        kwargs = self._fix_headers(**kwargs)
+        return self._downloader.post(url, data, json, **kwargs)
+
+    def delete(self, url, **kwargs):
+        kwargs = self._fix_headers(**kwargs)
+        return self._downloader.delete(url, **kwargs)
 
     def logout(self):
         self._logout_response = self.post(
@@ -71,14 +90,7 @@ class Connection:
         if 'Usted se ha identificado' not in self._login_response.text:
             raise LoginError
 
-    def get(self, url, **kwargs):
-        return self._downloader.get(url, **kwargs)
 
-    def post(self, url, data=None, json=None, **kwargs):
-        return self._downloader.post(url, data=data, json=json, **kwargs)
-
-    def delete(self, url, **kwargs):
-        return self._downloader.delete(url, **kwargs)
 
 
 class Downloader(requests.Session):
