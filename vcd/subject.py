@@ -69,9 +69,10 @@ class Subject:
         if self.hasfolder is False:
             self.logger.debug('Creating folder %r', self.name)
             with self.folder_lock:
-                if os.path.isdir(self.folder) is False:
-                    os.makedirs(self.folder)
+                if not self.folder.exists():
+                    os.makedirs(self.folder.as_posix())
             self.hasfolder = True
+
         else:
             self.logger.debug('Folder already exists: %r', self.name)
 
