@@ -65,7 +65,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     for li in lis:
         course_id = re.search(r'course=(\d+)', li.a['href']).group(1)
         subject_url = 'https://campusvirtual.uva.es/course/view.php?id=%s' % course_id
-        name = re.search(r'^([\w\s]+)\s?\(', li.text).group(1)
+        name = re.search(r'^([\w\s]+?)\s?\(', li.text).group(1)
 
         if 'grado' in name.lower():
             continue
