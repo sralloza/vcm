@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 from pathlib import Path
 
@@ -14,15 +13,15 @@ class Options:
     PRODUCTION = False
     FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
 
-    ROOT_FOLDER: Path = Path(__file__).parent.parent
-    LOGS_FOLDER: Path = ROOT_FOLDER / 'logs'
+    ROOT_FOLDER: Path = Path('D:/sistema/desktop/ittade-metadata-4')
+    LOGS_FOLDER: Path = ROOT_FOLDER / '.logs'
     LOG_PATH: Path = LOGS_FOLDER / 'vcd.log'
     TIMEOUT = 30
     LOGGING_LEVEL = logging.DEBUG
 
     FORUMS_SUBFOLDERS = True
 
-    _CONFIG_PATH = os.path.normpath(os.path.join(os.path.expanduser('~'), 'vcd-config.ini'))
+    _CONFIG_PATH = Path.home() / 'vcd-config.ini'
 
     @staticmethod
     def ensure_files():
