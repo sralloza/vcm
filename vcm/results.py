@@ -1,5 +1,4 @@
 """Print real-time alerts."""
-import os
 from threading import Lock
 
 from colorama import Fore
@@ -12,7 +11,7 @@ class Results:
     print_lock = Lock()
 
     file_lock = Lock()
-    result_path = os.path.join(Options.ROOT_FOLDER, 'new-files.txt').replace('\\', '/')
+    result_path = Options.ROOT_FOLDER / 'new-files.txt'
 
     @staticmethod
     def print_updated(message):
@@ -49,5 +48,5 @@ class Results:
 
         """
         with Results.file_lock:
-            with open(Results.result_path, 'at') as f:
+            with Results.result_path.open('at', encoding='utf-8') as f:
                 f.write(message + '\n')

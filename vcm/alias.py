@@ -7,8 +7,6 @@ from .exceptions import AliasFatalError, IdError, AliasNotFoundError
 from .options import Options
 
 
-
-
 class Events:
     """Contains events to control the multithreading version of Alias."""
     access = Semaphore()
@@ -26,7 +24,7 @@ class Alias:
     """Class designed to declare aliases"""
 
     def __init__(self):
-        self.alias_path = os.path.join(Options.ROOT_FOLDER, 'alias.json')
+        self.alias_path = Options.ROOT_FOLDER / 'alias.json'
         self.json = []
         self.load()
 
@@ -41,7 +39,7 @@ class Alias:
             return
         try:
             Events.acquire()
-            with open(self.alias_path, encoding='utf-8') as file_handler:
+            with self.alias_path.open(encoding='utf-8') as file_handler:
                 self.json = json.load(file_handler) or []
         except json.JSONDecodeError as ex:
             raise AliasFatalError('Raised JSONDecodeError') from ex
@@ -66,7 +64,7 @@ class Alias:
         Events.acquire()
 
         self.json = []
-        with open(self.alias_path, 'wt', encoding='utf-8') as file_handler:
+        with self.alias_path.open('wt', encoding='utf-8') as file_handler:
             json.dump([], file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
         Events.release()
@@ -75,7 +73,7 @@ class Alias:
     def save(self):
         """Saves alias configuration to the file."""
         try:
-            with open(self.alias_path, encoding='utf-8') as file_handler:
+            with self.alias_path.open(encoding='utf-8') as file_handler:
                 temp = json.load(file_handler) or []
         except (FileNotFoundError, json.JSONDecodeError):
             temp = []
@@ -87,7 +85,7 @@ class Alias:
             if to_write[i] not in to_write[i + 1:]:
                 res_list.append(to_write[i])
 
-        with open(self.alias_path, 'wt', encoding='utf-8') as file_handler:
+        with self.alias_path.open('wt', encoding='utf-8') as  file_handler:
             json.dump(res_list, file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
     def _increment(self, something):

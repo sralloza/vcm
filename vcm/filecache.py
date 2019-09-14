@@ -5,7 +5,6 @@ from .exceptions import FileCacheError
 from .options import Options
 
 
-
 class FileCache:
     """File scanner to control file version."""
     path = Options.ROOT_FOLDER
@@ -32,7 +31,7 @@ class FileCache:
             raise FileCacheError('Use REAL_FILE_CACHE instead')
 
         filenames = []
-        for elem in os.walk(self.path):
+        for elem in os.walk(self.path.as_posix()):
             folder = elem[0]
             files = elem[2]
 
