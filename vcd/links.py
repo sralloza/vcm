@@ -175,20 +175,15 @@ class BaseLink:
         filename = self._process_filename(self.name) + '.' + self._get_ext_from_response()
         filename = secure_filename(filename)
 
-        # if self.subfolder is not None:
-        #     filename = os.path.join(self.subfolder, filename)
+        temp_filepath = self.subject.folder
 
         if self.subfolders:
-            filename = os.path.join(*self.subfolders, filename)
+            temp_filepath.joinpath(*self.subfolders)
 
-        self.filepath = os.path.join(self.subject.folder, filename)
-
-        self.filepath = os.path.normpath(os.path.join(Options.ROOT_FOLDER, self.filepath))
-
-        self.filepath = Options.ROOT_FOLDER.joinpath()
+        temp_filepath /= filename
 
         self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
-                                            self.filepath.as_posix())
+                                            temp_filepath.as_posix())
 
         self.logger.debug('Set filepath: %r', self.filepath)
 
