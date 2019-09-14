@@ -42,7 +42,8 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        self.folder = Options.ROOT_FOLDER / secure_filename(self.name)
+        # self.folder = Options.ROOT_FOLDER / secure_filename(self.name)
+        self.folder = Options.ROOT_FOLDER / self.name
         self.logger = logging.getLogger(__name__)
 
         self.logger.debug('Created Subject(name=%r, url=%r)',
