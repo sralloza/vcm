@@ -1,6 +1,7 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
 import logging
 import os
+import re
 import time
 from logging.handlers import RotatingFileHandler
 from queue import Queue
@@ -53,21 +54,25 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
-    soup = BeautifulSoup(connection._login_response.content, 'html.parser')
-    search = soup.findAll('div', {'class': 'card dashboard-card'})
+    request = connection.get(connection.user_url)
+    soup = BeautifulSoup(request.text, 'html.parser')
+    primary_li = soup.find_all('li', class_='contentnode')[3]
 
-    logger.debug('Found %d potential subjects', len(search))
+    lis = primary_li.find_all('li')
+    logger.debug('Found %d potential subjects', len(lis))
     subjects = []
 
-    for find in search:
-        name = find.find('span', class_='multiline').text
-        subject_url = find.h2.a['href']
+    for li in lis:
+        course_id = re.search(r'course=(\d+)', li.a['href']).group(1)
+        subject_url = 'https://campusvirtual.uva.es/course/view.php?id=%s' % course_id
+        name = re.search(r'^([\w\s]+)\s?\(', li.text).group(1)
 
         if 'grado' in name.lower():
             continue
 
         logger.debug('Assembling subject %r', name)
-        subjects.append(Subject(name, subject_url, connection, queue))
+        subject = Subject(name, subject_url, connection, queue)
+        subjects.append(subject)
 
     subjects.sort(key=lambda x: x.name)
 
