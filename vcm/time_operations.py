@@ -18,9 +18,9 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language='en'):
     Args:
         seconds (int, float): number of seconds.
         abbreviated (bool): use the abbreviated form or not.
-        integer (bool): affects the type of the seconds. If set to true, seconds will always be int. If
-            set to False, seconds will always be float. If not set (integer=None), seconds will be
-            int if it has no decimals, if not it will be float.
+        integer (bool): affects the type of the seconds. If set to true, seconds will always be
+            int. If set to False, seconds will always be float. If not set (integer=None),
+            seconds will be int if it has no decimals, if not it will be float.
         language (str): language to use.
     """
 

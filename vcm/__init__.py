@@ -10,7 +10,7 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama, Fore
 
-from vcd.exceptions import LoginError
+from .exceptions import LoginError
 from ._requests import Downloader, Connection
 from ._threading import start_workers
 from .credentials import Credentials
@@ -48,7 +48,6 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
         no_killer (bool): desactivate Killer thread.
 
     """
-    logger = logging.getLogger(__name__)
     logger.debug('Finding subjects')
 
     threads = start_workers(queue, nthreads, no_killer=no_killer)

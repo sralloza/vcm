@@ -85,12 +85,10 @@ class Connection:
         self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
 
         self._user_url = soup.find('span', id='actionmenuaction-2').parent[
-                            'href'] + '&showallcourses=1'
+                             'href'] + '&showallcourses=1'
 
         if 'Usted se ha identificado' not in self._login_response.text:
             raise LoginError
-
-
 
 
 class Downloader(requests.Session):

@@ -142,7 +142,7 @@ class Killer(threading.Thread):
 
     def to_log(self, *args, **kwargs):
         output = f'<font color="blue">{self.name}: {self.status}'
-        return (output, 0)
+        return output, 0
 
     def run(self):
         print('Killer ready')
@@ -176,6 +176,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
     Args:
         queue (Queue): queue to manage the workers's tasks.
         nthreads (int): number of trheads to start.
+        no_killer (bool): if true, killer thread will not be started.
 
     Returns:
 

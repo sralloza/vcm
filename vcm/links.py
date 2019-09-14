@@ -105,8 +105,8 @@ class BaseLink:
 
         return filepath
 
-    # @staticmethod
-    def _filename_to_ext(self, filename):
+    @staticmethod
+    def _filename_to_ext(filename):
         """Returns the extension given a filename."""
         return Path(filename).suffix[1:]
 

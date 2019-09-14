@@ -11,7 +11,7 @@ class LogoutError(VcdError):
 
 
 class DownloaderError(VcdError):
-    "Downloader error."
+    """Downloader error."""
 
 
 class CredentialError(VcdError):
