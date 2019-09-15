@@ -1,39 +1,18 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
 import logging
-import os
 import re
 import time
-from logging.handlers import RotatingFileHandler
 from queue import Queue
-from threading import current_thread
 
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama, Fore
 
-from .core._requests import Downloader, Connection
-from .core._threading import start_workers
-from .credentials import Credentials
-from .core.exceptions import LoginError
-from .core.options import Options
-from .status_server import runserver
+from vcm.core._requests import Connection
+from vcm.core._threading import start_workers
+from vcm.core.exceptions import LoginError
+from vcm.core.status_server import runserver
+from vcm.core.time_operations import seconds_to_str
 from .subject import Subject
-from .time_operations import seconds_to_str
-
-if os.environ.get('TESTING') is None:
-    should_roll_over = os.path.isfile(Options.LOG_PATH)
-
-    fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
-    handler = RotatingFileHandler(filename=Options.LOG_PATH, maxBytes=2_500_000,
-                                  encoding='utf-8', backupCount=5)
-
-    current_thread().setName('MT')
-
-    if should_roll_over:
-        handler.doRollover()
-
-    logging.basicConfig(handlers=[handler, ], level=Options.LOGGING_LEVEL, format=fmt)
-
-logging.getLogger('urllib3').setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +65,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     return subjects
 
 
-def start(nthreads=None, no_killer=False):
+def download(nthreads=None, no_killer=False):
     """Starts the app.
 
     Args:
