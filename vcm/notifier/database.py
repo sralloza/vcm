@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 from vcm.core.options import Options
 
@@ -19,7 +20,9 @@ class DatabaseInterface:
     def ensure_table(self):
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS database_links (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT UNIQUE NOT NULL
+                url TEXT UNIQUE NOT NULL,
+                subject TEXT NOT NULL,
+                datetime TEXT NOT NULL
                 )""")
 
     def commit(self):
@@ -30,8 +33,9 @@ class DatabaseInterface:
         self.connection.close()
 
     def save_link(self, link):
+        data = [link.url, link.subject.name, datetime.today().strftime('%Y-%m-%d %H:%M:%S')]
         try:
-            self.cursor.execute("INSERT INTO database_links VALUES (NULL,?)", [link.url])
+            self.cursor.execute("INSERT INTO database_links VALUES (NULL,?,?,?)", data)
             return True
         except sqlite3.IntegrityError:
             return False
@@ -42,3 +46,4 @@ class DatabaseLinkInterface:
     def save(link):
         with DatabaseInterface() as connection:
             return connection.save_link(link)
+
