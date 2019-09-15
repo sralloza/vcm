@@ -14,6 +14,5 @@ logs/
 *.csv
 *.ini
 *.ini
-*.txt
 
 TODO.MD
