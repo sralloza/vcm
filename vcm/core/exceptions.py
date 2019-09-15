@@ -44,3 +44,7 @@ class InvalidLanguageError(VcmError):
 
 class OptionError(VcmError):
     """Option error."""
+
+
+class InvalidStateError(VcmError):
+    """Invalid state error."""
