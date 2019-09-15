@@ -3,6 +3,7 @@ from typing import List, Union
 
 from vcm.core._requests import Connection
 from vcm.core._threading import start_workers
+from vcm.core.modules import Modules
 from vcm.core.status_server import runserver
 from vcm.downloader import get_subjects
 from vcm.downloader.subject import Subject
@@ -14,7 +15,7 @@ A = Union[List[str], str]
 
 def notify(send_to: A, use_icons=True, nthreads=20):
     queue = Queue()
-    threads = start_workers(queue, nthreads)
+    threads = start_workers(queue, Modules.notify, nthreads)
     runserver(queue, threads)
 
     with Connection() as connection:

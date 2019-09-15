@@ -6,6 +6,7 @@ import time
 import webbrowser
 from queue import Queue
 
+from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
 from ._requests import DownloaderError
@@ -16,10 +17,11 @@ from .utils import getch
 class Worker(threading.Thread):
     """Special worker for vcd multithreading."""
 
-    def __init__(self, queue, *args, **kwargs):
+    def __init__(self, queue, called_from, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.logger = logging.getLogger(__name__)
+        self.called_from = Modules(called_from)
         self.queue: Queue = queue
         self.status = 'idle'
         self.timestamp = None
@@ -80,6 +82,10 @@ class Worker(threading.Thread):
             self.current_object = anything
 
             if isinstance(anything, BaseLink):
+                if self.called_from == Modules.notify:
+                    self.queue.task_done()
+                    continue
+
                 self.logger.debug('Found Link %r, processing', anything.name)
                 try:
                     anything.download()
@@ -169,7 +175,7 @@ class Killer(threading.Thread):
                 webbrowser.get(chrome_path).open_new('localhost')
 
 
-def start_workers(queue, nthreads=20, no_killer=False):
+def start_workers(queue, called_from, nthreads=20, no_killer=False):
     """Starts the wokers.
 
     Args:
@@ -191,7 +197,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
         print('Killer not started')
 
     for i in range(nthreads):
-        thread = Worker(queue, name=f'W-{i + 1:02d}', daemon=True)
+        thread = Worker(queue, called_from, name=f'W-{i + 1:02d}', daemon=True)
         thread.logger.debug('Started worker named %r', thread.name)
         thread.start()
         thread_list.append(thread)

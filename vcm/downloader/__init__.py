@@ -10,6 +10,7 @@ from colorama import init as init_colorama, Fore
 from vcm.core._requests import Connection
 from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
+from vcm.core.modules import Modules
 from vcm.core.status_server import runserver
 from vcm.core.time_operations import seconds_to_str
 from .subject import Subject
@@ -54,7 +55,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     """
     logger.debug('Finding subjects')
 
-    threads = start_workers(queue, nthreads, no_killer=no_killer)
+    threads = start_workers(queue, Modules.download, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
     subjects = get_subjects(connection, queue)
