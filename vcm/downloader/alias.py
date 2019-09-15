@@ -3,8 +3,8 @@ import json
 import os
 from threading import Semaphore
 
-from .exceptions import AliasFatalError, IdError, AliasNotFoundError
-from .options import Options
+from vcm.core.exceptions import AliasFatalError, IdError, AliasNotFoundError
+from vcm.core.options import Options
 
 
 class Events:

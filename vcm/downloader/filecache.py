@@ -1,8 +1,8 @@
 """File scanner to control file version."""
 import os
 
-from .exceptions import FileCacheError
-from .options import Options
+from vcm.core.exceptions import FileCacheError
+from vcm.core.options import Options
 
 
 class FileCache:

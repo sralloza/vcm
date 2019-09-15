@@ -11,12 +11,11 @@ import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
-from ._requests import Downloader
+from vcm.core.options import Options
+from vcm.core.results import Results
+from vcm.core.utils import secure_filename
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
-from .options import Options
-from .results import Results
-from .utils import secure_filename
 
 
 class DownloadsRecorder:
@@ -247,6 +246,7 @@ class BaseLink:
 
 class Resource(BaseLink):
     """Representation of a resource."""
+
     def __init__(self, name, url, icon_url, subject, connection, queue):
         super().__init__(name, url, icon_url, subject, connection, queue)
         self.resource_type = 'unknown'

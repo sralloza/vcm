@@ -7,9 +7,9 @@ from typing import List
 import flask
 import waitress
 
+from vcm.downloader.links import BaseLink
+from vcm.downloader.subject import Subject
 from ._threading import Worker
-from .links import BaseLink
-from .subject import Subject
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             else:
                 status = 'None'
 
-            output += f'{i+1:03d} → {status}<br>'
+            output += f'{i + 1:03d} → {status}<br>'
 
         return output
 

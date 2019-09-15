@@ -8,9 +8,9 @@ from threading import Lock
 from bs4 import BeautifulSoup
 from requests import Response
 
+from vcm.core.options import Options
 from .alias import Alias
 from .links import BaseLink, Resource, Delivery, Forum, Folder
-from .options import Options
 
 
 # pylint: disable=too-many-instance-attributes

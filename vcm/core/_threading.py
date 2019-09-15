@@ -4,12 +4,11 @@ import logging
 import threading
 import time
 import webbrowser
-
 from queue import Queue
 
+from vcm.downloader.links import BaseLink
+from vcm.downloader.subject import Subject
 from ._requests import DownloaderError
-from .links import BaseLink
-from .subject import Subject
 from .time_operations import seconds_to_str
 from .utils import getch
 
