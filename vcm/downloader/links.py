@@ -31,11 +31,12 @@ class DownloadsRecorder:
 class BaseLink:
     """Base class for Links."""
 
-    def __init__(self, name, url, subject, connection, queue):
+    def __init__(self, name, url, icon_url, subject, connection, queue):
         """
         Args:
             name (str): name of the url.
             url (str): URL of the url.
+            icon_url (str): URL of the icon.
             subject (vcd.subject.Subject): subject of the url.
             connection (vcd.requests.Downloader): connection to download resources.
             queue (Queue): queue to controll threads.
@@ -43,6 +44,7 @@ class BaseLink:
 
         self.name = name.strip()
         self.url = url
+        self._icon_url = icon_url
         self.subject = subject
         self.connection = connection
         self.queue = queue
@@ -245,9 +247,8 @@ class BaseLink:
 
 class Resource(BaseLink):
     """Representation of a resource."""
-
-    def __init__(self, name, url, subject, connection: Downloader, queue: Queue):
-        super().__init__(name, url, subject, connection, queue)
+    def __init__(self, name, url, icon_url, subject, connection, queue):
+        super().__init__(name, url, icon_url, subject, connection, queue)
         self.resource_type = 'unknown'
 
     def set_resource_type(self, new):
@@ -364,6 +365,7 @@ class Resource(BaseLink):
         name = self.soup.find('div', {'role': 'main'}).h2.text
 
         try:
+            # TODO: add icon_url
             resource = Resource(name, resource['data'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
@@ -373,6 +375,7 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('iframe', {'id': 'resourceobject'})
+            # TODO: add icon_url
             resource = Resource(name, resource['src'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
@@ -382,6 +385,7 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('div', {'class': 'resourceworkaround'})
+            # TODO: add icon_url
             resource = Resource(name, resource.a['href'], self.subject, self.connection, self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
@@ -417,6 +421,7 @@ class Folder(BaseLink):
         for container in containers:
             try:
                 url = container.a['href']
+                # TODO: add icon_url
                 resource = Resource(os.path.splitext(container.a.text)[0],
                                     url, self.subject, self.connection, self.queue)
                 resource.subfolders = self.subfolders
@@ -449,6 +454,7 @@ class Forum(BaseLink):
             themes = self.soup.findAll('td', {'class': 'topic starter'})
 
             for theme in themes:
+                # TODO: add icon_url
                 forum = Forum(theme.text, theme.a['href'], self.subject, self.connection,
                               self.queue)
 
@@ -463,6 +469,7 @@ class Forum(BaseLink):
             for attachment in attachments:
                 try:
                     # TODO PROBABLY FIXME, LIKE IMAGES
+                    # TODO: add icon_url
                     resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
                                         self.subject, self.connection, self.queue)
                     resource.subfolders = self.subfolders
@@ -481,6 +488,7 @@ class Forum(BaseLink):
                     except KeyError:
                         url = image['src']
 
+                    # TODO: add icon_url
                     resource = Resource(
                         os.path.splitext(url.split('/')[-1])[0],
                         url, self.subject, self.connection, self.queue)

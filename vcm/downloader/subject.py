@@ -11,7 +11,6 @@ from requests import Response
 from .alias import Alias
 from .links import BaseLink, Resource, Delivery, Forum, Folder
 from .options import Options
-from .utils import secure_filename
 
 
 # pylint: disable=too-many-instance-attributes
@@ -103,27 +102,24 @@ class Subject:
 
         search = self.soup.findAll('div', {'class', 'activityinstance'})
 
-        for find in search:
+        for div in search:
             try:
-                name = find.a.span.text
-                url = find.a['href']
+                name = div.a.span.text
+                url = div.a['href']
+                icon_url = div.a.img['src']
 
                 if 'resource' in url:
                     self.logger.debug('Created Resource (subject search): %r, %s', name, url)
-                    self.add_link(
-                        Resource(name, url, self, self.connection, self.queue))
+                    self.add_link(Resource(name, url, icon_url, self, self.connection, self.queue))
                 elif 'folder' in url:
                     self.logger.debug('Created Folder (subject search): %r, %s', name, url)
-                    self.add_link(
-                        Folder(name, url, self, self.connection, self.queue))
+                    self.add_link(Folder(name, url, icon_url, self, self.connection, self.queue))
                 elif 'forum' in url:
                     self.logger.debug('Created Forum (subject search): %r, %s', name, url)
-                    self.add_link(
-                        Forum(name, url, self, self.connection, self.queue))
+                    self.add_link(Forum(name, url, icon_url, self, self.connection, self.queue))
                 elif 'assign' in url:
                     self.logger.debug('Created Delivery (subject search): %r, %s', name, url)
-                    self.add_link(
-                        Delivery(name, url, self, self.connection, self.queue))
+                    self.add_link(Delivery(name, url, icon_url, self, self.connection, self.queue))
 
             except AttributeError:
                 pass

@@ -10,11 +10,11 @@ from threading import current_thread
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama, Fore
 
-from .exceptions import LoginError
-from ._requests import Downloader, Connection
-from ._threading import start_workers
+from .core._requests import Downloader, Connection
+from .core._threading import start_workers
 from .credentials import Credentials
-from .options import Options
+from .core.exceptions import LoginError
+from .core.options import Options
 from .status_server import runserver
 from .subject import Subject
 from .time_operations import seconds_to_str
@@ -38,21 +38,7 @@ logging.getLogger('urllib3').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-def find_subjects(connection, queue, nthreads=20, no_killer=False):
-    """Starts finding subjects.
-
-    Args:
-        connection (Connection): custom session with retry control.
-        queue (Queue): queue to organize threads.
-        nthreads (int): number of threads to start.
-        no_killer (bool): desactivate Killer thread.
-
-    """
-    logger.debug('Finding subjects')
-
-    threads = start_workers(queue, nthreads, no_killer=no_killer)
-    runserver(queue, threads)
-
+def get_subjects(connection, queue):
     request = connection.get(connection.user_url)
     soup = BeautifulSoup(request.text, 'html.parser')
     primary_li = soup.find_all('li', class_='contentnode')[3]
@@ -74,6 +60,25 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
         subjects.append(subject)
 
     subjects.sort(key=lambda x: x.name)
+    return subjects
+
+
+def find_subjects(connection, queue, nthreads=20, no_killer=False):
+    """Starts finding subjects.
+
+    Args:
+        connection (Connection): custom session with retry control.
+        queue (Queue): queue to organize threads.
+        nthreads (int): number of threads to start.
+        no_killer (bool): desactivate Killer thread.
+
+    """
+    logger.debug('Finding subjects')
+
+    threads = start_workers(queue, nthreads, no_killer=no_killer)
+    runserver(queue, threads)
+
+    subjects = get_subjects(connection, queue)
 
     for i, _ in enumerate(subjects):
         queue.put(subjects[i])
