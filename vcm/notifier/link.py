@@ -28,6 +28,32 @@ class IconType(Enum):
     not_id = -1
 
 
+URLS = {
+    IconType.pdf: '1OBqjLDdO7newsN8gtLkUEc61kIVsCCI2',
+    IconType.zip: '1S4lRY6iDw8uqelEkOiEdTS5kiJJPdsjV',
+    IconType.word: '1VeGEeGyDZ7VTYhzXtb_k068urpeyie7-',
+    IconType.forum: '1ChuqxOgaSkOHNrABtWEulazaQt4gG6J_',
+    IconType.page: '1c9UZxb0vqP7QtgMdit_YqO5rdIe6oLNV',
+    IconType.url: '1LPTP1oKhtXvGu3oApLBXdqHZmkJK81el',
+    IconType.assign: '1l056BB9rIuvC_2DsClt81i2VsGtPLAqN',
+    IconType.feedback: '1uZLx-knwrtI1gwL44ehvLs2wOmsO5Isd',
+    IconType.quiz: '1Wfr3ube0J8ZAn5sHSjMtzNLatFTJmT6k',
+    IconType.unkown: '12BL-MLAEv5gEd2HqusEUE7ohR1kIZdLa',
+    IconType.choice: '10KReH-TLyBPMcerOQ4J7nZ-ARzYHYIet',
+    IconType.folder: '1QBcHalK6zRx_MX7H6_zDRuuJjte9dBMj',
+    IconType.workshop: '12yclWnyEiQpyuRR4cRJAGyMJHrcJabpz',
+    IconType.avi: '1Hd3sAjz6BX6RfOBg3X5E2VZ603KsMyZj',
+    IconType.mpeg: '1BpafvF0WBvGCjLCjUruBtyzAIDkgWOXx',
+    IconType.sourcecode: '1LOYPh2Z1YWlAX6kRuYdiYY_-QsOEfuEh',
+    IconType.excel: '12THl4cPW2phdmiQ9mHAKGg_6PP_ym8iS',
+    IconType.powerpoint: '1uXo1sjW24dDokCF2u7ek_Ylq_YBezvab',
+    IconType.jpeg: '1tXp7K0uv5vGxsPeudKcGxTr0q-I2GdJs',
+}
+
+for key in URLS.keys():
+    URLS[key] = 'https://drive.google.com/uc?export=download&id=' + URLS[key]
+
+
 class NotifierLink(BaseLink):
     def __init__(self, name, url, icon_url, subject, connection, queue):
         super().__init__(name, url, icon_url, subject, connection, queue)
@@ -62,23 +88,23 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.pdf
         elif 'archive' in self._icon_url:
             self._icon_type = IconType.zip
-        elif '/forum/1566977852/icon' in self._icon_url:
+        elif '/forum' in self._icon_url:
             self._icon_type = IconType.forum
-        elif '/page/1535396818/icon' in self._icon_url:
+        elif '/page' in self._icon_url:
             self._icon_type = IconType.page
-        elif '/url/1535396818/icon' in self._icon_url:
+        elif '/url' in self._icon_url:
             self._icon_type = IconType.url
-        elif '/assign/1566977852/icon' in self._icon_url:
+        elif '/assign' in self._icon_url:
             self._icon_type = IconType.assign
-        elif '/feedback/1535396818/icon' in self._icon_url:
+        elif '/feedback' in self._icon_url:
             self._icon_type = IconType.feedback
-        elif '/quiz/1535396818/icon' in self._icon_url:
+        elif '/quiz' in self._icon_url:
             self._icon_type = IconType.quiz
-        elif '/choice/1535396818/icon' in self._icon_url:
+        elif '/choice' in self._icon_url:
             self._icon_type = IconType.choice
-        elif '/folder/1535396818/icon' in self._icon_url:
+        elif '/folder' in self._icon_url:
             self._icon_type = IconType.folder
-        elif '/workshop/1535396818/icon' in self._icon_url:
+        elif '/workshop' in self._icon_url:
             self._icon_type = IconType.workshop
 
         elif '/f/unknown' in self._icon_url:
@@ -104,66 +130,10 @@ class NotifierLink(BaseLink):
 
     @property
     def icon_url(self):
-        icon_type = self.icon_type
-        if icon_type == IconType.pdf:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1OBqjLDdO7newsN8gtLkUEc61kIVsCCI2'
-        if icon_type == IconType.zip:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1S4lRY6iDw8uqelEkOiEdTS5kiJJPdsjV'
-        if icon_type == IconType.word:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1VeGEeGyDZ7VTYhzXtb_k068urpeyie7-'
-        if icon_type == IconType.forum:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1ChuqxOgaSkOHNrABtWEulazaQt4gG6J_'
-        if icon_type == IconType.page:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1c9UZxb0vqP7QtgMdit_YqO5rdIe6oLNV'
-        if icon_type == IconType.url:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1LPTP1oKhtXvGu3oApLBXdqHZmkJK81el'
-        if icon_type == IconType.assign:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1l056BB9rIuvC_2DsClt81i2VsGtPLAqN'
-        if icon_type == IconType.feedback:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1uZLx-knwrtI1gwL44ehvLs2wOmsO5Isd'
-        if icon_type == IconType.quiz:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1Wfr3ube0J8ZAn5sHSjMtzNLatFTJmT6k'
-        if icon_type == IconType.unkown:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=12BL-MLAEv5gEd2HqusEUE7ohR1kIZdLa'
-        if icon_type == IconType.choice:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=10KReH-TLyBPMcerOQ4J7nZ-ARzYHYIet'
-        if icon_type == IconType.folder:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1QBcHalK6zRx_MX7H6_zDRuuJjte9dBMj'
-        if icon_type == IconType.workshop:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=12yclWnyEiQpyuRR4cRJAGyMJHrcJabpz'
-        if icon_type == IconType.avi:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1Hd3sAjz6BX6RfOBg3X5E2VZ603KsMyZj'
-        if icon_type == IconType.mpeg:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1BpafvF0WBvGCjLCjUruBtyzAIDkgWOXx'
-        if icon_type == IconType.sourcecode:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1LOYPh2Z1YWlAX6kRuYdiYY_-QsOEfuEh'
-        if icon_type == IconType.excel:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=12THl4cPW2phdmiQ9mHAKGg_6PP_ym8iS'
-        if icon_type == IconType.powerpoint:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1uXo1sjW24dDokCF2u7ek_Ylq_YBezvab'
-        if icon_type == IconType.jpeg:
-            return 'https://drive.google.com/uc?export=download&' \
-                   'id=1tXp7K0uv5vGxsPeudKcGxTr0q-I2GdJs'
-
-        return 'https://invalid.invalid.es'
+        try:
+            return URLS[self.icon_type]
+        except KeyError:
+            return 'https://invalid.invalid.es'
 
     def __repr__(self):
         return f'Link({self.subject!r}, {self.name!r})'
