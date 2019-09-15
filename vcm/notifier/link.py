@@ -9,7 +9,17 @@ class NotifierLink(BaseLink):
 
     @classmethod
     def from_link(cls, link: BaseLink):
-        return NotifierLink(**vars(link))
+        dir_notifier_link = ['name', 'url', 'icon_url', 'subject', 'connection', 'queue']
+        new_vars = {}
+
+        for attribute in dir_notifier_link:
+            try:
+                new_vars[attribute] = getattr(link, attribute)
+            except AttributeError:
+                pass
+
+        new_vars['icon_url'] = getattr(link, '_icon_url')
+        return NotifierLink(**new_vars)
 
     def save(self):
         return DatabaseLinkInterface.save(self)
