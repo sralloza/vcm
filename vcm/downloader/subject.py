@@ -45,11 +45,10 @@ class Subject:
         self.folder = Options.ROOT_FOLDER / self.name
         self.logger = logging.getLogger(__name__)
 
-        self.logger.debug('Created Subject(name=%r, url=%r)',
-                          self.name, self.url)
+        self.logger.debug('Created %s(name=%r, url=%r)', type(self).__name__, self.name, self.url)
 
     def __repr__(self):
-        return f'Subject(name={self.name!r}, url={self.url!r}, ' \
+        return f'{type(self).__name__}(name={self.name!r}, url={self.url!r}, ' \
             f'{len(self.notes_links)} notes links)'
 
     def __str__(self):
