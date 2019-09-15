@@ -1,46 +1,46 @@
-class VcdError(Exception):
+class VcmError(Exception):
     """Vcd error."""
 
 
-class LoginError(VcdError):
+class LoginError(VcmError):
     """Login error."""
 
 
-class LogoutError(VcdError):
+class LogoutError(VcmError):
     """Logout error."""
 
 
-class DownloaderError(VcdError):
+class DownloaderError(VcmError):
     """Downloader error."""
 
 
-class CredentialError(VcdError):
+class CredentialError(VcmError):
     """Credential error."""
 
 
-class NoCredentialsFoundError(VcdError):
+class NoCredentialsFoundError(VcmError):
     """No credentials found error."""
 
 
-class IdError(VcdError):
+class IdError(VcmError):
     """Id error."""
 
 
-class AliasNotFoundError(VcdError):
+class AliasNotFoundError(VcmError):
     """Alias not found error."""
 
 
-class AliasFatalError(VcdError):
+class AliasFatalError(VcmError):
     """Alias fatal error."""
 
 
-class FileCacheError(VcdError):
+class FileCacheError(VcmError):
     """File cache error."""
 
 
-class InvalidLanguageError(VcdError):
+class InvalidLanguageError(VcmError):
     """Invalid language error."""
 
 
-class OptionError(VcdError):
+class OptionError(VcmError):
     """Option error."""
