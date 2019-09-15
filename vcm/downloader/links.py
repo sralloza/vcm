@@ -269,7 +269,7 @@ class Resource(BaseLink):
         self.make_request()
 
         if self.response.status_code == 404:
-            self.logger.error('status code of 404 in url %r [%r]', self.url, self.name)
+            self.logger.error('state code of 404 in url %r [%r]', self.url, self.name)
             return None
 
         if 'application/pdf' in self.content_type:

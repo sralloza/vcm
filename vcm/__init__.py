@@ -20,7 +20,7 @@ if os.environ.get('TESTING') is None:
     if should_roll_over:
         handler.doRollover()
 
-    logging.basicConfig(handlers=[handler, ], level=Options.LOGGING_LEVEL, format=fmt)
+    logging.basicConfig(handlers=[handler], level=Options.LOGGING_LEVEL, format=fmt)
 
 logging.getLogger('urllib3').setLevel(logging.ERROR)
 
