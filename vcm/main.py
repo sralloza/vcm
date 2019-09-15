@@ -18,7 +18,6 @@ def main():
     notifier_parser.add_argument('--nthreads', default=20, type=int)
     notifier_parser.add_argument('--no-icons', action='store_true')
 
-
     opt = parser.parse_args()
 
     if opt.command is None:
@@ -35,6 +34,6 @@ def main():
         return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
 
     elif opt.command == 'notify':
-        return notify('sralloza@gmail.com', not(opt.no_icons), nthreads=opt.nthreads)
+        return notify('sralloza@gmail.com', not opt.no_icons, nthreads=opt.nthreads)
     else:
         return parser.error('Invalid command: %r' % opt.command)
