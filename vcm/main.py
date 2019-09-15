@@ -10,12 +10,12 @@ def main():
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
     downloader_parser = subparsers.add_parser('download')
-    downloader_parser.add_argument('--nthreads', default=None, type=int)
+    downloader_parser.add_argument('--nthreads', default=20, type=int)
     downloader_parser.add_argument('--no-killer', action='store_true')
     downloader_parser.add_argument('-d', '--debug', action='store_true')
 
     notifier_parser = subparsers.add_parser('notify')
-    notifier_parser.add_argument('--ntrheads', default=None, type=int)
+    notifier_parser.add_argument('--nthreads', default=20, type=int)
     notifier_parser.add_argument('--no-icons', action='store_true')
 
 
