@@ -81,9 +81,9 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                 thread_status += f'\t-{temp_status}<br>'
 
                 try:
-                    if thread.status == 'working':
+                    if thread.state == 'working':
                         working += 1
-                    if thread.status == 'idle':
+                    if thread.state == 'idle':
                         idle += 1
                 except AttributeError:
                     pass
@@ -119,7 +119,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return output
 
-    t = threading.Thread(name='vcd-status', target=waitress.serve, daemon=True, args=(app,),
+    t = threading.Thread(name='vcd-state', target=waitress.serve, daemon=True, args=(app,),
                          kwargs={'port': 80, 'host': '0.0.0.0', '_quiet': True,
                                  'clear_untrusted_proxy_headers': True})
     t.start()

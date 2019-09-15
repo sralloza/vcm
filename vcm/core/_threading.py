@@ -4,14 +4,52 @@ import logging
 import threading
 import time
 import webbrowser
+from enum import Enum, auto
 from queue import Queue
+from typing import Any
 
 from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
 from ._requests import DownloaderError
+from .exceptions import InvalidStateError
 from .time_operations import seconds_to_str
 from .utils import getch
+
+logger = logging.getLogger(__name__)
+
+
+class Empty:
+    pass
+
+
+class ThreadStates(Enum):
+    idle = auto()
+    working = auto()
+    killed = auto()
+    online = auto()
+
+    @staticmethod
+    def get(value):
+        try:
+            return ThreadStates(value)
+        except ValueError:
+            pass
+
+        try:
+            return ThreadStates[value]
+        except KeyError:
+            pass
+
+        raise ValueError("%r is not a valid %s" % (value, ThreadStates.__name__))
+
+
+class WorkerCodes(Enum):
+    black = 0
+    green = 1
+    orange = 2
+    red = 3
+    magenta = 4
 
 
 class Worker(threading.Thread):
@@ -20,38 +58,42 @@ class Worker(threading.Thread):
     def __init__(self, queue, called_from, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.logger = logging.getLogger(__name__)
         self.called_from = Modules(called_from)
         self.queue: Queue = queue
-        self.status = 'idle'
+        self._state = ThreadStates.idle
         self.timestamp = None
         self.current_object = None
-        self.active = True
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def active(self):
+        return self.state != ThreadStates.killed
 
     def to_log(self, integer=False):
-        color = 'black'
+        code = WorkerCodes.black
         exec_time = 0
-        status_code = 0
+
+        if self.state == ThreadStates.idle:
+            code = WorkerCodes.green
 
         if self.timestamp is not None:
             exec_time = time.time() - self.timestamp
 
-            if exec_time < 30:
-                color = 'green'
-                status_code = 1
+            if exec_time < 30 and self.state != ThreadStates.killed:
+                code = WorkerCodes.green
             elif 30 <= exec_time < 60:
-                color = "orange"
-                status_code = 2
+                code = WorkerCodes.orange
             elif 60 <= exec_time < 90:
-                color = "red"
-                status_code = 3
+                code = WorkerCodes.red
             else:
-                color = "magenta"
-                status_code = 4
+                code = WorkerCodes.magenta
 
-        status = f'<font color="{color}">{self.name}: {self.status} - '
+        status = f'<font color="{code.name}">{self.name}: {self.state.name} - '
 
-        if status_code == 4:
+        if code == WorkerCodes.magenta:
             status += f'[{seconds_to_str(exec_time, integer=integer)}] '
 
         if isinstance(self.current_object, BaseLink):
@@ -65,85 +107,99 @@ class Worker(threading.Thread):
 
         status += '</font>'
 
-        return status, status_code
+        return status, code.value
+
+    def kill(self):
+        self.set_state(ThreadStates.killed, None)
+
+    def set_state(self, state, queue_object: Any = Empty):
+        self._state = ThreadStates.get(state)
+
+        if queue_object != Empty:
+            self.current_object = queue_object
+            return
+
+        if self.state in [ThreadStates.idle, ThreadStates.killed, ThreadStates.online]:
+            self.current_object = None
+            self.timestamp = None
 
     # noinspection PyUnresolvedReferences
     def run(self):
         """Runs the thread"""
         while self.active:
-            self.status = 'idle'
-            self.logger.info('Worker %r ready to continue working', self.name)
-            anything = self.queue.get()
+            self.set_state(ThreadStates.idle)
+            logger.info('Worker %r ready to continue working', self.name)
+            queue_object = self.queue.get()
             self.timestamp = time.time()
-            self.logger.debug('%d items left in queue (%d unfinished tasks)', self.queue.qsize(),
-                              self.queue.unfinished_tasks)
+            logger.debug('%d items left in queue (%d unfinished tasks)', self.queue.qsize(),
+                         self.queue.unfinished_tasks)
 
-            self.status = 'working'
-            self.current_object = anything
+            self.set_state(ThreadStates.working, queue_object)
 
-            if isinstance(anything, BaseLink):
+            if isinstance(queue_object, BaseLink):
                 if self.called_from == Modules.notify:
+                    queue_object.subject.notes_links.append(queue_object)
+                    logger.debug('Saved link %s of subject %s', queue_object.url,
+                                 queue_object.subject)
                     self.queue.task_done()
                     continue
 
-                self.logger.debug('Found Link %r, processing', anything.name)
+                logger.debug('Found Link %r, processing', queue_object.name)
                 try:
-                    anything.download()
+                    queue_object.download()
                 except FileNotFoundError as ex:
-                    self.logger.exception('FileNotFoundError in url %s (%r)', anything.url, ex)
+                    logger.exception('FileNotFoundError in url %s (%r)', queue_object.url, ex)
                 except DownloaderError as ex:
-                    self.logger.exception('DownloaderError in url %s (%r)', anything.url, ex)
+                    logger.exception('DownloaderError in url %s (%r)', queue_object.url, ex)
 
-                self.logger.info('Worker %r completed work of Link %r', self.name, anything.name)
+                logger.info('Worker %r completed work of Link %r', self.name, queue_object.name)
                 self.queue.task_done()
 
-            elif isinstance(anything, Subject):
-                self.logger.debug('Found Subject %r, processing', anything.name)
+            elif isinstance(queue_object, Subject):
+                logger.debug('Found Subject %r, processing', queue_object.name)
                 try:
-                    anything.find_links()
+                    queue_object.find_links()
                 except DownloaderError as ex:
-                    self.logger.exception('DownloaderError in subject %s (%r)', anything.name, ex)
+                    logger.exception('DownloaderError in subject %s (%r)', queue_object.name, ex)
 
-                self.logger.info('Worker %r completed work of Subject %r', self.name, anything.name)
+                logger.info('Worker %r completed work of Subject %r', self.name, queue_object.name)
                 self.queue.task_done()
-            elif anything is None:
-                self.logger.info('Closing thread, received None')
-                self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
-                self.current_object = None
-                self.timestamp = None
-                return
-            elif anything == 'killed':
-                self.status = 'killed'
-                break
+            elif queue_object is None:
+                logger.info('Closing thread, received None')
+                return self.kill()
+            elif queue_object == ThreadStates.killed:
+                return self.kill()
+            else:
+                raise InvalidStateError('Unkown object in queue: %r' % queue_object)
 
-            self.logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
-            self.current_object = None
+            logger.info('%d unfinished tasks', self.queue.unfinished_tasks)
+            self.set_state(ThreadStates.idle)
             self.timestamp = None
 
-        # if self.status == 'killed':
-        self.timestamp = None
-        self.current_object = 'Dead thread'
+        return self.kill()
 
-        for thread in threading.enumerate():
-            if isinstance(thread, Worker):
-                self.queue.put('killed')
-                thread.status = 'killed'
-                thread.active = 0
+        # self.timestamp = None
+        # self.current_object = 'Dead thread'
+        #
+        # for thread in threading.enumerate():
+        #     if isinstance(thread, Worker):
+        #         self.queue.put(ThreadStates.killed)
+        #         thread.kill()
+        #
+        # while True:
+        #     foo = self.queue.get()
+        #     if not foo:
+        #         break
+        #     self.queue.task_done()
 
-        while True:
-            foo = self.queue.get()
-            if not foo:
-                break
-            self.queue.task_done()
-
-        exit()
+        # exit()
 
 
-class Killer(threading.Thread):
-    def __init__(self, queue):
-        super().__init__(name='Killer', daemon=True)
+class Killer(Worker):
+    def __init__(self, queue, called_from, *args, **kwargs):
+        super().__init__(queue, called_from, name='Killer', *args, **kwargs)
         self.queue = queue
-        self.status = 'online'
+        self.status = ThreadStates.online
 
     def to_log(self, *args, **kwargs):
         output = f'<font color="blue">{self.name}: {self.status}'
@@ -163,14 +219,13 @@ class Killer(threading.Thread):
 
                 for thread in threading.enumerate():
                     if isinstance(thread, Worker):
-                        thread.active = False
-                        thread.status = 'killed'
+                        thread.kill()
 
-                self.status = 'commited suicide'
+                self.kill()
                 exit(1)
 
             if real in ('w', 'o'):
-                print('Opening status server')
+                print('Opening state server')
                 chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
                 webbrowser.get(chrome_path).open_new('localhost')
 
@@ -190,7 +245,7 @@ def start_workers(queue, called_from, nthreads=20, no_killer=False):
     thread_list = []
 
     if no_killer is False:
-        killer = Killer(queue)
+        killer = Killer(queue, called_from, daemon=True)
         killer.start()
         thread_list.append(killer)
     else:
@@ -199,7 +254,7 @@ def start_workers(queue, called_from, nthreads=20, no_killer=False):
 
     for i in range(nthreads):
         thread = Worker(queue, called_from, name=f'W-{i + 1:02d}', daemon=True)
-        thread.logger.debug('Started worker named %r', thread.name)
+        logger.debug('Started worker named %r', thread.name)
         thread.start()
         thread_list.append(thread)
 
