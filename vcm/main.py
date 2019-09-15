@@ -1,21 +1,36 @@
 import argparse
 
-from . import start
+from vcm.downloader import download
+from vcm.notifier import notify
 
 
 def main():
     parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(title='commands', dest='command')
 
-    parser.add_argument('--nthreads', default=None, type=int)
-    parser.add_argument('--no-killer', action='store_true')
-    parser.add_argument('-d', '--debug', action='store_true')
+    downloader_parser = subparsers.add_parser('download')
+    downloader_parser.add_argument('--nthreads', default=None, type=int)
+    downloader_parser.add_argument('--no-killer', action='store_true')
+    downloader_parser.add_argument('-d', '--debug', action='store_true')
+
+    subparsers.add_parser('notify')
 
     opt = parser.parse_args()
 
-    if opt.debug:
-        import webbrowser
+    if opt.command is None:
+        return parser.error('Invalid use: use download or notify')
 
-        chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
-        webbrowser.get(chrome_path).open_new('localhost')
+    elif opt.command == 'download':
 
-    start(nthreads=opt.nthreads, no_killer=opt.no_killer)
+        if opt.debug:
+            import webbrowser
+
+            chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
+            webbrowser.get(chrome_path).open_new('localhost')
+
+        return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
+
+    elif opt.command == 'notify':
+        return notify('sralloza@gmail.com', True)
+    else:
+        return parser.error('Invalid command: %r' % opt.command)
