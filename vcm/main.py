@@ -5,6 +5,7 @@ from vcm.notifier import notify
 
 
 def main():
+    # TODO - Test, I don't think it works as it is supposed to
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
@@ -13,7 +14,10 @@ def main():
     downloader_parser.add_argument('--no-killer', action='store_true')
     downloader_parser.add_argument('-d', '--debug', action='store_true')
 
-    subparsers.add_parser('notify')
+    notifier_parser = subparsers.add_parser('notify')
+    notifier_parser.add_argument('--ntrheads', default=None, type=int)
+    notifier_parser.add_argument('--no-icons', action='store_true')
+
 
     opt = parser.parse_args()
 
@@ -31,6 +35,6 @@ def main():
         return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
 
     elif opt.command == 'notify':
-        return notify('sralloza@gmail.com', True)
+        return notify('sralloza@gmail.com', not(opt.no_icons), nthreads=opt.nthreads)
     else:
         return parser.error('Invalid command: %r' % opt.command)
