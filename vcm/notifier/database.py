@@ -41,4 +41,4 @@ class DatabaseLinkInterface:
     @staticmethod
     def save(link):
         with DatabaseInterface() as connection:
-            connection.save_link(link)
+            return connection.save_link(link)
