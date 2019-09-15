@@ -138,9 +138,6 @@ class Worker(threading.Thread):
 
             if isinstance(queue_object, BaseLink):
                 if self.called_from == Modules.notify:
-                    queue_object.subject.notes_links.append(queue_object)
-                    logger.debug('Saved link %s of subject %s', queue_object.url,
-                                 queue_object.subject)
                     self.queue.task_done()
                     continue
 
@@ -159,6 +156,9 @@ class Worker(threading.Thread):
                 logger.debug('Found Subject %r, processing', queue_object.name)
                 try:
                     queue_object.find_links()
+
+                    if self.called_from == Modules.download:
+                        queue_object.download_notes()
                 except DownloaderError as ex:
                     logger.exception('DownloaderError in subject %s (%r)', queue_object.name, ex)
 

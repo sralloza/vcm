@@ -124,4 +124,3 @@ class Subject:
                 pass
 
         self.logger.debug('Downloading files for subject %r', self.name)
-        self.download_notes()
