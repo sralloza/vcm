@@ -403,104 +403,87 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
-    def make_folder(self):
-        """Makes a subfolder to save the folder's links."""
-        self.append_subfolder(self.name)
-        self.create_subject_folder()
-        self.create_subfolder()
+    def __init__(self, name, url, icon_url, subject, connection, queue, id):
+        super().__init__(name, url, icon_url, subject, connection, queue)
+        self.id = id
+
+    def make_request(self):
+        """Makes the request for the Link."""
+        self.logger.debug('Making request')
+
+        data = {'id': self.id, 'sesskey': self.connection.sesskey}
+        self.response = self.connection.post(self.url, timeout=Options.TIMEOUT, data=data)
+        self.logger.debug('Response obtained [%d]', self.response.status_code)
 
     def download(self):
         """Downloads the folder."""
         self.logger.debug('Downloading folder %s', self.name)
         self.make_request()
-        self.process_request_bs4()
-        self.make_folder()
+        self.save_response_content()
 
-        containers = self.soup.findAll('span', {'class': 'fp-filename-icon'})
-
-        for container in containers:
-            try:
-                url = container.a['href']
-                # TODO: add icon_url
-                resource = Resource(os.path.splitext(container.a.text)[0],
-                                    url, self.subject, self.connection, self.queue)
-                resource.subfolders = self.subfolders
-
-                self.logger.debug('Created resource from folder: %r, %s',
-                                  resource.name, resource.url)
-                self.queue.put(resource)
-
-            except TypeError:
-                continue
-
-
-class Forum(BaseLink):
+class BaseForum(BaseLink):
     """Representation of a Forum link."""
 
     BASE_DIR = 'foros'
 
     def download(self):
         """Downloads the resources found in the forum hierarchy."""
+        raise NotImplementedError
+
+
+class ForumList(BaseForum):
+    def download(self):
         self.logger.debug('Downloading forum %s', self.name)
         self.make_request()
         self.process_request_bs4()
 
-        if len(self.subfolders) == 0 and Options.FORUMS_SUBFOLDERS:
-            self.append_subfolder('foros')
-        self.append_subfolder(self.name)
+        themes = self.soup.findAll('td', {'class': 'topic starter'})
 
-        if 'view.php' in self.url:
-            self.logger.debug('Forum is type list of themes')
-            themes = self.soup.findAll('td', {'class': 'topic starter'})
+        for theme in themes:
+            forum = ForumDiscussion(theme.text, theme.a['href'], None, self.subject,
+                                    self.connection,
+                                    self.queue)
 
-            for theme in themes:
-                # TODO: add icon_url
-                forum = Forum(theme.text, theme.a['href'], self.subject, self.connection,
-                              self.queue)
+            self.logger.debug('Created forum from forum: %r, %s', forum.name, forum.url)
+            self.queue.put(forum)
 
-                self.logger.debug('Created forum from forum: %r, %s', forum.name, forum.url)
-                self.queue.put(forum)
 
-        elif 'discuss.php' in self.url:
-            self.logger.debug('Forum is a theme discussion')
-            attachments = self.soup.findAll('div', {'class': 'attachments'})
-            images = self.soup.findAll('div', {'class': 'attachedimages'})
+class ForumDiscussion(BaseForum):
+    def download(self):
+        self.logger.debug('Downloading forum %s', self.name)
+        self.make_request()
+        self.process_request_bs4()
 
-            for attachment in attachments:
+        attachments = self.soup.findAll('div', {'class': 'attachments'})
+        images = self.soup.findAll('div', {'class': 'attachedimages'})
+
+        for attachment in attachments:
+            try:
+                resource = Resource(Path(attachment.text).suffix[1:], attachment.a['href'],
+                                    None, self.subject, self.connection, self.queue)
+                resource.subfolders = self.subfolders
+
+                self.logger.debug('Created resource from forum: %r, %s', resource.name,
+                                  resource.url)
+                self.queue.put(resource)
+            except TypeError:
+                pass
+
+        for image_container in images:
+            real_images = image_container.findAll('img')
+            for image in real_images:
                 try:
-                    # TODO PROBABLY FIXME, LIKE IMAGES
-                    # TODO: add icon_url
-                    resource = Resource(os.path.splitext(attachment.text)[0], attachment.a['href'],
-                                        self.subject, self.connection, self.queue)
-                    resource.subfolders = self.subfolders
+                    url = image['href']
+                except KeyError:
+                    url = image['src']
 
-                    self.logger.debug('Created resource from forum: %r, %s', resource.name,
-                                      resource.url)
-                    self.queue.put(resource)
-                except TypeError:
-                    pass
+                resource = Resource(Path(url.split('/')[-1]).suffix[1:], url, None,
+                                    self.subject, self.connection, self.queue)
+                resource.subfolders = self.subfolders
 
-            for image_container in images:
-                real_images = image_container.findAll('img')
-                for image in real_images:
-                    try:
-                        url = image['href']
-                    except KeyError:
-                        url = image['src']
-
-                    # TODO: add icon_url
-                    resource = Resource(
-                        os.path.splitext(url.split('/')[-1])[0],
-                        url, self.subject, self.connection, self.queue)
-                    resource.subfolders = self.subfolders
-
-                    self.logger.debug('Created resource (image) from forum: %r, %s',
-                                      resource.name, resource.url)
-                    self.queue.put(resource)
-
-        else:
-            self.logger.critical('Unkown url for forum %r. Vars: %r', self.url, vars())
-            raise RuntimeError(f'Unknown url for forum: {self.url}')
+                self.logger.debug('Created resource (image) from forum: %r, %s',
+                                  resource.name, resource.url)
+                self.queue.put(resource)
 
 
 class Delivery(BaseLink):
