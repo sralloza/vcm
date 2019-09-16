@@ -50,7 +50,7 @@ class BaseLink:
 
         self.response: Response = None
         self.soup: BeautifulSoup = None
-        self.filepath: str = None
+        self.filepath: Path = None
         self.redirect_url = None
         self.response_name = None
         self.subfolders = []
@@ -81,13 +81,13 @@ class BaseLink:
         if not self.filepath:
             self.autoset_filepath()
 
-        folder = os.path.normpath(os.path.dirname(self.filepath))
+        folder: Path = self.filepath.parent
 
-        if not os.path.isdir(folder):
-            os.makedirs(folder, exist_ok=True)
-            self.logger.debug('Created subfolder %r', folder)
+        if not folder.exists():
+            os.makedirs(folder.as_posix(), exist_ok=True)
+            self.logger.debug('Created subfolder %r', folder.as_posix())
         else:
-            self.logger.debug('Subfolder already exists %r', folder)
+            self.logger.debug('Subfolder already exists %r', folder.as_posix())
 
     @staticmethod
     def _process_filename(filepath: str):
@@ -130,7 +130,7 @@ class BaseLink:
         except KeyError:
             pass
 
-        self.response_name = os.path.basename(self.url)
+        self.response_name = Path(self.url).name
         return self._filename_to_ext(self.response_name) or 'ukn'
 
     def create_subject_folder(self):
@@ -183,8 +183,8 @@ class BaseLink:
 
         temp_filepath /= filename
 
-        self.filepath = Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
-                                            temp_filepath.as_posix())
+        self.filepath = Path(Alias.real_to_alias(sha1(self.url.encode()).hexdigest(),
+                                                 temp_filepath.as_posix()))
 
         self.logger.debug('Set filepath: %r', self.filepath)
 
@@ -232,16 +232,14 @@ class BaseLink:
             Results.print_new(f'New file: {self.filepath}')
 
         try:
-            with open(self.filepath, 'wb') as file_handler:
+            with self.filepath.open('wb') as file_handler:
                 file_handler.write(self.response.content)
             self.logger.debug('File downloaded and saved: %s', self.filepath)
-            DownloadsRecorder.write('Downloaded %s -- %s', self.subject.name,
-                                    os.path.basename(self.filepath))
+            DownloadsRecorder.write('Downloaded %s -- %s', self.subject.name, self.filepath.name)
         except PermissionError:
             self.logger.warning('File couldn\'t be downloaded due to permission error: %s',
-                                os.path.basename(self.filepath))
-            self.logger.warning('Permission error %s -- %s', self.subject.name,
-                                os.path.basename(self.filepath))
+                                self.filepath.name)
+            self.logger.warning('Permission error %s -- %s', self.subject.name, self.filepath.name)
 
 
 class Resource(BaseLink):
@@ -506,7 +504,7 @@ class Delivery(BaseLink):
         containers = self.soup.findAll('a', {'target': '_blank'})
 
         for container in containers:
-            resource = Resource(os.path.splitext(container.text)[0], container['href'],
+            resource = Resource(Path(container.text).suffix[1:], container['href'], None,
                                 self.subject, self.connection, self.queue)
             resource.subfolders = self.subfolders
 
