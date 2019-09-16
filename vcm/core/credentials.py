@@ -5,6 +5,7 @@ from getpass import getpass
 
 from colorama import Fore
 
+from vcm import Options
 from .exceptions import CredentialError
 
 
@@ -26,7 +27,7 @@ class StudentCredentials:
 
 class Credentials:
     """Credentials manager."""
-    path = os.path.expanduser("~") + '/vcd-credentials.ini'
+    path = Options.CREDENTIALS_PATH
 
     def __init__(self, _auto=False):
         self._auto = _auto
