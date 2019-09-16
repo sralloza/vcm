@@ -23,7 +23,8 @@ class Options:
 
     DATABASE_PATH: Path = ROOT_FOLDER / 'links.db'
 
-    _CONFIG_PATH = Path.home() / 'vcd-config.ini'
+    CONFIG_PATH = Path.home() / 'vcd-config.ini'
+    CREDENTIALS_PATH = Path.home() / 'vcd-credentials.ini'
 
     @staticmethod
     def ensure_files():
