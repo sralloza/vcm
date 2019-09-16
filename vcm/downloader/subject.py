@@ -10,7 +10,7 @@ from requests import Response
 
 from vcm.core.options import Options
 from .alias import Alias
-from .links import BaseLink, Resource, Delivery, Forum, Folder
+from .links import BaseLink, Resource, Delivery, Folder, ForumList
 
 
 # pylint: disable=too-many-instance-attributes
@@ -99,23 +99,34 @@ class Subject:
         _ = [x.extract() for x in self.soup.findAll('span', {'class': 'accesshide'})]
         _ = [x.extract() for x in self.soup.findAll('div', {'class': 'mod-indent'})]
 
-        search = self.soup.findAll('div', {'class', 'activityinstance'})
+        search = self.soup.findAll('li', class_='activity')
 
-        for div in search:
+        for li in search:
             try:
-                name = div.a.span.text
-                url = div.a['href']
-                icon_url = div.a.img['src']
+                div = li.find('div', class_='activityinstance')
+                id_ = None
+
+                if not div:  # Folder
+                    div = li.find('div', class_='singlebutton')
+                    name = li.find('span', class_='fp-filename').text
+                    url = div.form['action']
+                    id_ = div.find('input', {'name': 'id'})['value']
+                    icon_url = li.find('span', class_='fp-icon').img['src']
+                else:
+                    name = div.a.span.text
+                    url = div.a['href']
+                    icon_url = div.a.img['src']
 
                 if 'resource' in url:
                     self.logger.debug('Created Resource (subject search): %r, %s', name, url)
                     self.add_link(Resource(name, url, icon_url, self, self.connection, self.queue))
                 elif 'folder' in url:
                     self.logger.debug('Created Folder (subject search): %r, %s', name, url)
-                    self.add_link(Folder(name, url, icon_url, self, self.connection, self.queue))
+                    self.add_link(
+                        Folder(name, url, icon_url, self, self.connection, self.queue, id_))
                 elif 'forum' in url:
                     self.logger.debug('Created Forum (subject search): %r, %s', name, url)
-                    self.add_link(Forum(name, url, icon_url, self, self.connection, self.queue))
+                    self.add_link(ForumList(name, url, icon_url, self, self.connection, self.queue))
                 elif 'assign' in url:
                     self.logger.debug('Created Delivery (subject search): %r, %s', name, url)
                     self.add_link(Delivery(name, url, icon_url, self, self.connection, self.queue))

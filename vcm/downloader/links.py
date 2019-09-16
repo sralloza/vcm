@@ -35,7 +35,7 @@ class BaseLink:
         Args:
             name (str): name of the url.
             url (str): URL of the url.
-            icon_url (str): URL of the icon.
+            icon_url (str or None): URL of the icon.
             subject (vcd.subject.Subject): subject of the url.
             connection (vcd.requests.Downloader): connection to download resources.
             queue (Queue): queue to controll threads.
@@ -365,8 +365,8 @@ class Resource(BaseLink):
         name = self.soup.find('div', {'role': 'main'}).h2.text
 
         try:
-            # TODO: add icon_url
-            resource = Resource(name, resource['data'], self.subject, self.connection, self.queue)
+            resource = Resource(name, resource['data'], None, self.subject, self.connection,
+                                self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -375,8 +375,8 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('iframe', {'id': 'resourceobject'})
-            # TODO: add icon_url
-            resource = Resource(name, resource['src'], self.subject, self.connection, self.queue)
+            resource = Resource(name, resource['src'], None, self.subject, self.connection,
+                                self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
@@ -385,8 +385,8 @@ class Resource(BaseLink):
 
         try:
             resource = self.soup.find('div', {'class': 'resourceworkaround'})
-            # TODO: add icon_url
-            resource = Resource(name, resource.a['href'], self.subject, self.connection, self.queue)
+            resource = Resource(name, resource.a['href'], None, self.subject, self.connection,
+                                self.queue)
             self.logger.debug('Created resource from HTML: %r, %s', resource.name, resource.url)
             self.subject.queue.put(resource)
             return
