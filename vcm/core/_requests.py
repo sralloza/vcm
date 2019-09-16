@@ -73,6 +73,7 @@ class Connection:
         logger.debug('Login token: %s', login_token)
 
         user = Credentials.get()
+        logger.info('Logging in with user %r', user.username)
 
         self._login_response = self.post(
             'https://campusvirtual.uva.es/login/index.php',
@@ -81,14 +82,17 @@ class Connection:
                 'logintoken': login_token
             })
 
-        soup = BeautifulSoup(self._login_response.text, 'html.parser')
-        self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
+        del user
 
-        self._user_url = soup.find('span', id='actionmenuaction-2').parent[
-                             'href'] + '&showallcourses=1'
+        soup = BeautifulSoup(self._login_response.text, 'html.parser')
 
         if 'Usted se ha identificado' not in self._login_response.text:
             raise LoginError
+
+        self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
+
+        self._user_url = soup.find('a', {'aria-labelledby':'actionmenuaction-2'})[
+                             'href'] + '&showallcourses=1'
 
 
 class Downloader(requests.Session):
