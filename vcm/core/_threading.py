@@ -8,6 +8,7 @@ from enum import Enum, auto
 from queue import Queue
 from typing import Any
 
+from vcm import Options
 from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
@@ -55,10 +56,10 @@ class WorkerCodes(Enum):
 class Worker(threading.Thread):
     """Special worker for vcd multithreading."""
 
-    def __init__(self, queue, called_from, *args, **kwargs):
+    def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.called_from = Modules(called_from)
+        self.called_from = Options.get_module()
         self.queue: Queue = queue
         self._state = ThreadStates.idle
         self.timestamp = None
@@ -196,13 +197,13 @@ class Worker(threading.Thread):
 
 
 class Killer(Worker):
-    def __init__(self, queue, called_from, *args, **kwargs):
-        super().__init__(queue, called_from, name='Killer', *args, **kwargs)
+    def __init__(self, queue, *args, **kwargs):
+        super().__init__(queue, name='Killer', *args, **kwargs)
         self.queue = queue
         self.status = ThreadStates.online
 
     def to_log(self, *args, **kwargs):
-        output = f'<font color="blue">{self.name}: {self.status}'
+        output = f'<font color="blue">{self.name}: {self.status.name}'
         return output, 0
 
     def run(self):
@@ -230,7 +231,7 @@ class Killer(Worker):
                 webbrowser.get(chrome_path).open_new('localhost')
 
 
-def start_workers(queue, called_from, nthreads=20, no_killer=False):
+def start_workers(queue, nthreads=20, no_killer=False):
     """Starts the wokers.
 
     Args:
@@ -245,15 +246,15 @@ def start_workers(queue, called_from, nthreads=20, no_killer=False):
     thread_list = []
 
     if no_killer is False:
-        killer = Killer(queue, called_from, daemon=True)
+        killer = Killer(queue, daemon=True)
         killer.start()
         thread_list.append(killer)
     else:
-        if called_from == Modules.download:
+        if Options.get_module() == Modules.download:
             print('Killer not started')
 
     for i in range(nthreads):
-        thread = Worker(queue, called_from, name=f'W-{i + 1:02d}', daemon=True)
+        thread = Worker(queue, name=f'W-{i + 1:02d}', daemon=True)
         logger.debug('Started worker named %r', thread.name)
         thread.start()
         thread_list.append(thread)

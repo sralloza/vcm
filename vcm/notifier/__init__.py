@@ -3,6 +3,7 @@ import time
 from queue import Queue
 from typing import List, Union
 
+from vcm import Options
 from vcm.core._requests import Connection
 from vcm.core._threading import start_workers
 from vcm.core.modules import Modules
@@ -20,8 +21,10 @@ logger = logging.getLogger(__name__)
 
 def notify(send_to: A, use_icons=True, nthreads=20):
     initial_time = time.time()
+
+    Options.set_module(Modules.notify)
     queue = Queue()
-    threads = start_workers(queue, Modules.notify, nthreads, no_killer=True)
+    threads = start_workers(queue, nthreads, no_killer=True)
     runserver(queue, threads)
 
     with Connection() as connection:

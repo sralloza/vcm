@@ -7,6 +7,7 @@ from queue import Queue
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama, Fore
 
+from vcm import Options
 from vcm.core._requests import Connection
 from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
@@ -55,7 +56,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     """
     logger.debug('Finding subjects')
 
-    threads = start_workers(queue, Modules.download, nthreads, no_killer=no_killer)
+    threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
 
     subjects = get_subjects(connection, queue)
@@ -74,6 +75,7 @@ def download(nthreads=None, no_killer=False):
         no_killer (bool): desactivate Killer thread.
     """
 
+    Options.set_module(Modules.download)
     init_colorama()
 
     if not nthreads:
