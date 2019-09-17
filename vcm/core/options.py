@@ -22,6 +22,7 @@ class Options:
     FORUMS_SUBFOLDERS = True
 
     DATABASE_PATH: Path = ROOT_FOLDER / 'links.db'
+    USE_BASE64_ICONS = False
 
     CONFIG_PATH = Path.home() / 'vcd-config.ini'
     CREDENTIALS_PATH = Path.home() / 'vcd-credentials.ini'

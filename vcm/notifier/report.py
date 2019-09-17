@@ -2,6 +2,7 @@ import logging
 import platform
 from typing import Union, List
 
+from vcm import Options
 from vcm.downloader.subject import Subject
 from vcm.notifier.subject import NotifierSubject
 
@@ -57,11 +58,14 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
         for link in subject.new_links:
             message += '<ul>'
             if use_icons:
-                message += (
-                    '<li style="list-style: none;">'
-                    f'<img src="{link.icon_url}" width="24" '
-                    'height="24" style="margin-bottom: -0.5em;">'
-                )
+                message += '<li style="list-style: none;">'
+
+                if Options.USE_BASE64_ICONS:
+                    message += f"<img src='data:image/png;base64,{link.icon_data_64}' width='24' "
+                else:
+                    message += f'<img src="{link.icon_url}" width="24" '
+
+                message += 'height="24" style="margin-bottom: -0.5em;">'
 
                 # if link.is_teluva:
                 #     message += (
