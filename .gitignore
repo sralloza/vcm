@@ -10,7 +10,6 @@ logs/
 *.log
 *.cmd
 *.old
-*.json
 *.csv
 *.ini
 *.ini

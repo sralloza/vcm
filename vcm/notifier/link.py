@@ -1,5 +1,8 @@
+import json
 from enum import Enum, auto
+from pathlib import Path
 
+from vcm import Options
 from vcm.downloader.links import BaseLink
 from vcm.notifier.database import DatabaseLinkInterface
 
@@ -27,6 +30,14 @@ class IconType(Enum):
 
     not_id = -1
 
+base64path =  Path(__file__).parent / 'base64.json'
+
+with base64path.open() as f:
+    data = json.load(f)
+    data["not_id"] = dat
+
+IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
+del data
 
 URLS = {
     IconType.pdf: '1OBqjLDdO7newsN8gtLkUEc61kIVsCCI2',
@@ -134,6 +145,11 @@ class NotifierLink(BaseLink):
             return URLS[self.icon_type]
         except KeyError:
             return 'https://invalid.invalid.es'
+
+    @property
+    def icon_data_64(self):
+        # return Path(f'base64/{self.icon_type.name}').read_text()
+        return IMAGE_DATA[self.icon_type]
 
     def __repr__(self):
         return f'Link({self.subject!r}, {self.name!r})'
