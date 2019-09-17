@@ -434,6 +434,7 @@ class Folder(BaseLink):
         self.make_request()
         self.save_response_content()
 
+
 class BaseForum(BaseLink):
     """Representation of a Forum link."""
 
@@ -474,7 +475,7 @@ class ForumDiscussion(BaseForum):
 
         for attachment in attachments:
             try:
-                resource = Resource(Path(attachment.text).suffix[1:], attachment.a['href'],
+                resource = Resource(Path(attachment.text).stem, attachment.a['href'],
                                     None, self.subject, self.connection, self.queue)
                 resource.subfolders = self.subfolders
 
@@ -492,7 +493,7 @@ class ForumDiscussion(BaseForum):
                 except KeyError:
                     url = image['src']
 
-                resource = Resource(Path(url.split('/')[-1]).suffix[1:], url, None,
+                resource = Resource(Path(url).stem, url, None,
                                     self.subject, self.connection, self.queue)
                 resource.subfolders = self.subfolders
 
@@ -523,7 +524,7 @@ class Delivery(BaseLink):
         containers = self.soup.findAll('a', {'target': '_blank'})
 
         for container in containers:
-            resource = Resource(Path(container.text).suffix[1:], container['href'], None,
+            resource = Resource(Path(container.text).stem, container['href'], None,
                                 self.subject, self.connection, self.queue)
             resource.subfolders = self.subfolders
 
