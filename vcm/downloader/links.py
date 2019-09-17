@@ -221,6 +221,9 @@ class BaseLink(_Notify):
         if self.filepath is None:
             self.autoset_filepath()
 
+        if Options.get_module() == Modules.notify:
+            return
+
         self.create_subject_folder()
         self.create_subfolder()
 

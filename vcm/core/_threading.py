@@ -138,9 +138,9 @@ class Worker(threading.Thread):
             self.set_state(ThreadStates.working, queue_object)
 
             if isinstance(queue_object, BaseLink):
-                if self.called_from == Modules.notify:
-                    self.queue.task_done()
-                    continue
+                # if self.called_from == Modules.notify:
+                #     self.queue.task_done()
+                #     continue
 
                 logger.debug('Found Link %r, processing', queue_object.name)
                 try:
