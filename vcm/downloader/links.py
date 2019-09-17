@@ -27,7 +27,15 @@ class DownloadsRecorder:
             fh.write(something % args + '\n')
 
 
-class BaseLink:
+class _Notify(ABC):
+    _NOTIFY = False
+
+    @property
+    def notify(self):
+        return self._NOTIFY
+
+
+class BaseLink(_Notify):
     """Base class for Links."""
 
     def __init__(self, name, url, icon_url, subject, connection, queue):
