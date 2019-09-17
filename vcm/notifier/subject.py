@@ -17,7 +17,8 @@ class NotifierSubject(Subject):
     @classmethod
     def from_subject(cls, subject: Subject):
         ns = NotifierSubject(subject.name, subject.url, subject.connection, subject.queue)
-        ns.notes_links = subject.notes_links
+        ns.notes_links = [x for x in subject.notes_links if x.notify]
+        logger.debug('%d - %d', len(subject.notes_links), len(ns.notes_links))
         ns.determine_new_links()
         return ns
 
