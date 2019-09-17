@@ -13,7 +13,7 @@ class Command(Enum):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--show-config', action='store_true')
+    parser.add_argument('-sc', '--show-config', action='store_true')
 
     subparsers = parser.add_subparsers(title='commands', dest='command')
 
@@ -30,11 +30,15 @@ def main():
 
     if opt.show_config:
         data = ['root_folder', 'logs_folder', 'logging_level', 'database_path', 'config_path',
-                'credentials_path']
+                'credentials_path', 'use_base64_icons']
         data.sort()
-        message = '\n'.join(
-            ['%s: %s' % (x.replace('_', ' ').strip(), getattr(Options, x.upper())) for x in data])
 
+        template = '%%-%ds: %%s' % (max([len(x) for x in data]) + 1)
+
+        def get_info(x):
+            return x.replace('_', ' ').strip().capitalize(), getattr(Options, x.upper())
+
+        message = '\n'.join([template % get_info(x) for x in data])
         exit(message)
 
     try:
