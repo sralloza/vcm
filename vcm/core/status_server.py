@@ -9,7 +9,7 @@ import waitress
 
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
-from ._threading import Worker
+from ._threading import Worker, ThreadStates
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                     clearInterval(interval);
                     if (alerted == false) {
                         alerted = true;
-                        //alert("VCD ha terminado la ejecución");
+                        //alert("VCM ha terminado la ejecución");
                         }
                     }
                 );
@@ -81,9 +81,9 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                 thread_status += f'\t-{temp_status}<br>'
 
                 try:
-                    if thread.state == 'working':
+                    if thread.state == ThreadStates.working:
                         working += 1
-                    if thread.state == 'idle':
+                    if thread.state == ThreadStates.idle:
                         idle += 1
                 except AttributeError:
                     pass
@@ -102,11 +102,11 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return flask.Response(feed(), mimetype='text')
 
+    # noinspection PyUnresolvedReferences
     @app.route('/queue')
     def view_queue():
         output = f'<title>Queue content ({len(queue.queue)} remaining)</title>'
         output += f'<h1>Queue content ({len(queue.queue)} remaining)</h1>'
-        # noinspection PyUnresolvedReferences
         for i, elem in enumerate(list(queue.queue)):
             if isinstance(elem, BaseLink):
                 status = f'{elem.subject.name} → {elem.name}'

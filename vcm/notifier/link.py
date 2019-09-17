@@ -34,7 +34,7 @@ base64path =  Path(__file__).parent / 'base64.json'
 
 with base64path.open() as f:
     data = json.load(f)
-    data["not_id"] = dat
+    data["not_id"] = data["unkown"]
 
 IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
 del data
