@@ -4,6 +4,7 @@ import os
 import random
 import warnings
 from _sha1 import sha1
+from abc import ABC
 from pathlib import Path
 from queue import Queue
 
@@ -11,6 +12,7 @@ import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
+from vcm.core.modules import Modules
 from vcm.core.options import Options
 from vcm.core.results import Results
 from vcm.core.utils import secure_filename
@@ -253,6 +255,8 @@ class BaseLink(_Notify):
 class Resource(BaseLink):
     """Representation of a resource."""
 
+    _NOTIFY = True
+
     def __init__(self, name, url, icon_url, subject, connection, queue):
         super().__init__(name, url, icon_url, subject, connection, queue)
         self.resource_type = 'unknown'
@@ -409,9 +413,9 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
-    def __init__(self, name, url, icon_url, subject, connection, queue, id):
+    def __init__(self, name, url, icon_url, subject, connection, queue, id_):
         super().__init__(name, url, icon_url, subject, connection, queue)
-        self.id = id
+        self.id = id_
 
     def make_request(self):
         """Makes the request for the Link."""
@@ -455,6 +459,8 @@ class ForumList(BaseForum):
 
 
 class ForumDiscussion(BaseForum):
+    _NOTIFY = True
+
     def download(self):
         self.logger.debug('Downloading forum %s', self.name)
         self.make_request()
@@ -494,6 +500,8 @@ class ForumDiscussion(BaseForum):
 
 class Delivery(BaseLink):
     """Representation of a delivery link."""
+
+    _NOTIFY = True
 
     def make_subfolder(self):
         """Makes a subfolder to save the folder's links."""
