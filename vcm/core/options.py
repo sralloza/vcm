@@ -1,5 +1,6 @@
 import logging
 import re
+import types
 from pathlib import Path
 
 from colorama import init
@@ -41,6 +42,21 @@ class Options:
     @staticmethod
     def get_module():
         return Options._MODULE
+
+    @staticmethod
+    def list():
+        output = []
+        for e in dir(Options):
+            if e.startswith('_'):
+                continue
+
+            real = getattr(Options, e)
+
+            if isinstance(real, types.FunctionType):
+                continue
+
+            output.append(e)
+        return output
 
 
 Options.ensure_files()

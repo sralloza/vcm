@@ -29,8 +29,7 @@ def main():
     opt = parser.parse_args()
 
     if opt.show_config:
-        data = ['root_folder', 'logs_folder', 'logging_level', 'database_path', 'config_path',
-                'credentials_path', 'use_base64_icons']
+        data = Options.list()
         data.sort()
 
         template = '%%-%ds: %%s' % (max([len(x) for x in data]) + 1)
