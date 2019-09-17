@@ -4,12 +4,12 @@ from pathlib import Path
 
 from colorama import init
 
+from vcm.core.modules import Modules
+
 init()
 
 
 class Options:
-    _LOADED = False
-
     PRODUCTION = False
     FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
 
@@ -26,10 +26,20 @@ class Options:
     CONFIG_PATH = Path.home() / 'vcd-config.ini'
     CREDENTIALS_PATH = Path.home() / 'vcd-credentials.ini'
 
+    _MODULE = Modules.undefined
+
     @staticmethod
     def ensure_files():
         Options.ROOT_FOLDER.mkdir(exist_ok=True)
         Options.LOGS_FOLDER.mkdir(exist_ok=True)
+
+    @staticmethod
+    def set_module(module):
+        Options._MODULE = Modules(module)
+
+    @staticmethod
+    def get_module():
+        return Options._MODULE
 
 
 Options.ensure_files()
