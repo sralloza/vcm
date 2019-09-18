@@ -120,6 +120,12 @@ def exception_exit(exception, to_stderr=False, red=True):
 
 
 @decorator
+def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
+    try:
+        return func(*args, **kwargs)
+    except Exception as exc:
+        return exception_exit(exc, to_stderr=to_stderr, red=red)
+
 
 @decorator
 def timing(func, name=None, level=logging.INFO, *args, **kwargs):
