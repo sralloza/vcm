@@ -16,6 +16,7 @@ screen."""
         return self.impl()
 
 
+# noinspection PyUnresolvedReferences
 class _GetchUnix:
     def __init__(self):
         import tty
@@ -35,6 +36,7 @@ class _GetchUnix:
         return ch
 
 
+# noinspection PyUnresolvedReferences
 class _GetchWindows:
     def __init__(self):
         import msvcrt
@@ -71,4 +73,30 @@ def secure_filename(filename):
 
 class Patterns:
     FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
+
+
+def exception_exit(exception):
+    """Exists the progam showing an exception.
+
+    Args:
+        exception: Exception to show. Must hinherit `Exception`
+
+    Raises:
+        TypeError: if exception is not a subclass of Exception.
+
+    """
+
+    raise_exception = False
+
+    try:
+        if not issubclass(exception, Exception):
+            raise_exception = True
+    except TypeError:
+        if not isinstance(exception, Exception):
+            raise_exception = True
+
+    if raise_exception:
+        raise TypeError('exception should be a subclass of Exception')
+
+    exit('%s: %s' % (exception.__class__.__name__, ', '.join(exception.args)))
 
