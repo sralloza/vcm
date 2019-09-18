@@ -48,3 +48,7 @@ class OptionError(VcmError):
 
 class InvalidStateError(VcmError):
     """Invalid state error."""
+
+
+class ConfigError(VcmError):
+    """Config error."""
