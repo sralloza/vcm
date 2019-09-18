@@ -29,16 +29,8 @@ def main():
     opt = parser.parse_args()
 
     if opt.show_config:
-        data = Options.list()
-        data.sort()
-
-        template = '%%-%ds: %%s' % (max([len(x) for x in data]) + 1)
-
-        def get_info(x):
-            return x.replace('_', ' ').strip().capitalize(), getattr(Options, x.upper())
-
-        message = '\n'.join([template % get_info(x) for x in data])
-        exit(message)
+        print(Options.to_string())
+        exit(0)
 
     try:
         opt.command = Command(opt.command)
