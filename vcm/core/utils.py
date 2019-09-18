@@ -1,5 +1,13 @@
+import logging
 import os
 import re
+import time
+
+from decorator import decorator
+
+from vcm.core.time_operations import seconds_to_str
+
+logger = logging.getLogger(__name__)
 
 
 class _Getch:
@@ -100,3 +108,14 @@ def exception_exit(exception):
 
     exit('%s: %s' % (exception.__class__.__name__, ', '.join(exception.args)))
 
+
+@decorator
+
+@decorator
+def timing(func, name=None, level=logging.INFO, *args, **kwargs):
+    name = name or func.__name__
+    t0 = time.time()
+    result = func(*args, **kwargs)
+    delta_t = time.time() - t0
+    logger.log(level, '%s executed in %s', name, seconds_to_str(delta_t))
+    return result

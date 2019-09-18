@@ -1,7 +1,6 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
 import logging
 import re
-import time
 from queue import Queue
 
 from bs4 import BeautifulSoup
@@ -13,7 +12,7 @@ from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
 from vcm.core.modules import Modules
 from vcm.core.status_server import runserver
-from vcm.core.time_operations import seconds_to_str
+from vcm.core.utils import timing
 from .subject import Subject
 
 logger = logging.getLogger(__name__)
@@ -37,8 +36,8 @@ def get_subjects(connection, queue):
             continue
 
         logger.debug('Assembling subject %r', name)
-        subject = Subject(name, subject_url, connection, queue)
-        subjects.append(subject)
+        _subject = Subject(name, subject_url, connection, queue)
+        subjects.append(_subject)
 
     subjects.sort(key=lambda x: x.name)
     return subjects
@@ -67,6 +66,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     return subjects
 
 
+@timing(name='VCM downloader')
 def download(nthreads=None, no_killer=False):
     """Starts the app.
 
@@ -81,7 +81,6 @@ def download(nthreads=None, no_killer=False):
     if not nthreads:
         nthreads = 50
 
-    initial_time = time.time()
     logger.info('STARTING APP')
     logger.debug('Starting queue')
     queue = Queue()
@@ -96,6 +95,3 @@ def download(nthreads=None, no_killer=False):
             queue.join()
     except LoginError:
         exit(Fore.RED + 'Login not correct' + Fore.RESET)
-
-    final_time = time.time() - initial_time
-    logger.info('VCM downloader executed in %s', seconds_to_str(final_time))
