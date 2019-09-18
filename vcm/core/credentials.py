@@ -78,7 +78,7 @@ class Credentials:
         for person in self.credentials:
             config[person.alias] = {'username': person.username, 'password': person.password}
 
-        with open(self.path, 'wt', encoding='utf-8') as fh:
+        with self.path.open('wt') as fh:
             config.write(fh)
 
     @staticmethod
