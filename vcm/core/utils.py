@@ -3,6 +3,7 @@ import os
 import re
 import time
 
+from colorama import Fore
 from decorator import decorator
 
 from vcm.core.time_operations import seconds_to_str
@@ -83,7 +84,7 @@ class Patterns:
     FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
 
 
-def exception_exit(exception):
+def exception_exit(exception, to_stderr=False, red=True):
     """Exists the progam showing an exception.
 
     Args:
@@ -106,7 +107,16 @@ def exception_exit(exception):
     if raise_exception:
         raise TypeError('exception should be a subclass of Exception')
 
-    exit('%s: %s' % (exception.__class__.__name__, ', '.join(exception.args)))
+    message = '%s: %s' % (exception.__class__.__name__, ', '.join(exception.args))
+
+    if red:
+        message = Fore.RED + message + Fore.RESET
+
+    if to_stderr:
+        return exit(message)
+    print(message)
+    return exit(-1)
+
 
 
 @decorator
