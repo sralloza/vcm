@@ -15,7 +15,7 @@ from requests import Response
 from vcm.core.modules import Modules
 from vcm.core.options import Options
 from vcm.core.results import Results
-from vcm.core.utils import secure_filename
+from vcm.core.utils import secure_filename, Patterns
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
 
@@ -135,7 +135,7 @@ class BaseLink(_Notify):
 
         try:
             # unidecode.unidecode is used to remove accents.
-            self.response_name = Options.FILENAME_PATTERN.search(self.content_disposition).group(1)
+            self.response_name = Patterns.FILENAME_PATTERN.search(self.content_disposition).group(1)
             return self._filename_to_ext(self.response_name)
         except KeyError:
             pass

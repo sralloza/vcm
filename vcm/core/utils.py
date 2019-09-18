@@ -67,3 +67,8 @@ def secure_filename(filename):
         filename = "_" + filename
 
     return filename
+
+
+class Patterns:
+    FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
+
