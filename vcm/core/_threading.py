@@ -12,8 +12,8 @@ from vcm import Options
 from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
-from ._requests import DownloaderError
 from .exceptions import InvalidStateError
+from .networking import DownloaderError
 from .time_operations import seconds_to_str
 from .utils import getch
 

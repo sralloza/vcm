@@ -2,7 +2,6 @@ import json
 from enum import Enum, auto
 from pathlib import Path
 
-from vcm import Options
 from vcm.downloader.links import BaseLink
 from vcm.notifier.database import DatabaseLinkInterface
 
@@ -30,7 +29,8 @@ class IconType(Enum):
 
     not_id = -1
 
-base64path =  Path(__file__).parent / 'base64.json'
+
+base64path = Path(__file__).parent / 'base64.json'
 
 with base64path.open() as f:
     data = json.load(f)
