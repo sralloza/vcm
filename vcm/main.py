@@ -16,6 +16,7 @@ def main():
     parser.add_argument('-sc', '--show-config', action='store_true')
 
     subparsers = parser.add_subparsers(title='commands', dest='command')
+    subparsers.required = True
 
     downloader_parser = subparsers.add_parser('download')
     downloader_parser.add_argument('--nthreads', default=20, type=int)

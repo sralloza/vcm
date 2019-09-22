@@ -5,6 +5,7 @@ vcd/analysis.py
 vcd/performance.py
 logs/
 .idea/
+.vscode/
 
 *.bat
 *.log
