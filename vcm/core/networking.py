@@ -91,8 +91,12 @@ class Connection:
 
         self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
 
-        self._user_url = soup.find('a', {'aria-labelledby':'actionmenuaction-2'})[
-                             'href'] + '&showallcourses=1'
+        try:
+            self._user_url = soup.find('a', {'aria-labelledby':'actionmenuaction-2'})[
+                                 'href'] + '&showallcourses=1'
+        except KeyError:
+            logger.warning('Needed to call again Connection.login()')
+            return self.login()
 
 
 class Downloader(requests.Session):
