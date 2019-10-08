@@ -28,7 +28,7 @@ class Subject:
             queue (Queue): queue to controll threads.
         """
 
-        name = name.capitalize()
+        name = name.capitalize().strip()
 
         self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
