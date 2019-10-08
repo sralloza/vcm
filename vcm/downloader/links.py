@@ -279,6 +279,12 @@ class Resource(BaseLink):
     def download(self):
         """Downloads the resource."""
         self.logger.debug('Downloading resource %s', self.name)
+        
+        url = self.redirect_url or self.url
+        if 'campusvirtual.uva.es' not in url:
+            self.logger.warning('Permision denied: URL is outside of campusvirtual.uva.es')
+            return
+
         self.make_request()
 
         if self.response.status_code == 404:
