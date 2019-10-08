@@ -1,40 +1,44 @@
-# Instrucciones de instalación
-Hay dos modos de instalación: la instalación normal y la instalación en un entorno virtual. Para ambas necesitan tener Python 3.6+ instalado. Si tienes más proyectos en Python instalador, lo mejor sería que optaras por la instalación en un entorno virtual. Si no, podrías conformarte con la instalación general.
+# How to install
+There are two diferent ways: normal instalation and virtualv instalation. Both need to have Python 3.6+ installed. If you have more python scripts running, it would be better to install it in a virual environment.
 
-Estaré trabajando en hacer el proceso de instalación más sencillo, e incluso reducirlo a un único ejecutable.
+In a future, The program will be just a folder. In a future, of course.
 
-### Instalación en un entorno virtual
+### Virtualenv install
+1. Clone this repo.
+2. Create a folder (whenever you want) and add it to the `%PATH%`. If you don't know how to achive this, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
+3. Inside that folder, create a file named `vcm.cmd`, and write this inside:
 
-1. Descargar este repositorio de github (con git clone).
-2. Crear una carpeta (donde sea) y añadirla al `%PATH%`.
-3. Dentro de dicha carpeta, crear un fichero llamado `vcd.cmd`, con este contenido:
-~~~
+```
 @echo off
-[RUTA_CARPETA_CLONADA]/venv/Scripts/python.exe [RUTA_CARPETA_CLONADA]/cli.py %*
-~~~
+"drive:/path/to/your/folder/venv/scripts/python.exe" "drive:/path/to/your/folder/cli.py %*
+```
+4. Now, inside that folder execute the command `virtualenv venv` to create the virtual environment.
+5. Execute the command `call venv/scripts/activate.bat` to activate the virtual environment.
+6. To install all the requirements, use the command `python -m pip install -r requirements.txt --upgrade`.
 
-4. A continuación, dentro de la carpeta ejecutar el comando `virtualenv venv` para crear el entorno virtual.
-5. Ejecutar el comando `"venv/scripts/activate.bat"` para activar el entorno virtual.
-6. Para instalar todas las dependencias, usar el comando `python -m pip install -r requirements.txt --upgrade`.
 
+### General install
+1. Clone this repo.
+2. Create a folder (whenever you want) and add it to the `%PATH%`. If you don't know how to achive this, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
+3. Inside that folder, create a file named `vcm.cmd`, and write this inside:
 
-### Instalación general
-1. Descargar este repositorio de github (con git clone).
-2. Crear una carpeta (donde sea) y añadirla al `%PATH%`.
-3. Dentro de dicha carpeta, crear un fichero llamado `vcd.cmd`, con este contenido:
-~~~
+```
 @echo off
-python.exe [RUTA_CARPETA_CLONADA]/cli.py %*
-~~~
-
-4. Para instalar todas las dependencias, usar el comando `python -m pip install -r requirements.txt --upgrade`.
-
-#Instrucciones de uso:
-
-Al ejecutar el programa por primera vez, se crearán los ficheros de configuración y de credenciales, que están alojados en `%USER%/vcd-config.ini` y `%USER%/vcd-credentials.ini`, respectivamente.
+"drive:/path/to/your/folder/venv/scripts/python.exe" "drive:/path/to/your/folder/cli.py %*
+```
+4. To install all the requirements, use the command `python -m pip install -r requirements.txt --upgrade`.
 
 
-##Ficheros de configuración
+# How to use
+Al execute the program for the first time, the configuration and credential files will be automatically created. You can find them in `%USER%/vcm-config.ini` and `%USER%/vcm-credentials.ini`.
+
+## Config files
+
+## Command Line Interface arguments
+
+## During the execution
+
+<!-- ## Ficheros de configuración
 `vcd-credentials.ini` tiene sólo 2 líneas, en las que se especifica el usuario y contraseña del [campus virtual](https://www.campusvirtualuva.es).
 
 `vcd-config.ini` tiene varias líneas:
@@ -55,4 +59,4 @@ El programa acepta los siguientes argumentos:
 * `-d` ó `--debug` abre el navegador la url ***localhost***. No se ha especificado antes, pero VCD viene integrado con un mecanismo de supervisión, que consiste en un servidor temporal HTTP alojado en *localhost*. Dicha URL envía información a tiempo real sobre cada hilo, y el estado en el que se encuentra. También existe la url *localhost/queue* que mostrará lo que está programado en la cola para el procesamiento.
 
 ## Durante la ejecución
-Si durante la ejecución quieres ver el estado de cada hilo, puedes abrir la url localhost o puedes pulsar la tecla `w` o `o`. Si quieres parar el programa de forma natural, pulsa la tecla `q` o `k`.
+Si durante la ejecución quieres ver el estado de cada hilo, puedes abrir la url localhost o puedes pulsar la tecla `w` o `o`. Si quieres parar el programa de forma natural, pulsa la tecla `q` o `k`. -->
