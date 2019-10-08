@@ -1,33 +1,26 @@
 # How to install
 There are two diferent ways: normal instalation and virtualv instalation. Both need to have Python 3.6+ installed. If you have more python scripts running, it would be better to install it in a virual environment.
 
-In a future, The program will be just a folder. In a future, of course.
+In the future, The program will be just a folder. In a future, of course.
 
 ### Virtualenv install
-1. Clone this repo.
-2. Create a folder (whenever you want) and add it to the `%PATH%`. If you don't know how to achive this, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
-3. Inside that folder, create a file named `vcm.cmd`, and write this inside:
+1. Create a folder whenever you want.
+2. Inside that folder we will create the virtual environment. To do so, open the terminal and type `virtualenv venv`.
+3. Activate the environment using `call venv/scripts/activate.bat`.
+4. Install the program with `python -m pip install git+https://github.com/sralloza/vcm.git@dev`
+5. Inside that folder, create another folder and add it to the `PATH`. If you don't know how to add folders to the `PATH`, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
+6. Finally, create a file named `vcm.cmd` in that 
 
 ```
 @echo off
-"drive:/path/to/your/folder/venv/scripts/python.exe" "drive:/path/to/your/folder/cli.py %*
+"drive:/path/to/your/folder/venv/scripts/python.exe" %*
 ```
-4. Now, inside that folder execute the command `virtualenv venv` to create the virtual environment.
-5. Execute the command `call venv/scripts/activate.bat` to activate the virtual environment.
-6. To install all the requirements, use the command `python -m pip install -r requirements.txt --upgrade`.
+7. Done. To use the program, type `vcm -h`
 
 
 ### General install
-1. Clone this repo.
-2. Create a folder (whenever you want) and add it to the `%PATH%`. If you don't know how to achive this, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
-3. Inside that folder, create a file named `vcm.cmd`, and write this inside:
-
-```
-@echo off
-"drive:/path/to/your/folder/venv/scripts/python.exe" "drive:/path/to/your/folder/cli.py %*
-```
-4. To install all the requirements, use the command `python -m pip install -r requirements.txt --upgrade`.
-
+1. Run `python -m pip install git+https://github.com/sralloza/vcm.git@dev`
+2. Done. To use the program, just type `vcm -h`
 
 # How to use
 Al execute the program for the first time, the configuration and credential files will be automatically created. You can find them in `%USER%/vcm-config.ini` and `%USER%/vcm-credentials.ini`.
