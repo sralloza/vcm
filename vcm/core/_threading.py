@@ -1,4 +1,4 @@
-"""Multithreading workers for the vcd."""
+"""Multithreading workers for the VCM."""
 
 import logging
 import threading
@@ -54,7 +54,7 @@ class WorkerCodes(Enum):
 
 
 class Worker(threading.Thread):
-    """Special worker for vcd multithreading."""
+    """Special worker for VCM multithreading."""
 
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -38,11 +38,13 @@ class Connection:
 
     @staticmethod
     def _fix_headers(**kwargs):
-        user_agent = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
-                     '(KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36'
-        headers = kwargs.pop('headers', dict())
-        headers['User-Agent'] = user_agent
-        kwargs['headers'] = headers
+        user_agent = (
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+        )
+        headers = kwargs.pop("headers", dict())
+        headers["User-Agent"] = user_agent
+        kwargs["headers"] = headers
         return kwargs
 
     def get(self, url, **kwargs):
@@ -59,24 +61,27 @@ class Connection:
 
     def logout(self):
         self._logout_response = self.post(
-            'https://campusvirtual.uva.es/login/logout.php?sesskey=%s' % self.sesskey,
-            data={'sesskey': self.sesskey})
+            "https://campusvirtual.uva.es/login/logout.php?sesskey=%s" % self.sesskey,
+            data={"sesskey": self.sesskey},
+        )
 
-        if 'Usted no se ha identificado' not in self._logout_response.text:
+        if "Usted no se ha identificado" not in self._logout_response.text:
             raise LogoutError
 
     def login(self):
-        response = self.get('https://campusvirtual.uva.es/login/index.php')
-        soup = BeautifulSoup(response.text, 'html.parser')
+        response = self.get("https://campusvirtual.uva.es/login/index.php")
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        login_token = soup.find('input', {'type': 'hidden', 'name': 'logintoken'})['value']
-        logger.debug('Login token: %s', login_token)
+        login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})[
+            "value"
+        ]
+        logger.debug("Login token: %s", login_token)
 
         user = Credentials.get()
         logger.info('Logging in with user %r', user.username)
 
         self._login_response = self.post(
-            'https://campusvirtual.uva.es/login/index.php',
+            "https://campusvirtual.uva.es/login/index.php",
             data={
                 'anchor': '', 'username': user.username, 'password': user.password,
                 'logintoken': login_token
@@ -84,18 +89,22 @@ class Connection:
 
         del user
 
-        soup = BeautifulSoup(self._login_response.text, 'html.parser')
+        soup = BeautifulSoup(self._login_response.text, "html.parser")
 
-        if 'Usted se ha identificado' not in self._login_response.text:
+        if "Usted se ha identificado" not in self._login_response.text:
             raise LoginError
 
-        self._sesskey = soup.find('input', {'type': 'hidden', 'name': 'sesskey'})['value']
+        self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
+            "value"
+        ]
 
         try:
-            self._user_url = soup.find('a', {'aria-labelledby':'actionmenuaction-2'})[
-                                 'href'] + '&showallcourses=1'
+            self._user_url = (
+                soup.find("a", {"aria-labelledby": "actionmenuaction-2"})["href"]
+                + "&showallcourses=1"
+            )
         except KeyError:
-            logger.warning('Needed to call again Connection.login()')
+            logger.warning("Needed to call again Connection.login()")
             return self.login()
 
 
@@ -112,35 +121,35 @@ class Downloader(requests.Session):
         super().__init__()
 
     def get(self, url, **kwargs):
-        self.logger.debug('GET %r', url)
         retries = self._retries
+        self.logger.debug("GET %r", url)
 
         while retries > 0:
             try:
                 return super().get(url, **kwargs)
             except requests.exceptions.ConnectionError:
                 retries -= 1
-                self.logger.warning('Connection error in GET, retries=%s', retries)
+                self.logger.warning("Connection error in GET, retries=%s", retries)
             except requests.exceptions.ReadTimeout:
                 retries -= 1
-                self.logger.warning('Timeout error in GET, retries=%s', retries)
+                self.logger.warning("Timeout error in GET, retries=%s", retries)
 
-        self.logger.critical('Download error in GET %r', url)
-        raise DownloaderError('max retries failed.')
+        self.logger.critical("Download error in GET %r", url)
+        raise DownloaderError("max retries failed.")
 
     def post(self, url, data=None, json=None, **kwargs):
-        self.logger.debug('POST %r', url)
         retries = self._retries
+        self.logger.debug("POST %r", url)
 
         while retries > 0:
             try:
                 return super().post(url=url, data=data, json=json, **kwargs)
             except requests.exceptions.ConnectionError:
                 retries -= 1
-                self.logger.warning('Connection error in POST, retries=%s', retries)
+                self.logger.warning("Connection error in POST, retries=%s", retries)
             except requests.exceptions.ReadTimeout:
                 retries -= 1
-                self.logger.warning('Timeout error in POST, retries=%s', retries)
+                self.logger.warning("Timeout error in POST, retries=%s", retries)
 
-        self.logger.critical('Download error in POST %r', url)
-        raise DownloaderError('max retries failed.')
+        self.logger.critical("Download error in POST %r", url)
+        raise DownloaderError("max retries failed.")

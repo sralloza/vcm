@@ -48,5 +48,5 @@ class Results:
 
         """
         with Results.file_lock:
-            with Results.result_path.open('at', encoding='utf-8') as f:
-                f.write(message + '\n')
+            with Results.result_path.open("at", encoding="utf-8") as f:
+                f.write(message + "\n")

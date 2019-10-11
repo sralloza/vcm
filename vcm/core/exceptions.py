@@ -1,5 +1,5 @@
 class VcmError(Exception):
-    """Vcd error."""
+    """Vcm error."""
 
 
 class LoginError(VcmError):

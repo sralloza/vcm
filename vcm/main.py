@@ -39,18 +39,20 @@ def main():
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            return parser.error('Invalid use: use download or notify')
+            return parser.error("Invalid use: use download or notify")
 
     if opt.command == Command.download:
         if opt.debug:
             import webbrowser
 
-            chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
-            webbrowser.get(chrome_path).open_new('localhost')
+            chrome_path = (
+                "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
+            )
+            webbrowser.get(chrome_path).open_new("localhost")
 
         return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
 
     elif opt.command == Command.notify:
         return notify(['sralloza@gmail.com'], not opt.no_icons, nthreads=opt.nthreads)
     else:
-        return parser.error('Invalid command: %r' % opt.command)
+        return parser.error("Invalid command: %r" % opt.command)

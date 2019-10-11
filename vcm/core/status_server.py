@@ -53,7 +53,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     @app.route('/feed')
     def info_feed():
         def feed():
-            status = '<title>VCD STATUS</title>'
+            status = '<title>VCM STATUS</title>'
             status += f'Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>'
 
             status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
@@ -119,7 +119,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return output
 
-    t = threading.Thread(name='vcd-state', target=waitress.serve, daemon=True, args=(app,),
+    t = threading.Thread(name='vcm-state', target=waitress.serve, daemon=True, args=(app,),
                          kwargs={'port': 80, 'host': '0.0.0.0', '_quiet': True,
                                  'clear_untrusted_proxy_headers': True})
     t.start()

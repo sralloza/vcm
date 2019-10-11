@@ -13,7 +13,6 @@ from .alias import Alias
 from .links import BaseLink, Resource, Delivery, Folder, ForumList
 
 
-# pylint: disable=too-many-instance-attributes
 
 class Subject:
     """Representation of a subject."""
@@ -44,93 +43,116 @@ class Subject:
         self.folder = Options.ROOT_FOLDER / self.name
         self.logger = logging.getLogger(__name__)
 
-        self.logger.debug('Created %s(name=%r, url=%r)', type(self).__name__, self.name, self.url)
+        self.logger.debug(
+            "Created %s(name=%r, url=%r)", type(self).__name__, self.name, self.url
+        )
 
     def __repr__(self):
-        return f'{type(self).__name__}(name={self.name!r}, url={self.url!r}, ' \
-            f'{len(self.notes_links)} notes links)'
+        return (
+            f"{type(self).__name__}(name={self.name!r}, url={self.url!r}, "
+            f"{len(self.notes_links)} notes links)"
+        )
 
     def __str__(self):
-        return f'{self.name}'
+        return f"{self.name}"
 
     def make_request(self):
         """Makes the primary request."""
-        self.logger.debug('Making subject request')
+        self.logger.debug("Making subject request")
         self.response = self.connection.get(self.url)
-        self.soup = BeautifulSoup(self.response.text, 'html.parser')
+        self.soup = BeautifulSoup(self.response.text, "html.parser")
 
-        self.logger.debug('Response obtained [%d]', self.response.status_code)
-        self.logger.debug('Response parsed')
+        self.logger.debug("Response obtained [%d]", self.response.status_code)
+        self.logger.debug("Response parsed")
 
     def create_folder(self):
         """Creates the folder named as self."""
         if self.hasfolder is False:
-            self.logger.debug('Creating folder %r', self.name)
+            self.logger.debug("Creating folder %r", self.name)
             with self.folder_lock:
                 if not self.folder.exists():
                     os.makedirs(self.folder.as_posix())
             self.hasfolder = True
 
         else:
-            self.logger.debug('Folder already exists: %r', self.name)
+            self.logger.debug("Folder already exists: %r", self.name)
 
     def add_link(self, url: BaseLink):
         """Adds a note url to the list."""
-        self.logger.debug('Adding url: %s', url.name)
+        self.logger.debug("Adding url: %s", url.name)
         self.notes_links.append(url)
 
     def download_notes(self):
         """Downloads the notes multithreadingly."""
-        self.logger.debug('Downloading notes by multithread: %s', self.name)
+        self.logger.debug("Downloading notes by multithread: %s", self.name)
         if self.queue is None:
-            self.logger.critical('Queue is not defined')
-            raise RuntimeError('Queue is not defined')
+            self.logger.critical("Queue is not defined")
+            raise RuntimeError("Queue is not defined")
 
         for link in self.notes_links:
-            self.logger.debug('Adding link to queue: %r', link.name)
+            self.logger.debug("Adding link to queue: %r", link.name)
             self.queue.put(link)
 
     def find_links(self):
         """Finds the links downloading the primary page."""
-        self.logger.debug('Finding links of %s', self.name)
+        self.logger.debug("Finding links of %s", self.name)
         self.make_request()
 
-        _ = [x.extract() for x in self.soup.findAll('span', {'class': 'accesshide'})]
-        _ = [x.extract() for x in self.soup.findAll('div', {'class': 'mod-indent'})]
+        _ = [x.extract() for x in self.soup.findAll("span", {"class": "accesshide"})]
+        _ = [x.extract() for x in self.soup.findAll("div", {"class": "mod-indent"})]
 
-        search = self.soup.findAll('li', class_='activity')
+        search = self.soup.findAll("li", class_="activity")
 
         for li in search:
             try:
-                div = li.find('div', class_='activityinstance')
+                div = li.find("div", class_="activityinstance")
                 id_ = None
 
                 if not div:  # Folder
-                    div = li.find('div', class_='singlebutton')
-                    name = li.find('span', class_='fp-filename').text
-                    url = div.form['action']
-                    id_ = div.find('input', {'name': 'id'})['value']
-                    icon_url = li.find('span', class_='fp-icon').img['src']
+                    div = li.find("div", class_="singlebutton")
+                    name = li.find("span", class_="fp-filename").text
+                    url = div.form["action"]
+                    id_ = div.find("input", {"name": "id"})["value"]
+                    icon_url = li.find("span", class_="fp-icon").img["src"]
                 else:
                     name = div.a.span.text
-                    url = div.a['href']
-                    icon_url = div.a.img['src']
+                    url = div.a["href"]
+                    icon_url = div.a.img["src"]
 
-                if 'resource' in url:
-                    self.logger.debug('Created Resource (subject search): %r, %s', name, url)
-                    self.add_link(Resource(name, url, icon_url, self, self.connection, self.queue))
-                elif 'folder' in url:
-                    self.logger.debug('Created Folder (subject search): %r, %s', name, url)
+                if "resource" in url:
+                    self.logger.debug(
+                        "Created Resource (subject search): %r, %s", name, url
+                    )
                     self.add_link(
-                        Folder(name, url, icon_url, self, self.connection, self.queue, id_))
-                elif 'forum' in url:
-                    self.logger.debug('Created Forum (subject search): %r, %s', name, url)
-                    self.add_link(ForumList(name, url, icon_url, self, self.connection, self.queue))
-                elif 'assign' in url:
-                    self.logger.debug('Created Delivery (subject search): %r, %s', name, url)
-                    self.add_link(Delivery(name, url, icon_url, self, self.connection, self.queue))
+                        Resource(name, url, icon_url, self, self.connection, self.queue)
+                    )
+                elif "folder" in url:
+                    self.logger.debug(
+                        "Created Folder (subject search): %r, %s", name, url
+                    )
+                    self.add_link(
+                        Folder(
+                            name, url, icon_url, self, self.connection, self.queue, id_
+                        )
+                    )
+                elif "forum" in url:
+                    self.logger.debug(
+                        "Created Forum (subject search): %r, %s", name, url
+                    )
+                    self.add_link(
+                        ForumList(
+                            name, url, icon_url, self, self.connection, self.queue
+                        )
+                    )
+                elif "assign" in url:
+                    self.logger.debug(
+                        "Created Delivery (subject search): %r, %s", name, url
+                    )
+                    self.add_link(
+                        Delivery(name, url, icon_url, self, self.connection, self.queue)
+                    )
 
             except AttributeError:
                 pass
 
-        self.logger.debug('Downloading files for subject %r', self.name)
+        self.logger.debug("Downloading files for subject %r", self.name)

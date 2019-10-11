@@ -35,6 +35,7 @@ class _GetchUnix:
         import sys
         import tty
         import termios
+
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -52,6 +53,7 @@ class _GetchWindows:
 
     def __call__(self):
         import msvcrt
+
         return msvcrt.getch()
 
 
@@ -69,12 +71,27 @@ def secure_filename(filename):
             filename = filename.replace(sep, " ")
 
     _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
-    _windows_device_files = ("CON", "AUX", "COM1", "COM2", "COM3",
-                             "COM4", "LPT1", "LPT2", "LPT3", "PRN", "NUL")
+    _windows_device_files = (
+        "CON",
+        "AUX",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "PRN",
+        "NUL",
+    )
     filename = str(_filename_ascii_strip_re.sub("", "_".join(filename.split()))).strip(
         "._"
     )
-    if os.name == "nt" and filename and filename.split(".")[0].upper() in _windows_device_files:
+    if (
+        os.name == "nt"
+        and filename
+        and filename.split(".")[0].upper() in _windows_device_files
+    ):
         filename = "_" + filename
 
     return filename
@@ -105,9 +122,9 @@ def exception_exit(exception, to_stderr=False, red=True):
             raise_exception = True
 
     if raise_exception:
-        raise TypeError('exception should be a subclass of Exception')
+        raise TypeError("exception should be a subclass of Exception")
 
-    message = '%s: %s' % (exception.__class__.__name__, ', '.join(exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
 
     if red:
         message = Fore.RED + message + Fore.RESET
@@ -133,5 +150,5 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     t0 = time.time()
     result = func(*args, **kwargs)
     delta_t = time.time() - t0
-    logger.log(level, '%s executed in %s', name, seconds_to_str(delta_t))
+    logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
     return result
