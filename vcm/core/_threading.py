@@ -8,7 +8,7 @@ from enum import Enum, auto
 from queue import Queue
 from typing import Any
 
-from vcm import Options
+from vcm.core.settings import GeneralSettings
 from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject

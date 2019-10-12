@@ -1,12 +1,12 @@
 import sqlite3
 from datetime import datetime
 
-from vcm.core.options import Options
+from vcm.core.settings import GeneralSettings
 
 
 class DatabaseInterface:
     def __init__(self):
-        self.connection = sqlite3.connect(Options.DATABASE_PATH.as_posix())
+        self.connection = sqlite3.connect(GeneralSettings.database_path.as_posix())
         self.cursor = self.connection.cursor()
         self.ensure_table()
 

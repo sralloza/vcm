@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import current_thread
 
-from .core.options import Options
+from .core.settings import GeneralSettings
 
 __all__ = []
 

@@ -4,7 +4,7 @@ import os
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, IdError, AliasNotFoundError
-from vcm.core.options import Options
+from vcm.core.settings import GeneralSettings
 
 
 class Events:
@@ -24,7 +24,7 @@ class Alias:
     """Class designed to declare aliases"""
 
     def __init__(self):
-        self.alias_path = Options.ROOT_FOLDER / 'alias.json'
+        self.alias_path = GeneralSettings.root_folder / 'alias.json'
         self.json = []
         self.load()
 

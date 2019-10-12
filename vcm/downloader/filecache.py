@@ -2,12 +2,12 @@
 import os
 
 from vcm.core.exceptions import FileCacheError
-from vcm.core.options import Options
+from vcm.core.settings import GeneralSettings
 
 
 class FileCache:
     """File scanner to control file version."""
-    path = Options.ROOT_FOLDER
+    path = GeneralSettings.root_folder
 
     def __init__(self):
         self.cache = {}

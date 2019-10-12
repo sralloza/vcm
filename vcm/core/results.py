@@ -3,7 +3,7 @@ from threading import Lock
 
 from colorama import Fore
 
-from .options import Options
+from .settings import GeneralSettings
 
 
 class Counters:
@@ -25,7 +25,7 @@ class Results:
     print_lock = Lock()
 
     file_lock = Lock()
-    result_path = Options.ROOT_FOLDER / 'new-files.txt'
+    result_path = GeneralSettings.root_folder / "new-files.txt"
 
     @staticmethod
     def print_updated(filepath):

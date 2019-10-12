@@ -2,7 +2,7 @@ import logging
 import platform
 from typing import List, Union
 
-from vcm import Options
+from vcm.core.settings import NotifySettings
 from vcm.downloader.subject import Subject
 from vcm.notifier.subject import NotifierSubject
 
@@ -53,7 +53,7 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
             if use_icons:
                 message += '<li style="list-style: none;">'
 
-                if Options.USE_BASE64_ICONS:
+                if NotifySettings.use_base64_icons:
                     message += f"<img src='data:image/png;base64,{link.icon_data_64}' width='24' "
                 else:
                     message += f'<img src="{link.icon_url}" width="24" '

@@ -2,16 +2,16 @@
 
 import logging
 import os
-from _sha1 import sha1
 from threading import Lock
 
 from bs4 import BeautifulSoup
 from requests import Response
 
-from vcm.core.options import Options
-from .alias import Alias
-from .links import BaseLink, Resource, Delivery, Folder, ForumList
+from _sha1 import sha1
+from vcm.core.settings import GeneralSettings
 
+from .alias import Alias
+from .links import BaseLink, Delivery, Folder, ForumList, Resource
 
 
 class Subject:
@@ -39,8 +39,8 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        # self.folder = Options.ROOT_FOLDER / secure_filename(self.name)
-        self.folder = Options.ROOT_FOLDER / self.name
+        # self.folder = GeneralSettings.root_folder / secure_filename(self.name)
+        self.folder = GeneralSettings.root_folder / self.name
         self.logger = logging.getLogger(__name__)
 
         self.logger.debug(
