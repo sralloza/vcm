@@ -4,13 +4,14 @@ import re
 from queue import Queue
 
 from bs4 import BeautifulSoup
-from colorama import init as init_colorama, Fore
+from colorama import Fore
+from colorama import init as init_colorama
 
-from vcm import Options
 from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
+from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
 from vcm.core.utils import timing
 
