@@ -135,7 +135,6 @@ def exception_exit(exception, to_stderr=False, red=True):
     return exit(-1)
 
 
-
 @decorator
 def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
     try:
@@ -152,3 +151,29 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     delta_t = time.time() - t0
     logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
     return result
+
+def configure_logging():
+    from .settings import GeneralSettings
+
+    if os.environ.get("TESTING") is None:
+        should_roll_over = GeneralSettings.log_path.exists()
+
+        fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+        handler = RotatingFileHandler(
+            filename=GeneralSettings.log_path,
+            maxBytes=2_500_000,
+            encoding="utf-8",
+            backupCount=5,
+        )
+
+        current_thread().setName("MT")
+
+        if should_roll_over:
+            handler.doRollover()
+
+        logging.basicConfig(
+            handlers=[handler], level=GeneralSettings.logging_level, format=fmt
+        )
+
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+
