@@ -474,6 +474,8 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
+    _NOTIFY = True
+
     def __init__(self, name, url, icon_url, subject, connection, queue, id_):
         super().__init__(name, url, icon_url, subject, connection, queue)
         self.id = id_
