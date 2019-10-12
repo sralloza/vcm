@@ -424,6 +424,9 @@ class Resource(BaseLink):
         self.logger.debug("Parsing HTML (%r)", self.url)
         resource = self.soup.find("object", {"id": "resourceobject"})
         name = self.soup.find("div", {"role": "main"}).h2.text
+        
+        # Self does not contain the file, only a link to the real file.
+        self._NOTIFY = False
 
         try:
             resource = Resource(
