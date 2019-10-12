@@ -286,6 +286,11 @@ class BaseLink(_Notify):
                 "Permission error %s -- %s", self.subject.name, self.filepath.name
             )
 
+    @staticmethod
+    def ensure_origin(url: str) -> bool:
+        """Returns True if the origin is the virtual campus."""
+        return "campusvirtual.uva.es" in url
+
 
 class Resource(BaseLink):
     """Representation of a resource."""
