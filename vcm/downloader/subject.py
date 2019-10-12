@@ -81,19 +81,9 @@ class Subject:
         """Adds a note url to the list."""
         self.logger.debug("Adding url: %s", url.name)
         self.notes_links.append(url)
+        self.queue.put(url)
 
-    def download_notes(self):
-        """Downloads the notes multithreadingly."""
-        self.logger.debug("Downloading notes by multithread: %s", self.name)
-        if self.queue is None:
-            self.logger.critical("Queue is not defined")
-            raise RuntimeError("Queue is not defined")
-
-        for link in self.notes_links:
-            self.logger.debug("Adding link to queue: %r", link.name)
-            self.queue.put(link)
-
-    def find_links(self):
+    def find_and_download_links(self):
         """Finds the links downloading the primary page."""
         self.logger.debug("Finding links of %s", self.name)
         self.make_request()
