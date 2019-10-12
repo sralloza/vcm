@@ -2,13 +2,16 @@ import logging
 import os
 import re
 import time
+from logging.handlers import RotatingFileHandler
+from threading import current_thread
 
-from colorama import Fore
+from colorama import Fore, init
 from decorator import decorator
 
-from vcm.core.time_operations import seconds_to_str
+from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
+init()
 
 
 class _Getch:
@@ -152,6 +155,25 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
     return result
 
+
+_true_set = {"yes", "true", "t", "y", "1"}
+_false_set = {"no", "false", "f", "n", "0"}
+
+
+def str2bool(value):
+    if value in (True, False):
+        return value
+
+    if isinstance(value, str):
+        value = value.lower()
+        if value in _true_set:
+            return True
+        if value in _false_set:
+            return False
+
+    raise ValueError("Invalid bool string: %r" % value)
+
+
 def configure_logging():
     from .settings import GeneralSettings
 
@@ -177,3 +199,6 @@ def configure_logging():
 
     logging.getLogger("urllib3").setLevel(logging.ERROR)
 
+@safe_exit
+def setup_vcm():
+    configure_logging()
