@@ -427,7 +427,12 @@ class Resource(BaseLink):
 
         try:
             resource = Resource(
-                name, resource["data"], None, self.subject, self.connection, self.queue
+                name,
+                resource["data"],
+                self._icon_url,
+                self.subject,
+                self.connection,
+                self,
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -440,7 +445,12 @@ class Resource(BaseLink):
         try:
             resource = self.soup.find("iframe", {"id": "resourceobject"})
             resource = Resource(
-                name, resource["src"], None, self.subject, self.connection, self.queue
+                name,
+                resource["src"],
+                self._icon_url,
+                self.subject,
+                self.connection,
+                self,
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -455,10 +465,10 @@ class Resource(BaseLink):
             resource = Resource(
                 name,
                 resource.a["href"],
-                None,
+                self._icon_url,
                 self.subject,
                 self.connection,
-                self.queue,
+                self,
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -553,7 +563,7 @@ class ForumDiscussion(BaseForum):
                 resource = Resource(
                     Path(attachment.text).stem,
                     attachment.a["href"],
-                    self._icon_url,
+                    attachment.a.img["src"],
                     self.subject,
                     self.connection,
                     self,
@@ -575,8 +585,14 @@ class ForumDiscussion(BaseForum):
                 except KeyError:
                     url = image["src"]
 
+                image_ext = Path(url).suffix[1:]
+                if image_ext in ("jpg", "jpeg"):
+                    icon_url = "https://campusvirtual.uva.es/invalid/f/jpeg"
+                else:
+                    raise RuntimeError
+
                 resource = Resource(
-                    Path(url).stem, url, None, self.subject, self.connection, self
+                    Path(url).stem, url, icon_url, self.subject, self.connection, self
                 )
                 resource.subfolders = self.subfolders
 
