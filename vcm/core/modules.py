@@ -5,6 +5,8 @@ class Modules(Enum):
     undefined = "undefined"
     download = "download"
     notify = "notify"
+    settings = "settings"
+
     @classmethod
     def current(cls):
         return _Static.module
