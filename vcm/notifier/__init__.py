@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @timing(name='VCM notifier')
 def notify(send_to: A, use_icons=True, nthreads=20):
-    Options.set_module(Modules.notify)
+    Modules.set_current(Modules.notify)
     queue = Queue()
     threads = start_workers(queue, nthreads, no_killer=True)
     runserver(queue, threads)

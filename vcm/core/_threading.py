@@ -12,6 +12,7 @@ from vcm import Options
 from vcm.core.modules import Modules
 from vcm.downloader.links import BaseLink
 from vcm.downloader.subject import Subject
+
 from .exceptions import InvalidStateError
 from .networking import DownloaderError
 from .time_operations import seconds_to_str
@@ -59,7 +60,7 @@ class Worker(threading.Thread):
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.called_from = Options.get_module()
+        self.called_from = Modules.current()
         self.queue: Queue = queue
         self._state = ThreadStates.idle
         self.timestamp = None
@@ -250,7 +251,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
         killer.start()
         thread_list.append(killer)
     else:
-        if Options.get_module() == Modules.download:
+        if Modules.current() == Modules.download:
             print('Killer not started')
 
     for i in range(nthreads):

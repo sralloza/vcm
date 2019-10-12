@@ -13,6 +13,7 @@ from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.status_server import runserver
 from vcm.core.utils import timing
+
 from .subject import Subject
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ def download(nthreads=None, no_killer=False):
         no_killer (bool): desactivate Killer thread.
     """
 
-    Options.set_module(Modules.download)
+    Modules.set_current(Modules.download)
     init_colorama()
 
     if not nthreads:
