@@ -551,7 +551,7 @@ class ForumList(BaseForum):
 
 
 class ForumDiscussion(BaseForum):
-    _NOTIFY = True
+    # _NOTIFY = True
 
     def download(self):
         self.logger.debug("Downloading forum discussion %s", self.name)
