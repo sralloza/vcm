@@ -5,7 +5,6 @@ import random
 import warnings
 from abc import ABC
 from pathlib import Path
-from queue import Queue
 
 import unidecode
 from bs4 import BeautifulSoup
@@ -14,7 +13,7 @@ from requests import Response
 from _sha1 import sha1
 from vcm.core.modules import Modules
 from vcm.core.results import Results
-from vcm.core.settings import GeneralSettings, DownloadSettings
+from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Patterns, secure_filename
 
 from .alias import Alias
