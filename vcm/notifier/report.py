@@ -18,6 +18,7 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
     logger.info("Creating report")
 
     nlinks = 0
+
     new_subjects = [NotifierSubject.from_subject(subject) for subject in subjects]
 
     for subject in new_subjects:
