@@ -66,13 +66,13 @@ for key in URLS.keys():
 
 
 class NotifierLink(BaseLink):
-    def __init__(self, name, url, icon_url, subject, connection, queue):
-        super().__init__(name, url, icon_url, subject, connection, queue)
+    def __init__(self, name, url, icon_url, subject, connection, parent=None):
+        super().__init__(name, url, icon_url, subject, connection, parent)
         self._icon_type = None
 
     @classmethod
     def from_link(cls, link: BaseLink):
-        dir_notifier_link = ['name', 'url', 'icon_url', 'subject', 'connection', 'queue']
+        dir_notifier_link = ['name', 'url', 'icon_url', 'subject', 'connection', 'parent']
         new_vars = {}
 
         for attribute in dir_notifier_link:
