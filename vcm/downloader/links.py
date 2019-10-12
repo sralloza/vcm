@@ -41,7 +41,7 @@ class _Notify(ABC):
 class BaseLink(_Notify):
     """Base class for Links."""
 
-    def __init__(self, name, url, icon_url, subject, connection, queue):
+    def __init__(self, name, url, icon_url, subject, connection, parent=None):
         """
         Args:
             name (str): name of the url.
@@ -49,7 +49,7 @@ class BaseLink(_Notify):
             icon_url (str or None): URL of the icon.
             subject (vcm.subject.Subject): subject of the url.
             connection (vcm.requests.Downloader): connection to download resources.
-            queue (Queue): queue to controll threads.
+            parent (BaseLink): object that created self.
         """
 
         self.name = name.strip()
@@ -57,7 +57,7 @@ class BaseLink(_Notify):
         self._icon_url = icon_url
         self.subject = subject
         self.connection = connection
-        self.queue = queue
+        self.parent = parent
 
         self.response: Response = None
         self.soup: BeautifulSoup = None
@@ -297,8 +297,8 @@ class Resource(BaseLink):
 
     _NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, connection, queue):
-        super().__init__(name, url, icon_url, subject, connection, queue)
+    def __init__(self, name, url, icon_url, subject, connection, parent=None):
+        super().__init__(name, url, icon_url, subject, connection, parent)
         self.resource_type = "unknown"
 
     def set_resource_type(self, new):
@@ -433,7 +433,7 @@ class Resource(BaseLink):
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
             )
-            self.subject.queue.put(resource)
+            self.subject.add_link(resource)
             return
         except TypeError:
             pass
@@ -446,7 +446,7 @@ class Resource(BaseLink):
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
             )
-            self.subject.queue.put(resource)
+            self.subject.add_link(resource)
             return
         except TypeError:
             pass
@@ -464,7 +464,7 @@ class Resource(BaseLink):
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
             )
-            self.subject.queue.put(resource)
+            self.subject.add_link(resource)
             return
         except TypeError:
             random_name = str(random.randint(0, 1000))
@@ -481,8 +481,8 @@ class Folder(BaseLink):
 
     _NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, connection, queue, id_):
-        super().__init__(name, url, icon_url, subject, connection, queue)
+    def __init__(self, name, url, icon_url, subject, connection, id_, parent=None):
+        super().__init__(name, url, icon_url, subject, connection, parent)
         self.id = id_
 
     def make_request(self):
@@ -527,7 +527,7 @@ class ForumList(BaseForum):
                 self._icon_url,
                 self.subject,
                 self.connection,
-                self.queue,
+                self,
             )
 
             self.logger.debug(
@@ -535,7 +535,7 @@ class ForumList(BaseForum):
                 forum.name,
                 forum.url,
             )
-            self.queue.put(forum)
+            self.subject.add_link(forum)
 
 
 class ForumDiscussion(BaseForum):
@@ -557,14 +557,14 @@ class ForumDiscussion(BaseForum):
                     self._icon_url,
                     self.subject,
                     self.connection,
-                    self.queue,
+                    self,
                 )
                 resource.subfolders = self.subfolders
 
                 self.logger.debug(
                     "Created resource from forum: %r, %s", resource.name, resource.url
                 )
-                self.queue.put(resource)
+                self.subject.add_link(resource)
             except TypeError:
                 pass
 
@@ -577,7 +577,7 @@ class ForumDiscussion(BaseForum):
                     url = image["src"]
 
                 resource = Resource(
-                    Path(url).stem, url, None, self.subject, self.connection, self.queue
+                    Path(url).stem, url, None, self.subject, self.connection, self
                 )
                 resource.subfolders = self.subfolders
 
@@ -586,7 +586,7 @@ class ForumDiscussion(BaseForum):
                     resource.name,
                     resource.url,
                 )
-                self.queue.put(resource)
+                self.subject.add_link(resource)
 
 
 class Delivery(BaseLink):
@@ -623,7 +623,7 @@ class Delivery(BaseLink):
                 icon_url,
                 self.subject,
                 self.connection,
-                self.queue,
+                self,
             )
             resource.subfolders = self.subfolders
 
@@ -645,4 +645,4 @@ class Delivery(BaseLink):
                     self.logger.debug("Changed name %r -> %r", name, links[i].name)
 
         for link in links:
-            self.queue.put(link)
+            self.subject.add_link(link)
