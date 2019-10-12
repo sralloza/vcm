@@ -1,129 +1,119 @@
 """Credentials manager for the web page of the University of Valladolid."""
-import os
-from configparser import ConfigParser
-from getpass import getpass
-
+import toml
 from colorama import Fore
 
-from vcm import Options
-from .exceptions import CredentialError
+from vcm.core.settings import CoreSettings
 
 
-class StudentCredentials:
+class EmailCredentials:
+    """Represents the data of a mailbox."""
+
+    def __init__(self, username, password, smtp_server=None, smtp_port=None):
+        self.username = str(username)
+        self.password = str(password)
+
+        # Using gmail as default
+        if smtp_server is None:
+            self.smtp_server = "smtp.gmail.com"
+        else:
+            self.smtp_server = str(smtp_server)
+
+        if smtp_port is None:
+            self.smtp_port = 587
+        else:
+            self.smtp_port = int(smtp_port)
+
+    def __str__(self):
+        return "%s(username=%r)" % (self.__class__.__name__, self.username)
+
+    def to_json(self):
+        return vars(self).copy()
+
+
+class VirtualCampusCredentials:
     """Represents a student with credentials."""
 
-    def __init__(self, alias, username, password):
-        self.alias = alias
+    def __init__(self, username, password):
         self.username = username
         self.password = password
 
     def __str__(self):
-        return f'{self.__class__.__name__}(alias={self.alias!r})'
+        return f"{self.__class__.__name__}(username={self.username!r})"
 
     def to_json(self):
         """Returns self json serialized."""
-        return vars(self)
+        return vars(self).copy()
 
 
-class Credentials:
+class _Credentials:
     """Credentials manager."""
-    path = Options.CREDENTIALS_PATH
+
+    _path = CoreSettings.credentials_path
+    VirtualCampus: VirtualCampusCredentials = None
+    Email: EmailCredentials = None
 
     def __init__(self, _auto=False):
-        self._auto = _auto
-        self.credentials = []
         self.load()
+
+    @classmethod
+    def make_default(cls, reason):
+        cls.make_example()
+        exit(Fore.RED + reason + Fore.RESET)
+
+    @classmethod
+    def read_credentials(cls):
+        if not cls._path.exists():
+            cls.make_default(reason="Credentials file does not exist")
+
+        with cls._path.open(encoding="utf-8") as pointer:
+            try:
+                return toml.load(pointer)
+            except toml.TomlDecodeError:
+                exit(Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET)
 
     def load(self):
         """Loads the credentials configuration."""
-        if not os.path.isfile(self.path):
-            if self._auto:
-                return
+        if not self._path.exists():
 
             self.make_example()
             self.save()
             return exit(
-                Fore.RED + f'Credentials file not found, created sample ({self.path})' + Fore.RESET)
+                Fore.RED
+                + f"Credentials file not found, created sample ({self._path})"
+                + Fore.RESET
+            )
 
-        raw_data = ConfigParser(allow_no_value=True)
-        raw_data.read(self.path, encoding='utf-8')
+        yaml_data = self.read_credentials()
 
-        for student in raw_data:
-            if student == 'DEFAULT':
-                continue
-            student_data = dict(raw_data[student])
+        _Credentials.VirtualCampus = VirtualCampusCredentials(
+            **yaml_data["VirtualCampus"]
+        )
+        _Credentials.Email = EmailCredentials(**yaml_data["Email"])
 
-            alias = student
-
-            try:
-                username = student_data.pop('username')
-            except KeyError:
-                raise CredentialError('username not found')
-
-            try:
-                password = student_data.pop('password')
-                if password is None:
-                    password = getpass(f'Insert password for user {username!r}: ')
-            except KeyError:
-                raise CredentialError('password not found')
-
-            if student_data:
-                raise CredentialError(f'Too much info: {student_data}')
-
-            self.credentials.append(StudentCredentials(alias, username, password))
-
-    def save(self):
+    @classmethod
+    def save(cls):
         """Saves the credentials to the file."""
-        config = ConfigParser()
-        for person in self.credentials:
-            config[person.alias] = {'username': person.username, 'password': person.password}
 
-        with self.path.open('wt') as fh:
-            config.write(fh)
+        data = {
+            "VirtualCampus": _Credentials.VirtualCampus.to_json(),
+            "Email": _Credentials.Email.to_json(),
+        }
 
-    @staticmethod
-    def get(alias: str = None) -> StudentCredentials:
-        """Gets the credentials from the alias.
+        with _Credentials._path.open("wt") as file_handler:
+            toml.dump(data, file_handler)
 
-        Args:
-            alias (str): alias of the user.
-
-        Returns:
-             StudentCredentials: with alias 'alias'.
-
-        """
-        self = Credentials.__new__(Credentials)
-        self.__init__()
-
-        for user in self.credentials:
-            if user.alias == alias or alias is None:
-                return user
-
-        return exit(Fore.RED + f'User not found: {alias}' + Fore.RESET)
-
-    def make_example(self):
+    @classmethod
+    def make_example(cls):
         """Makes a dummy Student with field description."""
-        user = StudentCredentials('insert alias',
-                                  'username of the virtual campus',
-                                  'password of the virtual campus')
+        _Credentials.VirtualCampus = VirtualCampusCredentials(
+            "username of the virtual campus", "password of the virtual campus"
+        )
 
-        self.credentials.append(user)
-        self.save()
+        _Credentials.Email = EmailCredentials(
+            "email-username@domain.es", "email-password", "smtp.domain.es", 587
+        )
 
-    @staticmethod
-    def add(alias: str, username: str, password: str):
-        """Adds new credentials.
+        cls.save()
 
-        Args:
-            alias (str): alias of the user.
-            username (str): username of the user.
-            password (str): password of the user.
 
-        """
-
-        self = Credentials.__new__(Credentials)
-        self.__init__(_auto=True)
-
-        user = StudentCredentials(alias, username, password)
-        self.credentials.append(user)
-        self.save()
+credentials = Credentials = _Credentials()

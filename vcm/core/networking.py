@@ -78,17 +78,17 @@ class Connection:
         ]
         logger.debug("Login token: %s", login_token)
 
-        user = Credentials.get()
-        logger.info('Logging in with user %r', user.username)
+        logger.info("Logging in with user %r", Credentials.VirtualCampus.username)
 
         self._login_response = self.post(
             "https://campusvirtual.uva.es/login/index.php",
             data={
-                'anchor': '', 'username': user.username, 'password': user.password,
-                'logintoken': login_token
-            })
-
-        del user
+                "anchor": "",
+                "username": Credentials.VirtualCampus.username,
+                "password": Credentials.VirtualCampus.password,
+                "logintoken": login_token,
+            },
+        )
 
         soup = BeautifulSoup(self._login_response.text, "html.parser")
 
