@@ -317,7 +317,7 @@ class Resource(BaseLink):
         self.logger.debug("Downloading resource %s", self.name)
 
         url = self.redirect_url or self.url
-        if "campusvirtual.uva.es" not in url:
+        if not self.ensure_origin(url):
             self.logger.warning(
                 "Permision denied: URL is outside of campusvirtual.uva.es"
             )
@@ -632,8 +632,10 @@ class Delivery(BaseLink):
             url = container["href"]
             if self.ensure_origin(url):
                 icon_url = container.parent.img["src"]
+                valid = True
             else:
                 icon_url = self._icon_url
+                valid = False
 
             resource = Resource(
                 Path(container.text).stem,
@@ -644,6 +646,10 @@ class Delivery(BaseLink):
                 self,
             )
             resource.subfolders = self.subfolders
+
+            # If the resource is not in campusvirtual.uva.es, then don't include in email
+            if not valid:
+                resource._NOTIFY = False
 
             self.logger.debug(
                 "Created resource from delivery: %r, %s", resource.name, resource.url
