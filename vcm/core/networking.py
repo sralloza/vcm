@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 
 from .credentials import Credentials
 from .exceptions import DownloaderError, LoginError, LogoutError
+from .settings import GeneralSettings
 
 logger = logging.getLogger(__name__)
 
@@ -111,18 +112,17 @@ class Connection:
 class Downloader(requests.Session):
     """Downloader with retries control."""
 
-    def __init__(self, retries=10, silenced=False):
+    def __init__(self, silenced=False):
         self.logger = logging.getLogger(__name__)
 
         if silenced is True:
             self.logger.setLevel(logging.CRITICAL)
 
-        self._retries = retries
         super().__init__()
 
     def get(self, url, **kwargs):
-        retries = self._retries
         self.logger.debug("GET %r", url)
+        retries = GeneralSettings.retries
 
         while retries > 0:
             try:
@@ -138,8 +138,8 @@ class Downloader(requests.Session):
         raise DownloaderError("max retries failed.")
 
     def post(self, url, data=None, json=None, **kwargs):
-        retries = self._retries
         self.logger.debug("POST %r", url)
+        retries = GeneralSettings.retries
 
         while retries > 0:
             try:
