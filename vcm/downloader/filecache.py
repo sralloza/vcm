@@ -1,5 +1,6 @@
 """File scanner to control file version."""
 import os
+from pathlib import Path
 
 from vcm.core.exceptions import FileCacheError
 from vcm.core.settings import GeneralSettings
@@ -36,14 +37,14 @@ class FileCache:
             files = elem[2]
 
             for file in files:
-                filenames.append(os.path.normpath(os.path.join(folder, file)))
+                filenames.append(Path(folder) / file)
 
         for file in filenames:
             self._get_file_length(file)
 
     def _get_file_length(self, file):
         """Gets the file content length."""
-        with open(file, 'rb') as file_handler:
+        with file.open('rb') as file_handler:
             length = len(file_handler.read())
 
         self.cache[file] = length
