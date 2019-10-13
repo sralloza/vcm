@@ -25,31 +25,91 @@ In the future, The program will be just a folder. In a future, of course.
 # How to use
 Al execute the program for the first time, the configuration and credential files will be automatically created. You can find them in `%USER%/vcm-config.ini` and `%USER%/vcm-credentials.ini`.
 
-## Config files
+## Config File
+The config file path is `%USER%/vcm-config.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
+
+It has 3 sections: general, download and notify.
+
+### General section
+Settings:
+* **root-folder** - Path to the folder where the files will be downloaded. It will be used to store other files, as logs, notify database, filecache json and others. Must be set, it lacks of a default value.
+* **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
+* **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
+* **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
+
+### Download section
+Settings:
+* **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a sepparate folder. Defaults to true.
+
+### Notify section
+Settings:
+* **use-base64-icons** - If true, the icons will be sent as base64 data. If false, the icons will be sent as direct download links from google drive. Note that Gmail does not render base64 data. Defaults to false.
+* **email** - Recipient of the notify email. Must be set, it lacks of a default value.
+
+## Credentials file
+The credentials file path is `%USER%/vcm-credentials.ini`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
+**Note that the credentials will be stored in plain text.**
+
+It has 2 sections: VirtualCampus and Email.
+All settings must be set, there are no default values.
+
+### VirtualCampus section
+Settings:
+* **username** - Username of the virtual campus.
+* **password** - Password of the virtual campus.
+
+### Email section
+
+* **username** - email address to send the report from.
+* **password** - password of the email.
+* **smtp_server** - stmp server name. For Gmail is smtp.gmail.com.
+* **smtp_port** - stmp port. For Gmail is 587
+
 
 ## Command Line Interface arguments
+There are 3 commands: download, notify and settings.
+
+To see more info use `vcm -h` or `vcm --help`
+
+### Download command
+It downloads all the virtual campus files in the root folder. 
+
+Arguments:
+* `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.
+* `--no-killer` - Disables the Killer thread
+* `-d`, `--debug` - Opens Google Chrome in localhost after start. See [During the Execution](#during-the-execution) for more info.
+
+To view the command help, use `vcm download -h` or `vcm download --help`.
+
+### Notify command
+It search all files in the virtual campus but it doesn't download them. Instead, it sends an email if there are new files, with a link to each new file. This is done using a local sqlite database stored in the root folder.
+
+Arguments:
+* `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.
+* `--no-icons` - Disable the icons in the email.
+
+Note: this command will not start the killer thread, because it's design to avoid using stdin and stdout, so it can be used with tasks managers like cron.
+
+To view the command help, use `vcm notify -h` or `vcm notify --help`.
+
+### Settings command
+It can show or change settings.
+
+Uses:
+* **List settings:** `vcm settings list`.
+* **Set settings value:** `vcm settings set section.key value`.
+    * *Section* is the settings section, can be one of `general`, `download` or `notify`.
+    * *Key* is the settings key you want to change. It depends on the section.
+    * *Value* is the settings value you want to set.
+    * To view the comand help, use `vcm settings set -h` or `vcm settings set --help`.
+
+
 
 ## During the execution
+During the execution you can open a web browser in localhost to access to real time information of the threading status. It is shown what is the state of each thread and what it's downloading each thread.
 
-<!-- ## Ficheros de configuración
-`vcd-credentials.ini` tiene sólo 2 líneas, en las que se especifica el usuario y contraseña del [campus virtual](https://www.campusvirtualuva.es).
-
-`vcd-config.ini` tiene varias líneas:
-
-- `root_folder` especifica la ruta absoluta de la carpeta donde se descargarán todos los ficheros. Si no existe dicha carpeta se creará.
-- `timeout` configura el tiempo durante el cual se esperará a las peticiones HTTP. Si una petición sobrepasa ese tiempo, se repetirá la petición.
-- `log_folder` te permite configurar la carpeta donde se guardarán los ficheros de log.
-- `logging_level` te permite especificar el nivel de log (DEBUG, INFO, WARNING, ERROR y CRITICAL).
-
-
-## Argumentos CLI (Command Line Interface)
-
-El programa acepta los siguientes argumentos:
-
-* `--root-folder FOLDER` permite especificar otra carpeta raíz (carpeta donde se descargarán los ficheros) distinta de la especificada en el fichero de configuración.
-* `--nthreads N` permite especificar el número de hilos (threads) que descargarán ficheros simultáneamente. El número predeterminado es `50`.
-* `--no-killer` evita que se inicie el hilo **killer**, que se encarga de esperar a que el usuario inserte una `q` por el teclado para mandar una orden al resto de hilos para que se apaguen (`Ctrl+C` no funciona).
-* `-d` ó `--debug` abre el navegador la url ***localhost***. No se ha especificado antes, pero VCD viene integrado con un mecanismo de supervisión, que consiste en un servidor temporal HTTP alojado en *localhost*. Dicha URL envía información a tiempo real sobre cada hilo, y el estado en el que se encuentra. También existe la url *localhost/queue* que mostrará lo que está programado en la cola para el procesamiento.
-
-## Durante la ejecución
-Si durante la ejecución quieres ver el estado de cada hilo, puedes abrir la url localhost o puedes pulsar la tecla `w` o `o`. Si quieres parar el programa de forma natural, pulsa la tecla `q` o `k`. -->
+To view the status of a thread, a color code is used:
+- Green: thread downloading for less than 30 seconds.
+- Yellow: thread downloading between 30 seconds and 1 minute.
+- Red: thread downloading between 1 minute and 1 and a half minutes.
+- Magenta: thread downloading for more than 1 and a half minutes. The total time is shown in this case.
