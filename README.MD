@@ -1,7 +1,19 @@
 # How to install
-There are two diferent ways: normal instalation and virtualv instalation. Both need to have Python 3.6+ installed. If you have more python scripts running, it would be better to install it in a virual environment.
+There are 3 diferent ways: using the exe, normal instalation and virtualv instalation. 
+- People who don't want to use a Command Line Interface should get the exe instalation.
+- Developers who prefer to use a single interpreter should get the normal instalation.
+- Developers who doesn't want to have dependency problems and like to manage projects in sepparate virtual environment should get the virtualenv instalation.
 
-In the future, The program will be just a folder. In a future, of course.
+_Note: normal and virtualenv instalation both need to have Python 3.6+ installed._
+
+### Exe install
+1. Go to the [releases](https://github.com/sralloza/vcm/releases) web page and download the last in a zip file.
+2. Extract the zip whenever you want.
+3. Run manually once the `vcm.exe` file (double click) inside the folder where you just extracted the zip.
+    3.1. If you have moved the desktop folder outside the default, you need to copy `download.cmd` and `notify.cmd` from `C:\Users\%USERNAME%\desktop` to your real desktop folder. If you haven't moved the desktop folder, you don't have to do this step.
+4. You will have 2 new files in the desktop, `download.cmd` and `notify.cmd`. The first one is the downloader, and the second one is the notificator.
+5. You need to set-up the settings. To do that, change the files `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml`. See [Settings File](#settings-file) and [Credential File](#credentials-file) for more info.
+
 
 ### Virtualenv install
 1. Create a folder whenever you want.
@@ -23,10 +35,10 @@ In the future, The program will be just a folder. In a future, of course.
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
-Al execute the program for the first time, the configuration and credential files will be automatically created. You can find them in `%USER%/vcm-config.ini` and `%USER%/vcm-credentials.ini`.
+Al execute the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.ini` and `C:\Users\%USERNAME%\vcm-credentials.ini`.
 
-## Config File
-The config file path is `%USER%/vcm-config.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
+## Settings File
+The settings file path is `C:\Users\%USERNAME%\vcm-settings.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
 
 It has 3 sections: general, download and notify.
 
@@ -47,7 +59,7 @@ Settings:
 * **email** - Recipient of the notify email. Must be set, it lacks of a default value.
 
 ## Credentials file
-The credentials file path is `%USER%/vcm-credentials.ini`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
+The credentials file path is `C:\Users\%USERNAME%\vcm-credentials.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
 **Note that the credentials will be stored in plain text.**
 
 It has 2 sections: VirtualCampus and Email.
