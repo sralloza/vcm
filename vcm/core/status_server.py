@@ -7,7 +7,7 @@ from typing import List
 import flask
 import waitress
 
-from vcm.downloader.links import BaseLink
+from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 from ._threading import Worker, ThreadStates
 from .time_operations import seconds_to_str

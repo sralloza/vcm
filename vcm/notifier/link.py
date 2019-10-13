@@ -2,7 +2,7 @@ import json
 from enum import Enum, auto
 from pathlib import Path
 
-from vcm.downloader.links import BaseLink
+from vcm.downloader.link import BaseLink
 from vcm.notifier.database import DatabaseLinkInterface
 
 

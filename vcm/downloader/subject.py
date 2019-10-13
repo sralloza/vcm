@@ -11,7 +11,7 @@ from _sha1 import sha1
 from vcm.core.settings import GeneralSettings
 
 from .alias import Alias
-from .links import BaseLink, Delivery, Folder, ForumList, Resource
+from .link import BaseLink, Delivery, Folder, ForumList, Resource
 
 
 class Subject:

@@ -9,7 +9,7 @@ from queue import Queue
 from typing import Any
 
 from vcm.core.modules import Modules
-from vcm.downloader.links import BaseLink
+from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 
 from .exceptions import InvalidStateError
