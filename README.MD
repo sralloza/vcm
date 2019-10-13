@@ -90,6 +90,7 @@ Arguments:
 * `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.
 * `--no-killer` - Disables the Killer thread
 * `-d`, `--debug` - Opens Google Chrome in localhost after start. See [During the Execution](#during-the-execution) for more info.
+* `-q`, `--quiet` - Disables stdout, so nothing gets printed.
 
 To view the command help, use `vcm download -h` or `vcm download --help`.
 
