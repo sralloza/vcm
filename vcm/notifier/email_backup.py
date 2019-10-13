@@ -11,9 +11,6 @@ logger = logging.getLogger(__name__)
 def send_email(destinations, subject, message, origin="Rpi-VCM", retries=5):
     logger.debug("Sending email")
 
-    # TODO: add arguments to store username, password, server and server-port from the email
-    # TODO: add config file to store info listed above
-
     username = Credentials.Email.username
     password = Credentials.Email.password
 
