@@ -1,4 +1,3 @@
-import ctypes
 import logging
 import os
 import re
@@ -7,6 +6,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import current_thread
 
+import psutil
 from colorama import Fore, init
 from decorator import decorator
 
@@ -228,6 +228,10 @@ def setup_vcm():
 
 
 def is_called_from_shell():
+    ppid = os.getppid()  # Get parent process id
+    a = psutil.Process(ppid).name().lower()
+    return "bash" in a or "cmd" in a
+
     # Load kernel32.dll
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     # Create an array to store the processes in.  This doesn't actually need to
