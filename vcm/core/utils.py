@@ -256,3 +256,19 @@ def create_desktop_cmds():
         file_handler.write(template % "notify")
     with download_path.open("wt") as file_handler:
         file_handler.write(template % "download")
+
+
+def useless(*args, **kwargs):
+    pass
+
+
+class Printer:
+    _print = print
+
+    @classmethod
+    def silence(cls):
+        cls._print = useless
+
+    @classmethod
+    def print(cls, *args, **kwargs):
+        return cls._print(*args, **kwargs)
