@@ -267,7 +267,7 @@ class BaseLink(_Notify):
                 len(self.response.content),
             )
             REAL_FILE_CACHE[self.filepath] = len(self.response.content)
-            Results.print_new(f"New file: {self.filepath}")
+            Results.print_new(self.filepath)
 
         try:
             with self.filepath.open("wb") as file_handler:
