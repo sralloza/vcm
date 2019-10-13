@@ -1,3 +1,4 @@
+import ctypes
 import logging
 import os
 import re
@@ -101,7 +102,7 @@ def secure_filename(filename):
 
 
 class Patterns:
-    FILENAME_PATTERN = re.compile('filename=\"?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)\"?')
+    FILENAME_PATTERN = re.compile('filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
 
 
 def exception_exit(exception, to_stderr=False, red=True):
@@ -223,3 +224,15 @@ def more_settings_check():
 def setup_vcm():
     more_settings_check()
     configure_logging()
+
+
+def is_called_from_shell():
+    # Load kernel32.dll
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    # Create an array to store the processes in.  This doesn't actually need to
+    # be large enough to store the whole process list since GetConsoleProcessList()
+    # just returns the number of processes if the array is too small.
+    process_array = (ctypes.c_uint * 1)()
+    num_processes = kernel32.GetConsoleProcessList(process_array, 1)
+    # num_processes may be 1 if your compiled program doesn't have a launcher/wrapper.
+    return num_processes == 2
