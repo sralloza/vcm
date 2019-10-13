@@ -1,5 +1,6 @@
 import argparse
 from enum import Enum
+import time
 
 from vcm.core.settings import (
     SETTINGS_CLASSES,
@@ -7,7 +8,12 @@ from vcm.core.settings import (
     settings_name_to_class,
     settings_to_string,
 )
-from vcm.core.utils import more_settings_check, setup_vcm
+from vcm.core.utils import (
+    is_called_from_shell,
+    more_settings_check,
+    setup_vcm,
+    create_desktop_cmds,
+)
 from vcm.downloader import download
 from vcm.notifier import notify
 
@@ -53,6 +59,11 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
+            if not is_called_from_shell():
+                create_desktop_cmds()
+                print("Created desktop cmds")
+                time.sleep(10)
+                return
             return parser.error("Invalid use: use download or notify")
 
     if opt.command == Command.settings:
