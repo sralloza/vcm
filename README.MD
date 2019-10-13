@@ -7,7 +7,7 @@ There are 3 diferent ways: using the exe, normal instalation and virtualv instal
 _Note: normal and virtualenv instalation both need to have Python 3.6+ installed._
 
 ### Exe install
-1. Go to the [releases](https://github.com/sralloza/vcm/releases) web page and download the last in a zip file.
+1. Go to the [last release](https://github.com/sralloza/vcm/releases/latest) web page and download the zip file (`vcm.zip`)
 2. Extract the zip whenever you want.
 3. Run manually once the `vcm.exe` file (double click) inside the folder where you just extracted the zip.
     3.1. If you have moved the desktop folder outside the default, you need to copy `download.cmd` and `notify.cmd` from `C:\Users\%USERNAME%\desktop` to your real desktop folder. If you haven't moved the desktop folder, you don't have to do this step.
