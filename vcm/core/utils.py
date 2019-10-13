@@ -4,6 +4,7 @@ import os
 import re
 import time
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from threading import current_thread
 
 from colorama import Fore, init
@@ -236,3 +237,18 @@ def is_called_from_shell():
     num_processes = kernel32.GetConsoleProcessList(process_array, 1)
     # num_processes may be 1 if your compiled program doesn't have a launcher/wrapper.
     return num_processes == 2
+
+
+def create_desktop_cmds():
+    desktop_path = Path.home() / "desktop"
+    notify_path = desktop_path / "notify.cmd"
+    download_path = desktop_path / "download.cmd"
+
+    exe_path = Path.cwd() / "vcm.exe"
+
+    template = f'@echo off\n"{exe_path}" %s'
+
+    with notify_path.open("wt") as file_handler:
+        file_handler.write(template % "notify")
+    with download_path.open("wt") as file_handler:
+        file_handler.write(template % "download")
