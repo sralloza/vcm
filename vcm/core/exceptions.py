@@ -50,8 +50,5 @@ class InvalidStateError(VcmError):
     """Invalid state error."""
 
 
-class ConfigError(VcmError):
-    """Config error."""
-
 class InvalidSettingsFileError(VcmError):
     """Invalid settings file error."""
