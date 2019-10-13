@@ -32,6 +32,7 @@ def main(args=None):
     downloader_parser.add_argument("--nthreads", default=20, type=int)
     downloader_parser.add_argument("--no-killer", action="store_true")
     downloader_parser.add_argument("-d", "--debug", action="store_true")
+    downloader_parser.add_argument("-q", "--quiet", action="store_true")
 
     notifier_parser = subparsers.add_parser("notify")
     notifier_parser.add_argument("--nthreads", default=20, type=int)
@@ -110,7 +111,7 @@ def main(args=None):
             )
             webbrowser.get(chrome_path).open_new("localhost")
 
-        return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
+        return download(nthreads=opt.nthreads, no_killer=opt.no_killer, quiet=opt.quiet)
 
     elif opt.command == Command.notify:
         return notify(NotifySettings.email, not opt.no_icons, nthreads=opt.nthreads)
