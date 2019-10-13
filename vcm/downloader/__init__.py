@@ -11,9 +11,10 @@ from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
+from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
-from vcm.core.utils import timing
+from vcm.core.utils import timing, Printer
 
 from .subject import Subject
 
@@ -69,7 +70,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
 
 
 @timing(name='VCM downloader')
-def download(nthreads=None, no_killer=False):
+def download(nthreads=None, no_killer=False, quiet=False):
     """Starts the app.
 
     Args:
@@ -79,6 +80,8 @@ def download(nthreads=None, no_killer=False):
 
     Modules.set_current(Modules.download)
     init_colorama()
+    if quiet:
+        Printer.silence()
 
     if not nthreads:
         nthreads = 50
