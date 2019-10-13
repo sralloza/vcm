@@ -4,5 +4,6 @@ decorator
 Flask
 requests
 ruamel.yaml 
+toml
 unidecode
 waitress
