@@ -15,7 +15,7 @@ from vcm.downloader.subject import Subject
 from .exceptions import InvalidStateError
 from .networking import DownloaderError
 from .time_operations import seconds_to_str
-from .utils import getch
+from .utils import Printer, getch
 
 logger = logging.getLogger(__name__)
 
@@ -187,22 +187,6 @@ class Worker(threading.Thread):
 
         return self.kill()
 
-        # self.timestamp = None
-        # self.current_object = 'Dead thread'
-        #
-        # for thread in threading.enumerate():
-        #     if isinstance(thread, Worker):
-        #         self.queue.put(ThreadStates.killed)
-        #         thread.kill()
-        #
-        # while True:
-        #     foo = self.queue.get()
-        #     if not foo:
-        #         break
-        #     self.queue.task_done()
-
-        # exit()
-
 
 class Killer(Worker):
     def __init__(self, queue, *args, **kwargs):
@@ -215,7 +199,7 @@ class Killer(Worker):
         return output, 0
 
     def run(self):
-        print("Killer ready")
+        Printer.print("Killer ready")
         while True:
             try:
                 char = getch()
@@ -224,7 +208,7 @@ class Killer(Worker):
                 continue
 
             if real in ("q", "k"):
-                print("Exiting")
+                Printer.print("Exiting")
 
                 for thread in threading.enumerate():
                     if isinstance(thread, Worker):
@@ -234,7 +218,7 @@ class Killer(Worker):
                 exit(1)
 
             if real in ("w", "o"):
-                print("Opening state server")
+                Printer.print("Opening state server")
                 chrome_path = (
                     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
                 )
