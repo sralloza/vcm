@@ -2,8 +2,12 @@ venv/
 vlogs/
 __pycache__/
 logs/
+
 .idea/
 .vscode/
+
+build/
+dist/
 
 *.bat
 *.log
