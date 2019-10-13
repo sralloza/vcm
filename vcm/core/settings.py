@@ -23,7 +23,7 @@ def save_settings():
         toml_data[name] = cls
 
     os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
-    with CoreSettings.config_path.open("wt") as file_handler:
+    with CoreSettings.settings_path.open("wt") as file_handler:
         toml.dump(toml_data, file_handler)
 
     del os.environ["VCM_DISABLE_CONSTRUCTS"]
@@ -54,13 +54,13 @@ def settings_to_string():
 
 
 class _CoreSettings(dict):
-    config_path: Path = Path.home() / "vcm-config.toml"
+    settings_path: Path = Path.home() / "vcm-settings.toml"
     credentials_path: Path = Path.home() / "vcm-credentials.toml"
 
     def __init__(self):
         super().__init__(
             {
-                "config_path": _CoreSettings.config_path,
+                "settings_path": _CoreSettings.settings_path,
                 "credentials_path": _CoreSettings.credentials_path,
             }
         )
@@ -70,7 +70,7 @@ CoreSettings = _CoreSettings()
 
 
 def create_default():
-    with CoreSettings.config_path.open("wt") as file_handler:
+    with CoreSettings.settings_path.open("wt") as file_handler:
         toml.dump(defaults, file_handler)
 
 
@@ -78,13 +78,13 @@ class MetaSettings(type):
     require = []
 
     try:
-        with Path(CoreSettings.config_path) as file_handler:
+        with Path(CoreSettings.settings_path) as file_handler:
             real_dict = toml.load(file_handler)
     except FileNotFoundError:
         create_default()
         exit(
             Fore.RED
-            + "Missing settings file, created sample (%s)" % CoreSettings.config_path
+            + "Missing settings file, created sample (%s)" % CoreSettings.settings_path
             + Fore.RESET
         )
 

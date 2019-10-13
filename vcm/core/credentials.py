@@ -72,7 +72,7 @@ class _Credentials:
                 exit(Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET)
 
     def load(self):
-        """Loads the credentials configuration."""
+        """Loads the credentials settings."""
         if not self._path.exists():
 
             self.make_example()
