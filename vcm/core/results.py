@@ -4,6 +4,7 @@ from threading import Lock
 from colorama import Fore
 
 from .settings import GeneralSettings
+from .utils import Printer
 
 
 class Counters:
@@ -33,7 +34,7 @@ class Results:
         Counters.count_updated()
         message = "File updated no. %3d: %s" % (Counters.updated, filepath)
         with Results.print_lock:
-            print(Fore.LIGHTYELLOW_EX + message + Fore.RESET)
+            Printer.print(Fore.LIGHTYELLOW_EX + message + Fore.RESET)
 
         Results.add_to_result_file(message)
 
@@ -43,7 +44,7 @@ class Results:
         Counters.count_new()
         message = "New file no. %3d: %s" % (Counters.new, filepath)
         with Results.print_lock:
-            print(Fore.LIGHTGREEN_EX + message + Fore.RESET)
+            Printer.print(Fore.LIGHTGREEN_EX + message + Fore.RESET)
 
         Results.add_to_result_file(message)
 
