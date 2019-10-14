@@ -29,6 +29,8 @@ class Command(Enum):
 @safe_exit
 def main(args=None):
     parser = argparse.ArgumentParser(prog="vcm")
+    parser.add_argument("-nss", "--no-status-server", action="store_true")
+
     subparsers = parser.add_subparsers(title="commands", dest="command")
 
     downloader_parser = subparsers.add_parser("download")
@@ -72,6 +74,11 @@ def main(args=None):
 
     if opt.command == Command.download and opt.quiet:
         Printer.silence()
+
+    if opt.no_status_server:
+        from vcm.core.status_server import DisableServer
+
+        DisableServer.set()
 
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
