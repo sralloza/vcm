@@ -111,7 +111,7 @@ def main(args=None):
             )
             webbrowser.get(chrome_path).open_new("localhost")
 
-        return download(nthreads=opt.nthreads, no_killer=opt.no_killer, quiet=opt.quiet)
+        return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
 
     elif opt.command == Command.notify:
         return notify(NotifySettings.email, not opt.no_icons, nthreads=opt.nthreads)
