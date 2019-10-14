@@ -9,6 +9,7 @@ from vcm.core.settings import (
     settings_to_string,
 )
 from vcm.core.utils import (
+    Printer,
     is_called_from_shell,
     more_settings_check,
     setup_vcm,
@@ -66,6 +67,9 @@ def main(args=None):
                 time.sleep(10)
                 return
             return parser.error("Invalid use: use download or notify")
+
+    if opt.command == Command.download and opt.quiet:
+        Printer.silence()
 
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
