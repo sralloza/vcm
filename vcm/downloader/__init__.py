@@ -80,8 +80,6 @@ def download(nthreads=None, no_killer=False):
 
     Modules.set_current(Modules.download)
     init_colorama()
-    if quiet:
-        Printer.silence()
 
     if not nthreads:
         nthreads = 50

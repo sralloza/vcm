@@ -1,6 +1,6 @@
 import argparse
-from enum import Enum
 import time
+from enum import Enum
 
 from vcm.core.settings import (
     SETTINGS_CLASSES,
@@ -10,10 +10,11 @@ from vcm.core.settings import (
 )
 from vcm.core.utils import (
     Printer,
+    create_desktop_cmds,
     is_called_from_shell,
     more_settings_check,
+    safe_exit,
     setup_vcm,
-    create_desktop_cmds,
 )
 from vcm.downloader import download
 from vcm.notifier import notify
@@ -25,6 +26,7 @@ class Command(Enum):
     settings = 3
 
 
+@safe_exit
 def main(args=None):
     parser = argparse.ArgumentParser(prog="vcm")
     subparsers = parser.add_subparsers(title="commands", dest="command")
