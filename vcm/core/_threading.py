@@ -245,7 +245,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
         thread_list.append(killer)
     else:
         if Modules.current() == Modules.download:
-            print("Killer not started")
+            Printer.print("Killer not started")
 
     for i in range(nthreads):
         thread = Worker(queue, name=f"W-{i + 1:02d}", daemon=True)
