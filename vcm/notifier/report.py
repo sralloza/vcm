@@ -71,10 +71,7 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
             else:
                 message += "<li>"
 
-            message += (
-                '<span style="color: #000000; font-family: cambria; font-size: 15px;"><a href='
-                f'"{link.url}">{link.name}</a></span></li></ul>'
-            )
+            message += f'<span style="color: #000000; font-family: cambria; font-size: 15px;">{link.to_html()}</span></li></ul>'
 
         message += "<p>&nbsp;</p>"
 
