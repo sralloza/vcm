@@ -2,6 +2,12 @@ import logging
 from pathlib import Path
 
 from .utils import str2bool
+from .exceptions import SettingsError
+
+
+def exclude_urls_setter(*args, **kwargs):
+    raise SettingsError("general.exclude-urls can't be set using the CLI.")
+
 
 defaults = {
     "general": {
@@ -27,6 +33,7 @@ types = {
     "notify": {"use-base64-icons": bool, "email": str},
 }
 
+# Transforms TOML → saved
 constructors = {
     "general": {
         "root-folder": Path,
@@ -38,3 +45,17 @@ constructors = {
     "download": {"forum-subfolders": str2bool},
     "notify": {"use-base64-icons": str2bool, "email": str},
 }
+
+# Transforms str → TOML
+setters = {
+    "general": {
+        "root-folder": str,
+        "logging-level": str,
+        "timeout": int,
+        "retries": int,
+        "exclude-urls": exclude_urls_setter,
+    },
+    "download": {"forum-subfolders": str2bool},
+    "notify": {"use-base64-icons": str2bool, "email": str},
+}
+
