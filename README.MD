@@ -48,6 +48,7 @@ Settings:
 * **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
 * **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
 * **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
+* **exclude-urls** - List of urls to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter.
 
 ### Download section
 Settings:
