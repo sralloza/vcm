@@ -70,7 +70,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
 
 
 @timing(name='VCM downloader')
-def download(nthreads=None, no_killer=False, quiet=False):
+def download(nthreads=None, no_killer=False):
     """Starts the app.
 
     Args:
@@ -80,8 +80,6 @@ def download(nthreads=None, no_killer=False, quiet=False):
 
     Modules.set_current(Modules.download)
     init_colorama()
-    if quiet:
-        Printer.silence()
 
     if not nthreads:
         nthreads = 50

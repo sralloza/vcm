@@ -221,7 +221,6 @@ def more_settings_check():
     os.makedirs(GeneralSettings.logs_folder, exist_ok=True)
 
 
-@safe_exit
 def setup_vcm():
     more_settings_check()
     configure_logging()

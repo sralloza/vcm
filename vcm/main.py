@@ -1,6 +1,6 @@
 import argparse
-from enum import Enum
 import time
+from enum import Enum
 
 from vcm.core.settings import (
     SETTINGS_CLASSES,
@@ -9,10 +9,12 @@ from vcm.core.settings import (
     settings_to_string,
 )
 from vcm.core.utils import (
+    Printer,
+    create_desktop_cmds,
     is_called_from_shell,
     more_settings_check,
+    safe_exit,
     setup_vcm,
-    create_desktop_cmds,
 )
 from vcm.downloader import download
 from vcm.notifier import notify
@@ -24,8 +26,11 @@ class Command(Enum):
     settings = 3
 
 
+@safe_exit
 def main(args=None):
     parser = argparse.ArgumentParser(prog="vcm")
+    parser.add_argument("-nss", "--no-status-server", action="store_true")
+
     subparsers = parser.add_subparsers(title="commands", dest="command")
 
     downloader_parser = subparsers.add_parser("download")
@@ -66,6 +71,14 @@ def main(args=None):
                 time.sleep(10)
                 return
             return parser.error("Invalid use: use download or notify")
+
+    if opt.command == Command.download and opt.quiet:
+        Printer.silence()
+
+    if opt.no_status_server:
+        from vcm.core.status_server import DisableServer
+
+        DisableServer.set()
 
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
@@ -111,7 +124,7 @@ def main(args=None):
             )
             webbrowser.get(chrome_path).open_new("localhost")
 
-        return download(nthreads=opt.nthreads, no_killer=opt.no_killer, quiet=opt.quiet)
+        return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
 
     elif opt.command == Command.notify:
         return notify(NotifySettings.email, not opt.no_icons, nthreads=opt.nthreads)

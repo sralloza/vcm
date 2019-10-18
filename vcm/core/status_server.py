@@ -9,23 +9,54 @@ import waitress
 
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
-from ._threading import Worker, ThreadStates
+
+from ._threading import ThreadStates, Worker
 from .time_operations import seconds_to_str
+from .utils import Printer
 
 logger = logging.getLogger(__name__)
 
 
+class MetaBool(type):
+    def __bool__(cls):
+        return cls().__bool__()
+
+    def __str__(cls, *args):
+        return cls().__str__()
+
+    def __call__(cls, *args):
+        return type.__call__(cls)
+
+
+class DisableServer(metaclass=MetaBool):
+    _internal = False
+
+    def __str__(self):
+        return "%s(%s)" % (type(self).__name__, self._internal)
+
+    def __bool__(self):
+        return self._internal
+
+    @classmethod
+    def set(cls):
+        cls._internal = True
+        Printer.print("Disabled status server")
+
+
 def runserver(queue: Queue, threadlist: List[Worker]):
+    if DisableServer:
+        return
+
     t0 = time.time()
-    logger.info('STARTED STATUS SERVER')
+    logger.info("STARTED STATUS SERVER")
 
     app = flask.Flask(__name__)
 
     @app.errorhandler(404)
     def back_to_index(error):
-        return flask.redirect(flask.url_for('index'))
+        return flask.redirect(flask.url_for("index"))
 
-    @app.route('/')
+    @app.route("/")
     def index():
         return """<p id="content">Here will be content</p>
 
@@ -50,35 +81,37 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     </script>
     """
 
-    @app.route('/feed')
+    @app.route("/feed")
     def info_feed():
         def feed():
-            status = '<title>VCM STATUS</title>'
-            status += f'Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>'
+            status = "<title>VCM STATUS</title>"
+            status += (
+                f"Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>"
+            )
 
             status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
             # noinspection PyUnresolvedReferences
-            status += f'tasks</a>: {queue.unfinished_tasks}<br>'
-            status += f'Items left: {queue.qsize()}<br><br>'
-            thread_status = 'Threads:<br>'
+            status += f"tasks</a>: {queue.unfinished_tasks}<br>"
+            status += f"Items left: {queue.qsize()}<br><br>"
+            thread_status = "Threads:<br>"
 
             idle = 0
             working = 0
 
-            colors = {'orange': 0, 'red': 0, 'green': 0, 'magenta': 0}
+            colors = {"orange": 0, "red": 0, "green": 0, "magenta": 0}
 
             for thread in threadlist:
                 temp_status, status_code = thread.to_log(integer=True)
 
                 if status_code == 4:
-                    colors['magenta'] += 1
+                    colors["magenta"] += 1
                 if status_code == 3:
-                    colors['red'] += 1
+                    colors["red"] += 1
                 elif status_code == 2:
-                    colors['orange'] += 1
+                    colors["orange"] += 1
                 elif status_code == 1:
-                    colors['green'] += 1
-                thread_status += f'\t-{temp_status}<br>'
+                    colors["green"] += 1
+                thread_status += f"\t-{temp_status}<br>"
 
                 try:
                     if thread.state == ThreadStates.working:
@@ -91,36 +124,49 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             colors = list(colors.items())
             colors.sort(key=lambda x: x[-1], reverse=True)
 
-            status += f'Threads working: {working}<br>'
-            status += f'Threads idle: {idle}<br><br>'
-            status += f'Codes:<br>'
-            status += '<br>'.join(
-                [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]) + '<br><br>'
+            status += f"Threads working: {working}<br>"
+            status += f"Threads idle: {idle}<br><br>"
+            status += f"Codes:<br>"
+            status += (
+                "<br>".join(
+                    [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]
+                )
+                + "<br><br>"
+            )
             status += thread_status
 
             yield status
 
-        return flask.Response(feed(), mimetype='text')
+        return flask.Response(feed(), mimetype="text")
 
     # noinspection PyUnresolvedReferences
-    @app.route('/queue')
+    @app.route("/queue")
     def view_queue():
-        output = f'<title>Queue content ({len(queue.queue)} remaining)</title>'
-        output += f'<h1>Queue content ({len(queue.queue)} remaining)</h1>'
+        output = f"<title>Queue content ({len(queue.queue)} remaining)</title>"
+        output += f"<h1>Queue content ({len(queue.queue)} remaining)</h1>"
         for i, elem in enumerate(list(queue.queue)):
             if isinstance(elem, BaseLink):
-                status = f'{elem.subject.name} → {elem.name}'
+                status = f"{elem.subject.name} → {elem.name}"
             elif isinstance(elem, Subject):
-                status = f'{elem.name}'
+                status = f"{elem.name}"
             else:
-                status = 'None'
+                status = "None"
 
-            output += f'{i + 1:03d} → {status}<br>'
+            output += f"{i + 1:03d} → {status}<br>"
 
         return output
 
-    t = threading.Thread(name='vcm-state', target=waitress.serve, daemon=True, args=(app,),
-                         kwargs={'port': 80, 'host': '0.0.0.0', '_quiet': True,
-                                 'clear_untrusted_proxy_headers': True})
+    t = threading.Thread(
+        name="vcm-state",
+        target=waitress.serve,
+        daemon=True,
+        args=(app,),
+        kwargs={
+            "port": 80,
+            "host": "0.0.0.0",
+            "_quiet": True,
+            "clear_untrusted_proxy_headers": True,
+        },
+    )
     t.start()
     return t
