@@ -5,7 +5,7 @@ from pathlib import Path
 import toml
 from colorama.ansi import Fore
 
-from ._settings import constructors, defaults, types
+from ._settings import constructors, defaults, setters, types
 from .exceptions import InvalidSettingsFileError
 
 
@@ -99,6 +99,7 @@ class MetaSettings(type):
                 attrs["def_dict"].update(mcs.real_dict[lookup_name])
                 attrs["types_dict"] = types[lookup_name]
                 attrs["constructors"] = constructors[lookup_name]
+                attrs["setters"] = setters[lookup_name]
             except KeyError as exc:
                 raise InvalidSettingsFileError(",".join(exc))
 
@@ -131,10 +132,9 @@ class BaseSettings(dict, metaclass=MetaSettings):
         key = self._parse_key(key)
         expected_type = self.types_dict[key]
         if isinstance(expected_type, tuple):
-            assert value in expected_type
-        else:
-            assert isinstance(value, expected_type)
-
+            if value not in expected_type:
+                raise TypeError("%r must be one of %r" % (key, expected_type))
+        value = self.setters[key](value)
         super().__setitem__(key, value)
         save_settings()
 
