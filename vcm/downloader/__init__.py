@@ -23,22 +23,26 @@ logger = logging.getLogger(__name__)
 
 def get_subjects(connection, queue):
     request = connection.get(connection.user_url)
-    soup = BeautifulSoup(request.text, 'html.parser')
-    primary_li = soup.find_all('li', class_='contentnode')[3]
+    soup = BeautifulSoup(request.text, "html.parser")
+    primary_li = soup.find_all("li", class_="contentnode")[3]
 
-    lis = primary_li.find_all('li')
-    logger.debug('Found %d potential subjects', len(lis))
+    lis = primary_li.find_all("li")
+    logger.debug("Found %d potential subjects", len(lis))
     subjects = []
 
     for li in lis:
-        course_id = re.search(r'course=(\d+)', li.a['href']).group(1)
-        subject_url = 'https://campusvirtual.uva.es/course/view.php?id=%s' % course_id
-        name = re.search(r'^([\w\s]+?)\s?\(', li.text).group(1)
+        course_id = re.search(r"course=(\d+)", li.a["href"]).group(1)
+        subject_url = "https://campusvirtual.uva.es/course/view.php?id=%s" % course_id
+        name = re.search(r"^([\w\s]+?)\s?\(", li.text).group(1)
 
-        if 'grado' in name.lower():
+        if subject_url in GeneralSettings.exclude_urls:
+            logger.info("Excluding subject %s (%s)", name, subject_url)
             continue
 
-        logger.debug('Assembling subject %r', name)
+        if "grado" in name.lower():
+            continue
+
+        logger.debug("Assembling subject %r", name)
         _subject = Subject(name, subject_url, connection, queue)
         subjects.append(_subject)
 
@@ -56,7 +60,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
         no_killer (bool): desactivate Killer thread.
 
     """
-    logger.debug('Finding subjects')
+    logger.debug("Finding subjects")
 
     threads = start_workers(queue, nthreads, no_killer=no_killer)
     runserver(queue, threads)
@@ -69,7 +73,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
     return subjects
 
 
-@timing(name='VCM downloader')
+@timing(name="VCM downloader")
 def download(nthreads=None, no_killer=False):
     """Starts the app.
 
@@ -84,17 +88,17 @@ def download(nthreads=None, no_killer=False):
     if not nthreads:
         nthreads = 50
 
-    logger.info('STARTING APP')
-    logger.debug('Starting queue')
+    logger.info("STARTING APP")
+    logger.debug("Starting queue")
     queue = Queue()
 
-    logger.debug('Launching subjects finder')
+    logger.debug("Launching subjects finder")
 
     try:
         with Connection() as connection:
             find_subjects(connection, queue, nthreads, no_killer)
 
-            logger.debug('Waiting for queue to empty')
+            logger.debug("Waiting for queue to empty")
             queue.join()
     except LoginError:
-        exit(Fore.RED + 'Login not correct' + Fore.RESET)
+        exit(Fore.RED + "Login not correct" + Fore.RESET)
