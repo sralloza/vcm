@@ -52,3 +52,7 @@ class InvalidStateError(VcmError):
 
 class InvalidSettingsFileError(VcmError):
     """Invalid settings file error."""
+
+
+class SettingsError(VcmError):
+    """Settings error."""
