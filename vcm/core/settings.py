@@ -7,7 +7,6 @@ from colorama.ansi import Fore
 
 from ._settings import constructors, defaults, types
 from .exceptions import InvalidSettingsFileError
-from .utils import safe_exit
 
 
 def extend_settings_class_name(base_settings_class_name):
