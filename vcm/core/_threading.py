@@ -1,59 +1,79 @@
 """Multithreading workers for the VCM."""
 
-import logging
-import threading
-import time
-import webbrowser
 from enum import Enum, auto
+from logging import getLogger
+from queue import Empty as EmptyQueue
 from queue import Queue
-from typing import Any
+from threading import Event, Thread
+from threading import enumerate as enumerate_threads
+from time import time
+from webbrowser import get as getwebbrowser
 
 from vcm.core.modules import Modules
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 
-from .exceptions import InvalidStateError
-from .networking import DownloaderError
 from .time_operations import seconds_to_str
 from .utils import Printer, getch
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Empty:
     pass
 
 
+running = Event()
+running.set()
+
+
 class ThreadStates(Enum):
     idle = auto()
-    working = auto()
+    working_0 = auto()
+    working_1 = auto()
+    working_2 = auto()
+    working_3 = auto()
     killed = auto()
-    online = auto()
+    online = auto()  # Only valid for the Killer Thread
 
-    @staticmethod
-    def get(value):
-        try:
-            return ThreadStates(value)
-        except ValueError:
-            pass
-
-        try:
-            return ThreadStates[value]
-        except KeyError:
-            pass
-
-        raise ValueError("%r is not a valid %s" % (value, ThreadStates.__name__))
+    @property
+    def alias(self):
+        return _state_to_alias[self]
 
 
-class WorkerCodes(Enum):
-    black = 0
-    green = 1
-    orange = 2
-    red = 3
-    magenta = 4
+_state_to_alias = {
+    ThreadStates.idle: "idle",
+    ThreadStates.working_0: "working",
+    ThreadStates.working_1: "working",
+    ThreadStates.working_2: "working",
+    ThreadStates.working_3: "working",
+    ThreadStates.killed: "killed",
+    ThreadStates.online: "online",
+}
 
 
-class Worker(threading.Thread):
+class Colors(Enum):
+    blue = "blue"
+    green = "green"
+    orange = "orange"
+    red = "red"
+    magenta = "magenta"
+    black = "black"
+    light_blue = "light_blue"
+
+
+state_to_color = {
+    ThreadStates.idle: Colors.blue,
+    ThreadStates.working_0: Colors.green,
+    ThreadStates.working_1: Colors.orange,
+    ThreadStates.working_2: Colors.red,
+    ThreadStates.working_3: Colors.magenta,
+    ThreadStates.killed: Colors.black,
+    ThreadStates.online: Colors.light_blue,
+}
+
+
+class Worker(Thread):
     """Special worker for VCM multithreading."""
 
     def __init__(self, queue, *args, **kwargs):
@@ -61,41 +81,66 @@ class Worker(threading.Thread):
 
         self.called_from = Modules.current()
         self.queue: Queue = queue
-        self._state = ThreadStates.idle
         self.timestamp = None
         self.current_object = None
 
+        self._state = ThreadStates.idle
+        self._last_state_update = time()
+        self._update_state()
+
     @property
     def state(self):
+        self.update_state()
         return self._state
+
+    def update_state(self):
+        if time() - self._last_state_update > 1:
+            self._update_state()
+            self._last_state_update = time()
+
+    def _update_state(self):
+        if self.timestamp is None:
+            if not self.active:
+                self._state = ThreadStates.killed
+                return
+
+            if isinstance(self, Killer):
+                self._state = ThreadStates.online
+                return
+
+            if self.current_object is None:
+                self._state = ThreadStates.idle
+                return
+
+        # try:
+        exec_time = time() - self.timestamp
+        # except TypeError:
+        #     print(vars(), vars(self))
+        #     exit()
+
+        if exec_time < 30:
+            state = ThreadStates.working_0
+        elif 30 <= exec_time < 60:
+            state = ThreadStates.working_1
+        elif 60 <= exec_time < 90:
+            state = ThreadStates.working_2
+        else:
+            state = ThreadStates.working_3
+
+        self._state = state
+        return
 
     @property
     def active(self):
-        return self.state != ThreadStates.killed
+        return running.is_set()
 
     def to_log(self, integer=False):
-        code = WorkerCodes.black
-        exec_time = 0
+        state = self.state
+        color = state_to_color[state]
+        status = f'<font color="{color.name}">{self.name}: {state.alias} - '
 
-        if self.state == ThreadStates.idle:
-            code = WorkerCodes.green
-
-        if self.timestamp is not None:
-            exec_time = time.time() - self.timestamp
-
-            if exec_time < 30 and self.state != ThreadStates.killed:
-                code = WorkerCodes.green
-            elif 30 <= exec_time < 60:
-                code = WorkerCodes.orange
-            elif 60 <= exec_time < 90:
-                code = WorkerCodes.red
-            else:
-                code = WorkerCodes.magenta
-
-        status = f'<font color="{code.name}">{self.name}: {self.state.name} - '
-
-        if code == WorkerCodes.magenta:
-            status += f"[{seconds_to_str(exec_time, integer=integer)}] "
+        if state == ThreadStates.working_3:
+            status += f"[{seconds_to_str(time() - self.timestamp, integer=integer)}] "
 
         if isinstance(self.current_object, BaseLink):
             status += f"{self.current_object.subject.name} → {self.current_object.name}"
@@ -108,81 +153,76 @@ class Worker(threading.Thread):
 
         status += "</font>"
 
-        return status, code.value
+        return status
 
     def kill(self):
-        self.set_state(ThreadStates.killed, None)
+        logger.info("Thread killed")
 
-    def set_state(self, state, queue_object: Any = Empty):
-        self._state = ThreadStates.get(state)
+        while True:
+            try:
+                self.queue.get(False)
+                self.queue.task_done()
+            except EmptyQueue:
+                break
 
-        if queue_object != Empty:
-            self.current_object = queue_object
-            return
+        self.timestamp = None
+        running.clear()
 
-        if self.state in [ThreadStates.idle, ThreadStates.killed, ThreadStates.online]:
-            self.current_object = None
-            self.timestamp = None
-
-    # noinspection PyUnresolvedReferences
     def run(self):
         """Runs the thread"""
         while self.active:
-            self.set_state(ThreadStates.idle)
             logger.info("Worker %r ready to continue working", self.name)
-            queue_object = self.queue.get()
-            self.timestamp = time.time()
+            self.current_object = self.queue.get()
+            self.timestamp = time()
+            self.update_state()
             logger.debug(
                 "%d items left in queue (%d unfinished tasks)",
                 self.queue.qsize(),
                 self.queue.unfinished_tasks,
             )
 
-            self.set_state(ThreadStates.working, queue_object)
-
-            if isinstance(queue_object, BaseLink):
-                logger.debug("Found Link %r, processing", queue_object.name)
+            if isinstance(self.current_object, BaseLink):
+                logger.debug("Found Link %r, processing", self.current_object.name)
                 try:
-                    queue_object.download()
-                except FileNotFoundError as ex:
+                    self.current_object.download()
+                except Exception as exc:
                     logger.exception(
-                        "FileNotFoundError in url %s (%r)", queue_object.url, ex
-                    )
-                except DownloaderError as ex:
-                    logger.exception(
-                        "DownloaderError in url %s (%r)", queue_object.url, ex
+                        "%s in url %s (%r)",
+                        type(exc).__name__,
+                        self.current_object.url,
+                        exc,
                     )
 
                 logger.info(
-                    "Worker %r completed work of Link %r", self.name, queue_object.name
+                    "Worker %r completed work of Link %r",
+                    self.name,
+                    self.current_object.name,
                 )
                 self.queue.task_done()
 
-            elif isinstance(queue_object, Subject):
-                logger.debug("Found Subject %r, processing", queue_object.name)
+            elif isinstance(self.current_object, Subject):
+                logger.debug("Found Subject %r, processing", self.current_object.name)
                 try:
-                    queue_object.find_and_download_links()
-                except DownloaderError as ex:
+                    self.current_object.find_and_download_links()
+                except Exception as exc:
                     logger.exception(
-                        "DownloaderError in subject %s (%r)", queue_object.name, ex
+                        "%s in subject %s (%r)",
+                        type(exc).__name__,
+                        self.current_object.name,
+                        exc,
                     )
 
                 logger.info(
                     "Worker %r completed work of Subject %r",
                     self.name,
-                    queue_object.name,
+                    self.current_object.name,
                 )
                 self.queue.task_done()
-            elif queue_object is None:
-                logger.info("Closing thread, received None")
-                return self.kill()
-            elif queue_object == ThreadStates.killed:
-                return self.kill()
             else:
-                raise InvalidStateError("Unkown object in queue: %r" % queue_object)
+                raise ValueError("Unkown object in queue: %r" % self.current_object)
 
             logger.info("%d unfinished tasks", self.queue.unfinished_tasks)
-            self.set_state(ThreadStates.idle)
+            self.current_object = None
             self.timestamp = None
 
         return self.kill()
@@ -194,9 +234,9 @@ class Killer(Worker):
         self.queue = queue
         self.status = ThreadStates.online
 
-    def to_log(self, *args, **kwargs):
+    def to_log(self, integer=False):
         output = f'<font color="blue">{self.name}: {self.status.name}'
-        return output, 0
+        return output
 
     def run(self):
         Printer.print("Killer ready")
@@ -209,11 +249,13 @@ class Killer(Worker):
 
             if real in ("q", "k"):
                 Printer.print("Exiting")
+                logger.info("Killer thread starts his massacre")
 
-                for thread in threading.enumerate():
+                for thread in enumerate_threads():
                     if isinstance(thread, Worker):
                         thread.kill()
 
+                logger.info("Killer thread ended his massacre")
                 self.kill()
                 exit(1)
 
@@ -222,7 +264,7 @@ class Killer(Worker):
                 chrome_path = (
                     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
                 )
-                webbrowser.get(chrome_path).open_new("localhost")
+                getwebbrowser(chrome_path).open_new("localhost")
 
 
 def start_workers(queue, nthreads=20, no_killer=False):

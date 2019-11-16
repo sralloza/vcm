@@ -30,7 +30,6 @@ screen."""
         return self.impl()
 
 
-# noinspection PyUnresolvedReferences
 class _GetchUnix:
     def __init__(self):
         import tty
@@ -51,7 +50,6 @@ class _GetchUnix:
         return ch
 
 
-# noinspection PyUnresolvedReferences
 class _GetchWindows:
     def __init__(self):
         import msvcrt

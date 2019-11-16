@@ -12,7 +12,7 @@ class FileCache:
     path = GeneralSettings.root_folder
 
     def __init__(self):
-        self.cache = {}
+        self._cache = {}
 
     def __contains__(self, item):
         if not isinstance(item, Path):
@@ -20,7 +20,7 @@ class FileCache:
                 "FileCache.__contains__ must be used with Path, not %r"
                 % type(item).__name__
             )
-        return item in self.cache.keys()
+        return item in self._cache.keys()
 
     def __getitem__(self, item):
         if not isinstance(item, Path):
@@ -28,13 +28,13 @@ class FileCache:
                 "FileCache.__getitem__ must be used with Path, not %r"
                 % type(item).__name__
             )
-        return self.cache[item]
+
+        return self._cache[item]
 
     def __setitem__(self, key, value):
         if not isinstance(key, Path):
             raise TypeError(
-                "FileCache.__setitem__'s key must be Path, not %r"
-                % type(key).__name__
+                "FileCache.__setitem__'s key must be Path, not %r" % type(key).__name__
             )
 
         if not isinstance(value, int):
@@ -43,10 +43,10 @@ class FileCache:
                 % type(value).__name__
             )
 
-        self.cache[key] = value
+        self._cache[key] = value
 
     def __len__(self):
-        return len(self.cache)
+        return len(self._cache)
 
     def load(self, _auto=False):
         """Starts the scanner."""
@@ -55,10 +55,7 @@ class FileCache:
             raise FileCacheError("Use REAL_FILE_CACHE instead")
 
         filenames = []
-        for elem in os.walk(self.path.as_posix()):
-            folder = elem[0]
-            files = elem[2]
-
+        for folder, _, files in os.walk(self.path.as_posix()):
             for file in files:
                 filenames.append(Path(folder) / file)
 
@@ -67,10 +64,7 @@ class FileCache:
 
     def _get_file_length(self, file):
         """Gets the file content length."""
-        with file.open("rb") as file_handler:
-            length = len(file_handler.read())
-
-        self[file] = length
+        self[file] = file.stat().st_size
 
 
 REAL_FILE_CACHE = FileCache()

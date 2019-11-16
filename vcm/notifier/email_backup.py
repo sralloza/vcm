@@ -27,7 +27,9 @@ def send_email(destinations, subject, message, origin="Rpi-VCM", retries=5):
 
     while retries > 0:
         try:
-            server = smtplib.SMTP(Credentials.Email.smtp_server, Credentials.Email.smtp_port)
+            server = smtplib.SMTP(
+                Credentials.Email.smtp_server, Credentials.Email.smtp_port
+            )
         except smtplib.SMTPConnectError:
             logger.warning("SMTP Connect Error, retries=%d", retries)
             retries -= 1

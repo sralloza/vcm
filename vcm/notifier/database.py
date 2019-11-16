@@ -18,12 +18,14 @@ class DatabaseInterface:
         self.close()
 
     def ensure_table(self):
-        self.cursor.execute("""CREATE TABLE IF NOT EXISTS database_links (
+        self.cursor.execute(
+            """CREATE TABLE IF NOT EXISTS database_links (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 url TEXT UNIQUE NOT NULL,
                 subject TEXT NOT NULL,
                 datetime TEXT NOT NULL
-                )""")
+                )"""
+        )
 
     def commit(self):
         self.connection.commit()
@@ -33,7 +35,11 @@ class DatabaseInterface:
         self.connection.close()
 
     def save_link(self, link):
-        data = [link.url, link.subject.name, datetime.today().strftime('%Y-%m-%d %H:%M:%S')]
+        data = [
+            link.url,
+            link.subject.name,
+            datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
+        ]
         try:
             self.cursor.execute("INSERT INTO database_links VALUES (NULL,?,?,?)", data)
             return True
@@ -46,4 +52,3 @@ class DatabaseLinkInterface:
     def save(link):
         with DatabaseInterface() as connection:
             return connection.save_link(link)
-

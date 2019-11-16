@@ -14,6 +14,21 @@ A = Union[List[str], str]
 S = List[Subject]
 
 
+# FORM_LIKE_A_STYLE = """<style>
+#     .btn-link {
+#     border: none;
+#     outline: none;
+#     background: none;
+#     cursor: pointer;
+#     color: #0000EE;
+#     padding: 0;
+#     text-decoration: underline;
+#     font-family: inherit;
+#     font-size: inherit;
+# }
+#     </style>"""
+
+
 def send_report(subjects: S, use_icons: bool, send_to: A):
     logger.info("Creating report")
 
@@ -31,10 +46,12 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
     logger.info("%d new links detected", nlinks)
 
     # Detect if plural should be used
-    s = nlinks != 1
-    info = f'enlace{"s" if s else ""} nuevo{"s" if s else ""}'
+    s = "s" if nlinks != 1 else ""
+    info = f"enlace{s} nuevo{s}"
 
-    message = (
+    # message = f"<html><head>{FORM_LIKE_A_STYLE}</head><body>"
+    message = '<!DOCTYPE html><html lang="es"><head><title>Virtual Campus Notifier</title></head><body>'
+    message += (
         '<h2><span style="color: #339966; font-family: cambria; font-size: 35px;">'
         f'Se han encontrado {nlinks} {info}{":" if nlinks else "."}'
         "</span></h2><p>&nbsp;</p>"
@@ -49,33 +66,27 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
             f';text-decoration: none">{subject.name.title()}</a></span></h2>'
         )
 
+        message += "<table>"
         for link in subject.new_links:
-            message += "<ul>"
+            message += '<tr style="height: 3em">'
+            message += "<td>"
             if use_icons:
-                message += '<li style="list-style: none;">'
-
                 if NotifySettings.use_base64_icons:
-                    message += f"<img src='data:image/png;base64,{link.icon_data_64}' width='24' "
+                    message += f"<img src='data:image/png;base64,{link.icon_data_64}' width='24' alt='{link.icon_type.name}' "
                 else:
-                    message += f'<img src="{link.icon_url}" width="24" '
+                    message += f'<img src="{link.icon_url}" width="24" alt="{link.icon_type.name}" '
 
                 message += 'height="24" style="margin-bottom: -0.5em;">'
 
-                # if link.is_teluva:
-                #     message += (
-                #         f'<img src="{link.icon_url}" width="24" '
-                #         'height="24" style="margin-bottom: -0.5em;">'
-                #     )
+            message += f"</td><td>{link.to_html()}</td>"
+            message += "</tr>"
 
-                message += "&nbsp;"
-            else:
-                message += "<li>"
-
-            message += f'<span style="color: #000000; font-family: cambria; font-size: 15px;">{link.to_html()}</span></li></ul>'
+        message += "</table>"
 
         message += "<p>&nbsp;</p>"
 
     message += "\n\nEjecutado en " + platform.system() + "."
+    message += "</body></html>"
     subject = "Se han encontrado %d enlaces nuevos" % nlinks
 
     return send_email(send_to, subject, message, origin="Rpi-VCM")

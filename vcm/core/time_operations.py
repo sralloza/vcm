@@ -1,18 +1,18 @@
 from .exceptions import InvalidLanguageError
 
 ALPHABET = {
-    'abbr': {
-        'es': ['d', 'h', 'm', 's', '', 'y'],
-        'en': ['d', 'h', 'm', 's', '', 'and']
+    "abbr": {
+        "es": ["d", "h", "m", "s", "", "y"],
+        "en": ["d", "h", "m", "s", "", "and"],
     },
-    'default': {
-        'es': ['día', 'hora', 'minuto', 'segundo', 's', 'y'],
-        'en': ['day', 'hour', 'minute', 'second', 's', 'and']
-    }
+    "default": {
+        "es": ["día", "hora", "minuto", "segundo", "s", "y"],
+        "en": ["day", "hour", "minute", "second", "s", "and"],
+    },
 }
 
 
-def seconds_to_str(seconds, abbreviated=False, integer=None, language='en'):
+def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
     """Returns seconds extended as string.
 
     Args:
@@ -25,22 +25,25 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language='en'):
     """
 
     if not isinstance(seconds, (float, int)):
-        raise TypeError(f'seconds must be float or int, not {type(seconds).__name__}')
+        raise TypeError(f"seconds must be float or int, not {type(seconds).__name__}")
 
     if integer is True:
         seconds = int(seconds)
 
     try:
         if abbreviated is True:
-            day_str, hour_str, minute_str, second_str, final_s, s_last = ALPHABET['abbr'][language]
+            day_str, hour_str, minute_str, second_str, final_s, s_last = ALPHABET[
+                "abbr"
+            ][language]
         else:
-            day_str, hour_str, minute_str, second_str, final_s, s_last = ALPHABET['default'][
-                language]
+            day_str, hour_str, minute_str, second_str, final_s, s_last = ALPHABET[
+                "default"
+            ][language]
     except KeyError:
-        raise InvalidLanguageError(f'{language!r} is not a valid language')
+        raise InvalidLanguageError(f"{language!r} is not a valid language")
 
     before = ", "
-    s_last = ' ' + s_last + ' '
+    s_last = " " + s_last + " "
     has_before = [False, False, False, False]
     has_not_zero = [0, 0, 0, 0]
 
@@ -108,7 +111,7 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language='en'):
             ret += final_s
 
     if second == minute == hour == day == 0:
-        return '0 ' + second + final_s
+        return "0 %s%s" % (second, final_s)
 
     return ret
 

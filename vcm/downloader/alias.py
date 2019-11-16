@@ -9,6 +9,7 @@ from vcm.core.settings import GeneralSettings
 
 class Events:
     """Contains events to control the multithreading version of Alias."""
+
     access = Semaphore()
 
     @staticmethod
@@ -24,7 +25,7 @@ class Alias:
     """Class designed to declare aliases"""
 
     def __init__(self):
-        self.alias_path = GeneralSettings.root_folder / 'alias.json'
+        self.alias_path = GeneralSettings.root_folder / "alias.json"
         self.json = []
         self.load()
 
@@ -39,19 +40,24 @@ class Alias:
             return
         try:
             Events.acquire()
-            with self.alias_path.open(encoding='utf-8') as file_handler:
+            with self.alias_path.open(encoding="utf-8") as file_handler:
                 self.json = json.load(file_handler) or []
         except json.JSONDecodeError as ex:
-            raise AliasFatalError('Raised JSONDecodeError') from ex
+            raise AliasFatalError("Raised JSONDecodeError") from ex
         except UnicodeDecodeError as ex:
-            raise AliasFatalError('Raised UnicodeDecodeError') from ex
+            raise AliasFatalError("Raised UnicodeDecodeError") from ex
 
         if not isinstance(self.json, list):
-            raise TypeError(f'alias file invalid ({type(self.json).__name__})')
+            raise TypeError(f"alias file invalid ({type(self.json).__name__})")
 
         for alias in self.json:
-            if 'id' not in alias or 'new' not in alias or 'old' not in alias or 'type' not in alias:
-                raise TypeError(f'alias file invalid: {alias!r}')
+            if (
+                "id" not in alias
+                or "new" not in alias
+                or "old" not in alias
+                or "type" not in alias
+            ):
+                raise TypeError(f"alias file invalid: {alias!r}")
 
         Events.release()
 
@@ -64,7 +70,7 @@ class Alias:
         Events.acquire()
 
         self.json = []
-        with self.alias_path.open('wt', encoding='utf-8') as file_handler:
+        with self.alias_path.open("wt", encoding="utf-8") as file_handler:
             json.dump([], file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
         Events.release()
@@ -73,20 +79,22 @@ class Alias:
     def save(self):
         """Saves alias configuration to the file."""
         try:
-            with self.alias_path.open(encoding='utf-8') as file_handler:
+            with self.alias_path.open(encoding="utf-8") as file_handler:
                 temp = json.load(file_handler) or []
         except (FileNotFoundError, json.JSONDecodeError):
             temp = []
 
-        to_write = (self.json + temp)
+        to_write = self.json + temp
 
         res_list = []
         for i in range(len(to_write)):
-            if to_write[i] not in to_write[i + 1:]:
+            if to_write[i] not in to_write[i + 1 :]:
                 res_list.append(to_write[i])
 
-        with self.alias_path.open('wt', encoding='utf-8') as  file_handler:
-            json.dump(res_list, file_handler, indent=4, sort_keys=True, ensure_ascii=False)
+        with self.alias_path.open("wt", encoding="utf-8") as file_handler:
+            json.dump(
+                res_list, file_handler, indent=4, sort_keys=True, ensure_ascii=False
+            )
 
     def _increment(self, something):
         """Changes the filename if it already exists in the database.
@@ -104,7 +112,7 @@ class Alias:
 
             done = True
             for file in self.json:
-                if temp == file['new']:
+                if temp == file["new"]:
                     done = False
                     break
 
@@ -121,11 +129,11 @@ class Alias:
             Alias._createname("some.file.txt", 5) -> "some.file.5.txt"
         """
 
-        splitted = template.split('.')
+        splitted = template.split(".")
         if len(splitted) == 1:
-            return f'{splitted[0]}.{index}'
+            return f"{splitted[0]}.{index}"
         elif len(splitted) == 2:
-            return f'{splitted[0]}.{index}.{splitted[1]}'
+            return f"{splitted[0]}.{index}.{splitted[1]}"
         else:
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
@@ -148,29 +156,31 @@ class Alias:
         Events.acquire()
 
         for file in self.json:
-            if file['id'] == id_:
+            if file["id"] == id_:
                 Events.release()
 
-                if file['old'] == real:
-                    return file['new']
+                if file["old"] == real:
+                    return file["new"]
 
-                raise IdError(f'Same id, different names ({file["id"]}, {file["new"]}, {real})')
+                raise IdError(
+                    f'Same id, different names ({file["id"]}, {file["new"]}, {real})'
+                )
 
         if os.path.isfile(real):
-            type_ = 'f'
+            type_ = "f"
         elif os.path.isdir(real):
-            type_ = 'd'
+            type_ = "d"
         else:
-            type_ = '?'
+            type_ = "?"
 
         new = real
 
         for file in self.json:
-            if file['old'] == real:
+            if file["old"] == real:
                 new = self._increment(new)
                 break
 
-        self.json.append({'id': id_, 'old': real, 'new': new, 'type': type_})
+        self.json.append({"id": id_, "old": real, "new": new, "type": type_})
         self.save()
 
         Events.release()
@@ -194,10 +204,10 @@ class Alias:
         self.__init__()
 
         for file in self.json:
-            if file['new'] == alias:
-                return file['old']
+            if file["new"] == alias:
+                return file["old"]
 
-        raise AliasNotFoundError(f'Alias not found: {alias!r}')
+        raise AliasNotFoundError(f"Alias not found: {alias!r}")
 
     @staticmethod
     def get_real_from_id(id_):
@@ -217,7 +227,7 @@ class Alias:
         self.__init__()
 
         for file in self.json:
-            if file['id'] == id_:
-                return file['old']
+            if file["id"] == id_:
+                return file["old"]
 
-        raise IdError(f'Id not found: {id_}')
+        raise IdError(f"Id not found: {id_}")

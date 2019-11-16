@@ -1,5 +1,5 @@
 # How to install
-There are 3 diferent ways: using the exe, normal instalation and virtualv instalation. 
+There are 3 diferent ways: using the exe, normal instalation and virtualv instalation.
 - People who don't want to use a Command Line Interface should get the exe instalation.
 - Developers who prefer to use a single interpreter should get the normal instalation.
 - Developers who doesn't want to have dependency problems and like to manage projects in sepparate virtual environment should get the virtualenv instalation.
@@ -21,7 +21,7 @@ _Note: normal and virtualenv instalation both need to have Python 3.6+ installed
 3. Activate the environment using `call venv/scripts/activate.bat`.
 4. Install the program with `python -m pip install git+https://github.com/sralloza/vcm.git@dev`
 5. Inside that folder, create another folder and add it to the `PATH`. If you don't know how to add folders to the `PATH`, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
-6. Finally, create a file named `vcm.cmd` in that 
+6. Finally, create a file named `vcm.cmd` in that
 
 ```
 @echo off
@@ -91,7 +91,7 @@ Example: `vcm --no-status-server download --nthreads 23 --no-killer`
 To see more info use `vcm -h` or `vcm --help`
 
 ### Download command
-It downloads all the virtual campus files in the root folder. 
+It downloads all the virtual campus files in the root folder.
 
 Arguments:
 * `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.

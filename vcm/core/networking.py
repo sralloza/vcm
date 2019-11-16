@@ -21,6 +21,7 @@ class Connection:
         self._login_response: requests.Response = None
         self._sesskey: str = None
         self._user_url: str = None
+        self._login_attempts = 0
 
     @property
     def sesskey(self):
@@ -37,27 +38,13 @@ class Connection:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
 
-    @staticmethod
-    def _fix_headers(**kwargs):
-        user_agent = (
-            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
-        )
-        headers = kwargs.pop("headers", dict())
-        headers["User-Agent"] = user_agent
-        kwargs["headers"] = headers
-        return kwargs
-
     def get(self, url, **kwargs):
-        kwargs = self._fix_headers(**kwargs)
         return self._downloader.get(url, **kwargs)
 
     def post(self, url, data=None, json=None, **kwargs):
-        kwargs = self._fix_headers(**kwargs)
         return self._downloader.post(url, data, json, **kwargs)
 
     def delete(self, url, **kwargs):
-        kwargs = self._fix_headers(**kwargs)
         return self._downloader.delete(url, **kwargs)
 
     def logout(self):
@@ -70,12 +57,23 @@ class Connection:
             raise LogoutError
 
     def login(self):
+        try:
+            self._login()
+        except (KeyError, TypeError, LoginError) as exc:
+            logger.warning("Needed to call again Connection.login() due to %r", exc)
+            self._login_attempts += 1
+
+            if self._login_attempts >= 10:
+                raise LoginError("10 login attempts, unkwown error. See logs.")
+            return self.login()
+
+    def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
         soup = BeautifulSoup(response.text, "html.parser")
 
-        login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})[
-            "value"
-        ]
+        login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
+        login_token = login_token["value"]
+
         logger.debug("Login token: %s", login_token)
 
         logger.info("Logging in with user %r", Credentials.VirtualCampus.username)
@@ -90,6 +88,11 @@ class Connection:
             },
         )
 
+        if not self._login_response.ok:
+            raise LoginError(
+                "Got response with HTTP code %d" % self._login_response.status_code
+            )
+
         soup = BeautifulSoup(self._login_response.text, "html.parser")
 
         if "Usted se ha identificado" not in self._login_response.text:
@@ -99,14 +102,10 @@ class Connection:
             "value"
         ]
 
-        try:
-            self._user_url = (
-                soup.find("a", {"aria-labelledby": "actionmenuaction-2"})["href"]
-                + "&showallcourses=1"
-            )
-        except KeyError:
-            logger.warning("Needed to call again Connection.login()")
-            return self.login()
+        self._user_url = (
+            soup.find("a", {"aria-labelledby": "actionmenuaction-2"})["href"]
+            + "&showallcourses=1"
+        )
 
 
 class Downloader(requests.Session):
@@ -119,6 +118,12 @@ class Downloader(requests.Session):
             self.logger.setLevel(logging.CRITICAL)
 
         super().__init__()
+        self.headers.update(
+            {
+                "User-Agent": "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+            }
+        )
 
     def get(self, url, **kwargs):
         self.logger.debug("GET %r", url)

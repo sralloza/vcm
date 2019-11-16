@@ -75,11 +75,6 @@ def main(args=None):
     if opt.command == Command.download and opt.quiet:
         Printer.silence()
 
-    if opt.no_status_server:
-        from vcm.core.status_server import DisableServer
-
-        DisableServer.set()
-
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
             print(settings_to_string())
@@ -124,9 +119,18 @@ def main(args=None):
             )
             webbrowser.get(chrome_path).open_new("localhost")
 
-        return download(nthreads=opt.nthreads, no_killer=opt.no_killer)
+        return download(
+            nthreads=opt.nthreads,
+            no_killer=opt.no_killer,
+            status_server=not opt.no_status_server,
+        )
 
     elif opt.command == Command.notify:
-        return notify(NotifySettings.email, not opt.no_icons, nthreads=opt.nthreads)
+        return notify(
+            send_to=NotifySettings.email,
+            use_icons=not opt.no_icons,
+            nthreads=opt.nthreads,
+            status_server=not opt.no_status_server,
+        )
     else:
         return parser.error("Invalid command: %r" % opt.command)

@@ -14,7 +14,7 @@ from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
-from vcm.core.utils import timing, Printer
+from vcm.core.utils import Printer, timing
 
 from .subject import Subject
 
@@ -50,20 +50,15 @@ def get_subjects(connection, queue):
     return subjects
 
 
-def find_subjects(connection, queue, nthreads=20, no_killer=False):
+def find_subjects(connection, queue):
     """Starts finding subjects.
 
     Args:
         connection (Connection): custom session with retry control.
         queue (Queue): queue to organize threads.
-        nthreads (int): number of threads to start.
-        no_killer (bool): desactivate Killer thread.
 
     """
     logger.debug("Finding subjects")
-
-    threads = start_workers(queue, nthreads, no_killer=no_killer)
-    runserver(queue, threads)
 
     subjects = get_subjects(connection, queue)
 
@@ -74,7 +69,7 @@ def find_subjects(connection, queue, nthreads=20, no_killer=False):
 
 
 @timing(name="VCM downloader")
-def download(nthreads=None, no_killer=False):
+def download(nthreads=20, no_killer=False, status_server=True):
     """Starts the app.
 
     Args:
@@ -85,18 +80,21 @@ def download(nthreads=None, no_killer=False):
     Modules.set_current(Modules.download)
     init_colorama()
 
-    if not nthreads:
-        nthreads = 50
-
     logger.info("STARTING APP")
     logger.debug("Starting queue")
     queue = Queue()
 
     logger.debug("Launching subjects finder")
 
+    threads = start_workers(queue, nthreads, no_killer=no_killer)
+
+    if status_server:
+        runserver(queue, threads)
+
     try:
         with Connection() as connection:
-            find_subjects(connection, queue, nthreads, no_killer)
+
+            find_subjects(connection, queue)
 
             logger.debug("Waiting for queue to empty")
             queue.join()

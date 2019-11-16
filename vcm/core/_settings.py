@@ -58,4 +58,3 @@ setters = {
     "download": {"forum-subfolders": str2bool},
     "notify": {"use-base64-icons": str2bool, "email": str},
 }
-

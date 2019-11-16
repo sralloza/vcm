@@ -5,20 +5,7 @@ from pathlib import Path
 from vcm.downloader.link import BaseLink, Folder
 from vcm.notifier.database import DatabaseLinkInterface
 
-
-FORM_LIKE_A_STYLE = """<style>
-    .btn-link {
-    border: none;
-    outline: none;
-    background: none;
-    cursor: pointer;
-    color: #0000EE;
-    padding: 0;
-    text-decoration: underline;
-    font-family: inherit;
-    font-size: inherit;
-}
-    </style>"""
+inline_style = "border: none; outline: none; background: none; cursor: pointer; color: #0000EE; padding: 0; text-decoration: underline; font-family: inherit; font-size: inherit;"
 
 
 class IconType(Enum):
@@ -196,13 +183,11 @@ class NotifierLink(BaseLink):
 
     def to_html(self):
         if self.super_class != Folder:
-            return f'<a href={self.url}">{self.name}</a>'
+            return f'<a href="{self.url}">{self.name}</a>'
 
         return f"""
         <form action="{self.url}" method="POST" style="display: inline;">
             <input name="id" type="hidden" value="{self.id}">
-            <input type="submit" class="btn-link" value="{self.name}">
-        </post>
-        {FORM_LIKE_A_STYLE}
+            <input type="submit" style="{inline_style}" value="{self.name}">
+        </form>
         """
-

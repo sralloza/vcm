@@ -1,7 +1,9 @@
-import logging
-import threading
-import time
+from collections import defaultdict
+from logging import getLogger
 from queue import Queue
+from threading import Thread
+from threading import enumerate as enumerate_threads
+from time import time
 from typing import List
 
 import flask
@@ -10,44 +12,14 @@ import waitress
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 
-from ._threading import ThreadStates, Worker
+from ._threading import Killer, ThreadStates, Worker, state_to_color
 from .time_operations import seconds_to_str
-from .utils import Printer
 
-logger = logging.getLogger(__name__)
-
-
-class MetaBool(type):
-    def __bool__(cls):
-        return cls().__bool__()
-
-    def __str__(cls, *args):
-        return cls().__str__()
-
-    def __call__(cls, *args):
-        return type.__call__(cls)
-
-
-class DisableServer(metaclass=MetaBool):
-    _internal = False
-
-    def __str__(self):
-        return "%s(%s)" % (type(self).__name__, self._internal)
-
-    def __bool__(self):
-        return self._internal
-
-    @classmethod
-    def set(cls):
-        cls._internal = True
-        Printer.print("Disabled status server")
+logger = getLogger(__name__)
 
 
 def runserver(queue: Queue, threadlist: List[Worker]):
-    if DisableServer:
-        return
-
-    t0 = time.time()
+    t0 = time()
     logger.info("STARTED STATUS SERVER")
 
     app = flask.Flask(__name__)
@@ -85,41 +57,17 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     def info_feed():
         def feed():
             status = "<title>VCM STATUS</title>"
-            status += (
-                f"Execution time: {seconds_to_str(time.time() - t0, integer=True)}<br>"
-            )
+            status += f"Execution time: {seconds_to_str(time() - t0, integer=True)}<br>"
 
             status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
-            # noinspection PyUnresolvedReferences
             status += f"tasks</a>: {queue.unfinished_tasks}<br>"
             status += f"Items left: {queue.qsize()}<br><br>"
             thread_status = "Threads:<br>"
 
-            idle = 0
-            working = 0
-
-            colors = {"orange": 0, "red": 0, "green": 0, "magenta": 0}
-
+            colors, working, idle = get_thread_state_info()
             for thread in threadlist:
-                temp_status, status_code = thread.to_log(integer=True)
-
-                if status_code == 4:
-                    colors["magenta"] += 1
-                if status_code == 3:
-                    colors["red"] += 1
-                elif status_code == 2:
-                    colors["orange"] += 1
-                elif status_code == 1:
-                    colors["green"] += 1
+                temp_status = thread.to_log(integer=True)
                 thread_status += f"\t-{temp_status}<br>"
-
-                try:
-                    if thread.state == ThreadStates.working:
-                        working += 1
-                    if thread.state == ThreadStates.idle:
-                        idle += 1
-                except AttributeError:
-                    pass
 
             colors = list(colors.items())
             colors.sort(key=lambda x: x[-1], reverse=True)
@@ -139,7 +87,6 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return flask.Response(feed(), mimetype="text")
 
-    # noinspection PyUnresolvedReferences
     @app.route("/queue")
     def view_queue():
         output = f"<title>Queue content ({len(queue.queue)} remaining)</title>"
@@ -156,7 +103,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return output
 
-    t = threading.Thread(
+    t = Thread(
         name="vcm-state",
         target=waitress.serve,
         daemon=True,
@@ -170,3 +117,30 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     )
     t.start()
     return t
+
+
+def get_thread_state_info():
+    def helper():
+        return 0
+
+    colors = defaultdict(helper, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
+    working = 0
+    idle = 0
+
+    for thread in enumerate_threads():
+        if not isinstance(thread, Worker):
+            continue
+        if isinstance(thread, Killer):
+            continue
+        state = thread.state
+        color = state_to_color[state]
+        colors[color.name] += 1
+
+        if state == ThreadStates.idle:
+            idle += 1
+
+        if state.value == "working":
+            working += 1
+
+    colors.pop("blue", None)
+    return dict(colors), working, idle

@@ -424,7 +424,7 @@ class Resource(BaseLink):
         self.logger.debug("Parsing HTML (%r)", self.url)
         resource = self.soup.find("object", {"id": "resourceobject"})
         name = self.soup.find("div", {"role": "main"}).h2.text
-        
+
         # Self does not contain the file, only a link to the real file.
         self._NOTIFY = False
 
@@ -612,18 +612,11 @@ class Delivery(BaseLink):
 
     _NOTIFY = True
 
-    def make_subfolder(self):
-        """Makes a subfolder to save the folder's links."""
-        self.append_subfolder(self.name)
-        self.create_subject_folder()
-        self.create_subfolder()
-
     def download(self):
         """Downloads the resources found in the delivery."""
         self.logger.debug("Downloading delivery %s", self.name)
         self.make_request()
         self.process_request_bs4()
-        self.make_subfolder()
 
         links = []
         containers = self.soup.findAll("a", {"target": "_blank"})

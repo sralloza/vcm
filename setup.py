@@ -5,7 +5,7 @@ from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
 version = Path(__file__).parent.joinpath("vcm/VERSION").read_text()
-requirements = Path(__file__).with_name('requirements.txt').read_text().splitlines()
+requirements = Path(__file__).with_name("requirements.txt").read_text().splitlines()
 
 
 class PyTest(TestCommand):
@@ -40,7 +40,7 @@ setup(
     packages=["vcm", "vcm.core", "vcm.notifier", "vcm.downloader"],
     install_requires=requirements,
     # package_data={'aes.test': ['test_data/ensure_filepath/*']},
-    package_data={'vcm': ['VERSION'], 'vcm.notifier': ['base64.json']},
+    package_data={"vcm": ["VERSION"], "vcm.notifier": ["base64.json"]},
     tests_require=["pytest"],
     cmdclass={"test": PyTest},
     zip_safe=False,
