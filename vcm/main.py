@@ -26,8 +26,7 @@ class Command(Enum):
     settings = 3
 
 
-@safe_exit
-def main(args=None):
+def parse_args(args=None, parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
     parser.add_argument("-nss", "--no-status-server", action="store_true")
 
@@ -57,7 +56,16 @@ def main(args=None):
 
     settings_subparser.add_parser("check")
 
-    opt = parser.parse_args(args)
+    if parser:
+        return parser.parse_args(args), parser
+
+    return parser.parse_args(args)
+
+
+@safe_exit
+def main(args=None):
+    opt, parser = parse_args(args, parser=True)
+
 
     try:
         opt.command = Command(opt.command)
