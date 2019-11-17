@@ -130,7 +130,9 @@ Uses:
 During the execution you can open a web browser in localhost to access to real time information of the threading status. It is shown what is the state of each thread and what it's downloading each thread.
 
 To view the status of a thread, a color code is used:
+- Blue: thread is idle (ready to work).
 - Green: thread downloading for less than 30 seconds.
-- Yellow: thread downloading between 30 seconds and 1 minute.
+- Orange: thread downloading between 30 seconds and 1 minute.
 - Red: thread downloading between 1 minute and 1 and a half minutes.
 - Magenta: thread downloading for more than 1 and a half minutes. The total time is shown in this case.
+- Black: thread was killed (not working anymore, the program is closing).
