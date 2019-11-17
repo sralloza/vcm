@@ -83,6 +83,7 @@ Settings:
 There are 3 commands: download, notify and settings.
 
 Arguments:
+- `-v`, `--version` - Prints the current version and exits.
 - `-nss`, `--no-status-server` - Disables the status server. See [During the Execution](#during-the-execution) for more info.
 
 Note: place the general arguments before the command.

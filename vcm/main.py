@@ -29,6 +29,7 @@ class Command(Enum):
 def parse_args(args=None, parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
     parser.add_argument("-nss", "--no-status-server", action="store_true")
+    parser.add_argument("-v", "--version", action="store_true", dest="version")
 
     subparsers = parser.add_subparsers(title="commands", dest="command")
 
@@ -66,6 +67,10 @@ def parse_args(args=None, parser=False):
 def main(args=None):
     opt, parser = parse_args(args, parser=True)
 
+    if opt.version:
+        from vcm import version
+
+        exit("Version: %s" % version)
 
     try:
         opt.command = Command(opt.command)
