@@ -118,7 +118,9 @@ To view the command help, use `vcm notify -h` or `vcm notify --help`.
 It can show or change settings.
 
 Uses:
-* **List settings:** `vcm settings list`.
+* **List all settings:** `vcm settings list`.
+* **List one specific setting:** `vcm settings show <setting>`
+* **List key settings (not values):** `vcm settings keys`
 * **Set settings value:** `vcm settings set section.key value`.
     * *Section* is the settings section, can be one of `general`, `download` or `notify`.
     * *Key* is the settings key you want to change. It depends on the section.
