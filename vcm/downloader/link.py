@@ -40,7 +40,7 @@ class _Notify:
 class BaseLink(_Notify):
     """Base class for Links."""
 
-    def __init__(self, name, url, icon_url, subject, parent=None):
+    def __init__(self, name, section, url, icon_url, subject, parent=None):
         """
         Args:
             name (str): name of the url.
@@ -51,6 +51,7 @@ class BaseLink(_Notify):
         """
 
         self.name = name.strip()
+        self.section = section
         self.url = url
         self.icon_url = icon_url
         self.subject = subject
@@ -295,8 +296,8 @@ class Resource(BaseLink):
 
     NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, parent=None):
-        super().__init__(name, url, icon_url, subject, parent)
+    def __init__(self, name, section, url, icon_url, subject, parent=None):
+        super().__init__(name, section, url, icon_url, subject, parent)
         self.resource_type = "unknown"
 
     def set_resource_type(self, new):
@@ -429,7 +430,7 @@ class Resource(BaseLink):
 
         try:
             resource = Resource(
-                name, resource["data"], self.icon_url, self.subject, self
+                name, self.section, resource["data"], self.icon_url, self.subject, self
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -442,7 +443,7 @@ class Resource(BaseLink):
         try:
             resource = self.soup.find("iframe", {"id": "resourceobject"})
             resource = Resource(
-                name, resource["src"], self.icon_url, self.subject, self
+                name, self.section, resource["src"], self.icon_url, self.subject, self
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -455,7 +456,12 @@ class Resource(BaseLink):
         try:
             resource = self.soup.find("div", {"class": "resourceworkaround"})
             resource = Resource(
-                name, resource.a["href"], self.icon_url, self.subject, self
+                name,
+                self.section,
+                resource.a["href"],
+                self.icon_url,
+                self.subject,
+                self,
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -477,8 +483,8 @@ class Folder(BaseLink):
 
     NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, id_, parent=None):
-        super().__init__(name, url, icon_url, subject, parent)
+    def __init__(self, name, section, url, icon_url, subject, id_, parent=None):
+        super().__init__(name, section, url, icon_url, subject, parent)
         self.id = id_
 
     def make_request(self):
@@ -518,7 +524,12 @@ class ForumList(BaseForum):
 
         for theme in themes:
             forum = ForumDiscussion(
-                theme.text, theme.a["href"], self.icon_url, self.subject, self
+                theme.text,
+                self.section,
+                theme.a["href"],
+                self.icon_url,
+                self.subject,
+                self,
             )
 
             self.logger.debug(
@@ -544,6 +555,7 @@ class ForumDiscussion(BaseForum):
             try:
                 resource = Resource(
                     Path(attachment.text).stem,
+                    self.section,
                     attachment.a["href"],
                     attachment.a.img["src"],
                     self.subject,
@@ -572,7 +584,9 @@ class ForumDiscussion(BaseForum):
                 else:
                     raise RuntimeError
 
-                resource = Resource(Path(url).stem, url, icon_url, self.subject, self)
+                resource = Resource(
+                    Path(url).stem, self.section, url, icon_url, self.subject, self
+                )
                 resource.subfolders = self.subfolders
 
                 self.logger.debug(
@@ -608,6 +622,7 @@ class Delivery(BaseLink):
 
             resource = Resource(
                 Path(container.text).stem,
+                self.section,
                 container["href"],
                 icon_url,
                 self.subject,
