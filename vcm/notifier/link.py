@@ -166,7 +166,7 @@ class NotifierLink(BaseLink):
         return self._icon_type
 
     @property
-    def icon_url(self):
+    def generated_icon_url(self):
         try:
             return URLS[self.icon_type]
         except KeyError:
