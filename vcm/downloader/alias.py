@@ -138,7 +138,7 @@ class Alias:
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
     @staticmethod
-    def real_to_alias(id_, real):
+    def real_to_alias(id_, real, section=None):
         """Returns the alias given the real name.
 
         Args:
@@ -154,6 +154,9 @@ class Alias:
         self = Alias.__new__(Alias)
         self.__init__()
         Events.acquire()
+
+        if section:
+            real.parent.joinpath(section + '.' + real.name)
 
         for file in self.json:
             if file["id"] == id_:

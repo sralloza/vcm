@@ -208,7 +208,9 @@ class BaseLink(_Notify):
 
         self.filepath = Path(
             Alias.real_to_alias(
-                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix()
+                sha1(self.url.encode()).hexdigest(),
+                temp_filepath.as_posix(),
+                section=self.section,
             )
         )
 
