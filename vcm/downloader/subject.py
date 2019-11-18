@@ -113,24 +113,24 @@ class Subject:
                     self.logger.debug(
                         "Created Resource (subject search): %r, %s", name, url
                     )
-                    self.add_link(Resource(name, url, icon_url, self))
+                    self.add_link(Resource(name, section_name, url, icon_url, self))
                 elif "folder" in url:
                     self.logger.debug(
                         "Created Folder (subject search): %r, %s", name, url
                     )
-                    self.add_link(Folder(name, url, icon_url, self, id_))
+                    self.add_link(Folder(name, section_name, url, icon_url, self, id_))
                 elif "forum" in url:
                     self.logger.debug(
                         "Created Forum (subject search): %r, %s", name, url
                     )
-                    self.add_link(ForumList(name, url, icon_url, self))
+                    self.add_link(ForumList(name, section_name, url, icon_url, self))
                 elif "assign" in url:
                     self.logger.debug(
                         "Created Delivery (subject search): %r, %s", name, url
                     )
-                    self.add_link(Delivery(name, url, icon_url, self))
 
             except AttributeError:
                 pass
+                    self.add_link(Delivery(name, section_name, url, icon_url, self))
 
         self.logger.debug("Downloading files for subject %r", self.name)
