@@ -7,6 +7,7 @@ There are 3 diferent ways: using the exe, normal instalation and virtualv instal
 _Note: normal and virtualenv instalation both need to have Python 3.6+ installed._
 
 ### Exe install
+***Warning: this installation is being discussed and may be removed in next versions.***
 1. Go to the [last release](https://github.com/sralloza/vcm/releases/latest) web page and download the zip file (`vcm.zip`)
 2. Extract the zip whenever you want.
 3. Run manually once the `vcm.exe` file (double click) inside the folder where you just extracted the zip.
@@ -35,7 +36,7 @@ _Note: normal and virtualenv instalation both need to have Python 3.6+ installed
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
-Al execute the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.ini` and `C:\Users\%USERNAME%\vcm-credentials.ini`.
+Al execute the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml`.
 
 ## Settings File
 The settings file path is `C:\Users\%USERNAME%\vcm-settings.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
@@ -109,7 +110,7 @@ Arguments:
 * `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.
 * `--no-icons` - Disable the icons in the email.
 
-Note: this command will not start the killer thread, because it's design to avoid using stdin and stdout, so it can be used with tasks managers like cron.
+Note: this command will not start the killer thread, because it's design to avoid using stdin and stdout, so it can be used with [tasks managers](#cron-integration-task-scheduler) like cron.
 
 To view the command help, use `vcm notify -h` or `vcm notify --help`.
 
@@ -136,3 +137,9 @@ To view the status of a thread, a color code is used:
 - Red: thread downloading between 1 minute and 1 and a half minutes.
 - Magenta: thread downloading for more than 1 and a half minutes. The total time is shown in this case.
 - Black: thread was killed (not working anymore, the program is closing).
+
+
+## Cron integration (Task Scheduler)
+VCM is designed to work with a task scheduler. Commands are:
+* Download: `virtualenv/path/bin/python -m vcm -nss download -q`
+* Notify: `virtualenv/path/bin/python -m vcm -nss notify`
