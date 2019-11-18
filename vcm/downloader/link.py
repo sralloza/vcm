@@ -30,11 +30,11 @@ class DownloadsRecorder:
 
 
 class _Notify:
-    _NOTIFY = False
+    NOTIFY = False
 
     @property
     def notify(self):
-        return self._NOTIFY
+        return self.NOTIFY
 
 
 class BaseLink(_Notify):
@@ -293,7 +293,7 @@ class BaseLink(_Notify):
 class Resource(BaseLink):
     """Representation of a resource."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
     def __init__(self, name, url, icon_url, subject, parent=None):
         super().__init__(name, url, icon_url, subject, parent)
@@ -425,7 +425,7 @@ class Resource(BaseLink):
         name = self.soup.find("div", {"role": "main"}).h2.text
 
         # Self does not contain the file, only a link to the real file.
-        self._NOTIFY = False
+        self.NOTIFY = False
 
         try:
             resource = Resource(
@@ -475,7 +475,7 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
     def __init__(self, name, url, icon_url, subject, id_, parent=None):
         super().__init__(name, url, icon_url, subject, parent)
@@ -530,7 +530,7 @@ class ForumList(BaseForum):
 
 
 class ForumDiscussion(BaseForum):
-    # _NOTIFY = True
+    # NOTIFY = True
 
     def download(self):
         self.logger.debug("Downloading forum discussion %s", self.name)
@@ -586,7 +586,7 @@ class ForumDiscussion(BaseForum):
 class Delivery(BaseLink):
     """Representation of a delivery link."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
     def download(self):
         """Downloads the resources found in the delivery."""
@@ -617,7 +617,7 @@ class Delivery(BaseLink):
 
             # If the resource is not in campusvirtual.uva.es, then don't include in email
             if not valid:
-                resource._NOTIFY = False
+                resource.NOTIFY = False
 
             self.logger.debug(
                 "Created resource from delivery: %r, %s", resource.name, resource.url
