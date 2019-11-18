@@ -74,12 +74,11 @@ class NotifierLink(BaseLink):
         url,
         icon_url,
         subject,
-        connection,
         parent=None,
         super_class=None,
         id=None,
     ):
-        super().__init__(name, url, icon_url, subject, connection, parent)
+        super().__init__(name, url, icon_url, subject, parent)
         self._icon_type = None
         self.super_class = super_class
         self.id = id
@@ -91,7 +90,6 @@ class NotifierLink(BaseLink):
             "url",
             "icon_url",
             "subject",
-            "connection",
             "parent",
             "icon_url"
         ]
