@@ -121,44 +121,44 @@ class NotifierLink(BaseLink):
         if self._icon_type:
             return self._icon_type
 
-        if "pdf" in self._icon_url:
+        if "pdf" in self.icon_url:
             self._icon_type = IconType.pdf
-        elif "archive" in self._icon_url:
+        elif "archive" in self.icon_url:
             self._icon_type = IconType.zip
-        elif "/forum" in self._icon_url:
+        elif "/forum" in self.icon_url:
             self._icon_type = IconType.forum
-        elif "/page" in self._icon_url:
+        elif "/page" in self.icon_url:
             self._icon_type = IconType.page
-        elif "/url" in self._icon_url:
+        elif "/url" in self.icon_url:
             self._icon_type = IconType.url
-        elif "/assign" in self._icon_url:
+        elif "/assign" in self.icon_url:
             self._icon_type = IconType.assign
-        elif "/feedback" in self._icon_url:
+        elif "/feedback" in self.icon_url:
             self._icon_type = IconType.feedback
-        elif "/quiz" in self._icon_url:
+        elif "/quiz" in self.icon_url:
             self._icon_type = IconType.quiz
-        elif "/choice" in self._icon_url:
+        elif "/choice" in self.icon_url:
             self._icon_type = IconType.choice
-        elif "/folder" in self._icon_url:
+        elif "/folder" in self.icon_url:
             self._icon_type = IconType.folder
-        elif "/workshop" in self._icon_url:
+        elif "/workshop" in self.icon_url:
             self._icon_type = IconType.workshop
 
-        elif "/f/unknown" in self._icon_url:
+        elif "/f/unknown" in self.icon_url:
             self._icon_type = IconType.unkown
-        elif "/f/document" in self._icon_url:
+        elif "/f/document" in self.icon_url:
             self._icon_type = IconType.word
-        elif "/f/mpeg" in self._icon_url:
+        elif "/f/mpeg" in self.icon_url:
             self._icon_type = IconType.mpeg
-        elif "/f/avi" in self._icon_url:
+        elif "/f/avi" in self.icon_url:
             self._icon_type = IconType.avi
-        elif "/f/sourcecode" in self._icon_url:
+        elif "/f/sourcecode" in self.icon_url:
             self._icon_type = IconType.sourcecode
-        elif "/f/spreadsheet" in self._icon_url:
+        elif "/f/spreadsheet" in self.icon_url:
             self._icon_type = IconType.excel
-        elif "/f/powerpoint" in self._icon_url:
+        elif "/f/powerpoint" in self.icon_url:
             self._icon_type = IconType.powerpoint
-        elif "/f/jpeg" in self._icon_url:
+        elif "/f/jpeg" in self.icon_url:
             self._icon_type = IconType.jpeg
         else:
             self._icon_type = IconType.not_id
