@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from requests import Response
 
 from _sha1 import sha1
+from vcm.core.networking import Connection
 from vcm.core.settings import GeneralSettings
 
 from .alias import Alias
@@ -17,13 +18,12 @@ from .link import BaseLink, Delivery, Folder, ForumList, Resource
 class Subject:
     """Representation of a subject."""
 
-    def __init__(self, name, url, connection, queue):
+    def __init__(self, name, url, queue):
         """
 
         Args:
             name (str): name of the subject.
             url (str): url of the subject.
-            connection (Connection): connection to download files.
             queue (Queue): queue to controll threads.
         """
 
@@ -31,7 +31,7 @@ class Subject:
 
         self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
-        self.connection = connection
+        self.connection = Connection()
         self.queue = queue
 
         self.response: Response = None
@@ -113,24 +113,22 @@ class Subject:
                     self.logger.debug(
                         "Created Resource (subject search): %r, %s", name, url
                     )
-                    self.add_link(Resource(name, url, icon_url, self, self.connection))
+                    self.add_link(Resource(name, url, icon_url, self))
                 elif "folder" in url:
                     self.logger.debug(
                         "Created Folder (subject search): %r, %s", name, url
                     )
-                    self.add_link(
-                        Folder(name, url, icon_url, self, self.connection, id_)
-                    )
+                    self.add_link(Folder(name, url, icon_url, self, id_))
                 elif "forum" in url:
                     self.logger.debug(
                         "Created Forum (subject search): %r, %s", name, url
                     )
-                    self.add_link(ForumList(name, url, icon_url, self, self.connection))
+                    self.add_link(ForumList(name, url, icon_url, self))
                 elif "assign" in url:
                     self.logger.debug(
                         "Created Delivery (subject search): %r, %s", name, url
                     )
-                    self.add_link(Delivery(name, url, icon_url, self, self.connection))
+                    self.add_link(Delivery(name, url, icon_url, self))
 
             except AttributeError:
                 pass

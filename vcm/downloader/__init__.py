@@ -21,7 +21,8 @@ from .subject import Subject
 logger = logging.getLogger(__name__)
 
 
-def get_subjects(connection, queue):
+def get_subjects(queue):
+    connection = Connection()
     request = connection.get(connection.user_url)
     soup = BeautifulSoup(request.text, "html.parser")
     primary_li = soup.find_all("li", class_="contentnode")[3]
@@ -43,24 +44,23 @@ def get_subjects(connection, queue):
             continue
 
         logger.debug("Assembling subject %r", name)
-        _subject = Subject(name, subject_url, connection, queue)
+        _subject = Subject(name, subject_url, queue)
         subjects.append(_subject)
 
     subjects.sort(key=lambda x: x.name)
     return subjects
 
 
-def find_subjects(connection, queue):
+def find_subjects(queue):
     """Starts finding subjects.
 
     Args:
-        connection (Connection): custom session with retry control.
         queue (Queue): queue to organize threads.
 
     """
     logger.debug("Finding subjects")
 
-    subjects = get_subjects(connection, queue)
+    subjects = get_subjects(queue)
 
     for i, _ in enumerate(subjects):
         queue.put(subjects[i])
@@ -93,9 +93,7 @@ def download(nthreads=20, no_killer=False, status_server=True):
 
     try:
         with Connection() as connection:
-
-            find_subjects(connection, queue)
-
+            find_subjects(queue)
             logger.debug("Waiting for queue to empty")
             queue.join()
     except LoginError:
