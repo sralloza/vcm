@@ -93,6 +93,7 @@ class NotifierLink(BaseLink):
             "subject",
             "connection",
             "parent",
+            "icon_url"
         ]
         new_vars = {}
 
@@ -109,7 +110,6 @@ class NotifierLink(BaseLink):
 
         new_vars["super_class"] = link.__class__
 
-        new_vars["icon_url"] = getattr(link, "_icon_url")
         return NotifierLink(**new_vars)
 
     def save(self):

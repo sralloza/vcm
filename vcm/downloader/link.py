@@ -53,7 +53,7 @@ class BaseLink(_Notify):
 
         self.name = name.strip()
         self.url = url
-        self._icon_url = icon_url
+        self.icon_url = icon_url
         self.subject = subject
         self.connection = connection
         self.parent = parent
@@ -432,7 +432,7 @@ class Resource(BaseLink):
             resource = Resource(
                 name,
                 resource["data"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
                 self.connection,
                 self,
@@ -450,7 +450,7 @@ class Resource(BaseLink):
             resource = Resource(
                 name,
                 resource["src"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
                 self.connection,
                 self,
@@ -468,7 +468,7 @@ class Resource(BaseLink):
             resource = Resource(
                 name,
                 resource.a["href"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
                 self.connection,
                 self,
@@ -536,7 +536,7 @@ class ForumList(BaseForum):
             forum = ForumDiscussion(
                 theme.text,
                 theme.a["href"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
                 self.connection,
                 self,
@@ -627,7 +627,7 @@ class Delivery(BaseLink):
                 icon_url = container.parent.img["src"]
                 valid = True
             else:
-                icon_url = self._icon_url
+                icon_url = self.icon_url
                 valid = False
 
             resource = Resource(
