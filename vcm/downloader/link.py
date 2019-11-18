@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import warnings
-from abc import ABC
 from pathlib import Path
 
 import unidecode
@@ -30,7 +29,7 @@ class DownloadsRecorder:
             fh.write(something % args + "\n")
 
 
-class _Notify(ABC):
+class _Notify:
     _NOTIFY = False
 
     @property
