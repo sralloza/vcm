@@ -9,7 +9,7 @@ import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
-from _sha1 import sha1
+from hashlib import sha1
 from vcm.core.modules import Modules
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
@@ -208,9 +208,14 @@ class BaseLink(_Notify):
 
         temp_filepath /= filename
 
+        try:
+            folder_id = self.id
+        except AttributeError:
+            folder_id = None
+
         self.filepath = Path(
             Alias.real_to_alias(
-                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix()
+                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix(), folder_id=folder_id
             )
         )
 

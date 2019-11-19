@@ -1,10 +1,17 @@
 """Alias manager for signatures."""
 import json
+from hashlib import sha1
 from os.path import isdir, isfile
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
 from vcm.core.settings import GeneralSettings
+
+
+def calculate_hash(byte_data):
+    if isinstance(byte_data, str):
+        byte_data = byte_data.encode()
+    return sha1(byte_data).hexdigest()
 
 
 class Events:
@@ -138,7 +145,7 @@ class Alias:
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
     @staticmethod
-    def real_to_alias(id_, real):
+    def real_to_alias(id_, real, folder_id=None):
         """Returns the alias given the real name.
 
         Args:
@@ -150,6 +157,11 @@ class Alias:
                 real name will be returned.
 
         """
+
+        is_folder = id_ == "744efab6c9423088e7f5c0bc83f9e7b92c604309"
+
+        if is_folder:
+            id_ = calculate_hash(real + str(folder_id))
 
         self = Alias.__new__(Alias)
         self.__init__()
