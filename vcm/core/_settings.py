@@ -9,6 +9,10 @@ def exclude_urls_setter(*args, **kwargs):
     raise SettingsError("general.exclude-urls can't be set using the CLI.")
 
 
+def disable_section_indexing_setter(*args, **kwargs):
+    raise SettingsError("download.disable-section-indexing can't be set using the CLI")
+
+
 defaults = {
     "general": {
         "root-folder": "insert-root-folder",
@@ -17,7 +21,7 @@ defaults = {
         "retries": 10,
         "exclude-urls": [],
     },
-    "download": {"forum-subfolders": True},
+    "download": {"forum-subfolders": True, "disable-section-indexing": []},
     "notify": {"use-base64-icons": False, "email": "insert-email"},
 }
 
@@ -29,7 +33,7 @@ types = {
         "retries": int,
         "exclude-urls": list,
     },
-    "download": {"forum-subfolders": bool},
+    "download": {"forum-subfolders": bool, "disable-section-indexing": list},
     "notify": {"use-base64-icons": bool, "email": str},
 }
 
@@ -42,7 +46,7 @@ constructors = {
         "retries": int,
         "exclude-urls": list,
     },
-    "download": {"forum-subfolders": str2bool},
+    "download": {"forum-subfolders": str2bool, "disable-section-indexing": list},
     "notify": {"use-base64-icons": str2bool, "email": str},
 }
 
@@ -55,6 +59,9 @@ setters = {
         "retries": int,
         "exclude-urls": exclude_urls_setter,
     },
-    "download": {"forum-subfolders": str2bool},
+    "download": {
+        "forum-subfolders": str2bool,
+        "disable-section-indexing": disable_section_indexing_setter,
+    },
     "notify": {"use-base64-icons": str2bool, "email": str},
 }

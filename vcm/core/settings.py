@@ -178,7 +178,11 @@ class _GeneralSettings(BaseSettings):
 class _DownloadSettings(BaseSettings):
     @property
     def forum_subfolders(self) -> bool:
-        return self["forum_subfolders"]
+        return self["forum-subfolders"]
+
+    @property
+    def disable_section_indexing(self) -> list:
+        return self["disable-section-indexing"]
 
 
 class _NotifySettings(BaseSettings):
