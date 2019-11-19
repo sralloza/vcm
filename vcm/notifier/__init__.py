@@ -28,7 +28,7 @@ def notify(send_to: A, use_icons=True, nthreads=20, status_server=True):
     if status_server:
         runserver(queue, threads)
 
-    with Connection() as connection:
+    with Connection():
         subjects = get_subjects(queue)
 
         for i, _ in enumerate(subjects):

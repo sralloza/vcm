@@ -91,10 +91,7 @@ def download(nthreads=20, no_killer=False, status_server=True):
     if status_server:
         runserver(queue, threads)
 
-    try:
-        with Connection() as connection:
-            find_subjects(queue)
-            logger.debug("Waiting for queue to empty")
-            queue.join()
-    except LoginError:
-        exit(Fore.RED + "Login not correct" + Fore.RESET)
+    with Connection():
+        find_subjects(queue)
+        logger.debug("Waiting for queue to empty")
+        queue.join()

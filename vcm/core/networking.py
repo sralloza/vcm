@@ -77,7 +77,7 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= 10:
-                raise LoginError("10 login attempts, unkwown error. See logs.")
+                raise LoginError("10 login attempts, unkwown error. See logs.") from exc
             return self.login()
 
     def _login(self):
