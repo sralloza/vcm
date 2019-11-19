@@ -194,24 +194,23 @@ class BaseLink(_Notify):
         if self.response is None:
             raise RuntimeError("Request not launched")
 
-        filename = (
+        filename = secure_filename(
             self._process_filename(self.name) + "." + self._get_ext_from_response()
         )
-        filename = secure_filename(filename)
 
         temp_filepath = self.subject.folder
 
         if self.subfolders:
             temp_filepath.joinpath(*self.subfolders)
 
-        # TODO: only if section-indexing is active
-        temp_filepath /= self.section
+        if self.section:
+            temp_filepath /= self.section.name
+
         temp_filepath /= filename
 
         self.filepath = Path(
             Alias.real_to_alias(
-                sha1(self.url.encode()).hexdigest(),
-                temp_filepath.as_posix(),
+                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix()
             )
         )
 

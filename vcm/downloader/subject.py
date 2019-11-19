@@ -9,7 +9,7 @@ from requests import Response
 
 from _sha1 import sha1
 from vcm.core.networking import Connection
-from vcm.core.settings import GeneralSettings
+from vcm.core.settings import GeneralSettings, DownloadSettings
 
 from .alias import Alias
 from .link import BaseLink, Delivery, Folder, ForumList, Resource
@@ -33,6 +33,10 @@ class Subject:
         self.url = url
         self.connection = Connection()
         self.queue = queue
+
+        self.disable_section_indexing = (
+            self.url in DownloadSettings.disable_section_indexing
+        )
 
         self.response: Response = None
         self.soup: BeautifulSoup = None
@@ -77,11 +81,14 @@ class Subject:
         else:
             self.logger.debug("Folder already exists: %r", self.name)
 
-    def add_link(self, url: BaseLink):
-        """Adds a note url to the list."""
-        self.logger.debug("Adding url: %s", url.name)
-        self.notes_links.append(url)
-        self.queue.put(url)
+    def add_link(self, link: BaseLink):
+        """Adds a note link to the list."""
+        self.logger.debug("Adding link: %s", link.name)
+        if self.disable_section_indexing:
+            link.section = None
+
+        self.notes_links.append(link)
+        self.queue.put(link)
 
     def find_and_download_links(self):
         """Finds the links downloading the primary page."""
@@ -93,44 +100,77 @@ class Subject:
 
         search = self.soup.findAll("li", class_="activity")
 
-        for li in search:
-            try:
-                div = li.find("div", class_="activityinstance")
-                id_ = None
+        for folder in self.soup.find_all("div", class_="singlebutton"):
+            folder_name = folder.parent.parent.div.find(
+                "span", class_="fp-filename"
+            ).text
+            # for e in folder.parents:
+            #     try:
+            #         class_ = e["class"]
+            #     except KeyError:
+            #         class_ = ""
+            #     print("%s <%s>" % (e.name, class_))
 
-                if not div:  # Folder
-                    div = li.find("div", class_="singlebutton")
-                    name = li.find("span", class_="fp-filename").text
-                    url = div.form["action"]
-                    id_ = div.find("input", {"name": "id"})["value"]
-                    icon_url = li.find("span", class_="fp-icon").img["src"]
-                else:
-                    name = div.a.span.text
-                    url = div.a["href"]
-                    icon_url = div.a.img["src"]
+            section_h3 = folder.find_parent("li", class_="section main clearfix").find(
+                "h3", class_="sectionname"
+            )
+            section = Section(section_h3.text, section_h3.a["href"])
+            folder_url = folder.form["action"]
+            folder_icon_url = folder.find_parent(
+                "div", class_="contentwithoutlink"
+            ).find("img", class_="icon")["src"]
+            id_ = folder.form.find("input", {"name": "id"})["value"]
 
-                if "resource" in url:
-                    self.logger.debug(
-                        "Created Resource (subject search): %r, %s", name, url
-                    )
-                    self.add_link(Resource(name, section_name, url, icon_url, self))
-                elif "folder" in url:
-                    self.logger.debug(
-                        "Created Folder (subject search): %r, %s", name, url
-                    )
-                    self.add_link(Folder(name, section_name, url, icon_url, self, id_))
-                elif "forum" in url:
-                    self.logger.debug(
-                        "Created Forum (subject search): %r, %s", name, url
-                    )
-                    self.add_link(ForumList(name, section_name, url, icon_url, self))
-                elif "assign" in url:
-                    self.logger.debug(
-                        "Created Delivery (subject search): %r, %s", name, url
-                    )
+            self.logger.debug(
+                "Created Folder (subject search): %r, %s", folder_name, folder_url
+            )
+            self.add_link(
+                Folder(folder_name, section, folder_url, folder_icon_url, self, id_)
+            )
 
-            except AttributeError:
-                pass
-                    self.add_link(Delivery(name, section_name, url, icon_url, self))
+        for resource in self.soup.find_all("div", class_="activityinstance"):
+            section_h3 = resource.find_parent(
+                "li", class_="section main clearfix"
+            ).find("h3", class_="sectionname")
+            section = Section(section_h3.text, section_h3.a["href"])
+
+            name = resource.a.span.text
+            url = resource.a["href"]
+            icon_url = resource.a.img["src"]
+
+            if "resource" in url:
+                self.logger.debug(
+                    "Created Resource (subject search): %r, %s", name, url
+                )
+                self.add_link(Resource(name, section, url, icon_url, self))
+            elif "folder" in url:
+                self.logger.debug("Created Folder (subject search): %r, %s", name, url)
+                self.add_link(Folder(name, section, url, icon_url, self, id_))
+            elif "forum" in url:
+                self.logger.debug("Created Forum (subject search): %r, %s", name, url)
+                self.add_link(ForumList(name, section, url, icon_url, self))
+            elif "assign" in url:
+                self.logger.debug(
+                    "Created Delivery (subject search): %r, %s", name, url
+                )
+                self.add_link(Delivery(name, section, url, icon_url, self))
 
         self.logger.debug("Downloading files for subject %r", self.name)
+
+
+class Section:
+    def __init__(self, name, url=None):
+        self.name = self.filter_name(name)
+        self.url = url
+
+    def __str__(self):
+        if self.url:
+            return "Section(%r, url=%r)" % (self.name, self.url)
+        return "Section(%r)" % self.name
+
+    @staticmethod
+    def filter_name(name):
+        name = name.replace("\t", " ").strip()
+        while "  " in name:
+            name = name.replace("  ", " ")
+        return name
