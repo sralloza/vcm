@@ -90,6 +90,18 @@ class Subject:
         self.notes_links.append(link)
         self.queue.put(link)
 
+    @staticmethod
+    def find_section_by_child(child):
+        try:
+            section_h3 = child.find_parent("li", class_="section main clearfix").find(
+                "h3", class_="sectionname"
+            )
+        except AttributeError:
+            section_h3 = child.find_parent(
+                "li", class_="section main clearfix current"
+            ).find("h3", class_="sectionname")
+        return Section(section_h3.text, section_h3.a["href"])
+
     def find_and_download_links(self):
         """Finds the links downloading the primary page."""
         self.logger.debug("Finding links of %s", self.name)
@@ -104,17 +116,9 @@ class Subject:
             folder_name = folder.parent.parent.div.find(
                 "span", class_="fp-filename"
             ).text
-            # for e in folder.parents:
-            #     try:
-            #         class_ = e["class"]
-            #     except KeyError:
-            #         class_ = ""
-            #     print("%s <%s>" % (e.name, class_))
 
-            section_h3 = folder.find_parent("li", class_="section main clearfix").find(
-                "h3", class_="sectionname"
-            )
-            section = Section(section_h3.text, section_h3.a["href"])
+            section = self.find_section_by_child(folder)
+
             folder_url = folder.form["action"]
             folder_icon_url = folder.find_parent(
                 "div", class_="contentwithoutlink"
@@ -129,10 +133,7 @@ class Subject:
             )
 
         for resource in self.soup.find_all("div", class_="activityinstance"):
-            section_h3 = resource.find_parent(
-                "li", class_="section main clearfix"
-            ).find("h3", class_="sectionname")
-            section = Section(section_h3.text, section_h3.a["href"])
+            section = self.find_section_by_child(resource)
 
             name = resource.a.span.text
             url = resource.a["href"]
