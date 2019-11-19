@@ -204,7 +204,7 @@ class BaseLink(_Notify):
             temp_filepath.joinpath(*self.subfolders)
 
         if self.section:
-            temp_filepath /= self.section.name
+            temp_filepath /= secure_filename(self.section.name)
 
         temp_filepath /= filename
 
