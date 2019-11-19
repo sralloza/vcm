@@ -204,13 +204,14 @@ class BaseLink(_Notify):
         if self.subfolders:
             temp_filepath.joinpath(*self.subfolders)
 
+        # TODO: only if section-indexing is active
+        temp_filepath /= self.section
         temp_filepath /= filename
 
         self.filepath = Path(
             Alias.real_to_alias(
                 sha1(self.url.encode()).hexdigest(),
                 temp_filepath.as_posix(),
-                section=self.section,
             )
         )
 
