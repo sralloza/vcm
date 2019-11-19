@@ -173,3 +173,17 @@ To view the status of a thread, a color code is used:
 VCM is designed to work with a task scheduler. Commands are:
 * Download: `virtualenv/path/bin/python -m vcm -nss download -q`
 * Notify: `virtualenv/path/bin/python -m vcm -nss notify`
+
+
+# How are notes stored (downloaded)
+Inside the root folder, a folder will be created for each subject.
+A section is how notes are classified in the virtual campus.
+For each subject, if its url is not in the `disable-section-indexing` list, a folder will be created for each section. The files will be downloaded inside the section's folder, which is inside the subject's folder.
+
+To sum up:
+**`/root-folder-path/subject-name/section-name/filename.extension`**
+
+
+## What is a section
+![example](https://github.com/sralloza/vcm/blob/dev/.github/example.png)
+A section is how notes are classified in the virtual campus. In this example, you can see the title **`Tema 1`**, and then 3 resources (2 pdfs and 1 zip file). The title **`Tema 1`** is the section.
