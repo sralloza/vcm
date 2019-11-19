@@ -1,9 +1,9 @@
 """Alias manager for signatures."""
 import json
-import os
+from os.path import isdir, isfile
 from threading import Semaphore
 
-from vcm.core.exceptions import AliasFatalError, IdError, AliasNotFoundError
+from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
 from vcm.core.settings import GeneralSettings
 
 
@@ -35,7 +35,7 @@ class Alias:
     def load(self):
         """Loads the alias configuration."""
 
-        if os.path.isfile(self.alias_path) is False:
+        if isfile(self.alias_path) is False:
             self.json = []
             return
         try:
@@ -87,7 +87,7 @@ class Alias:
         to_write = self.json + temp
 
         res_list = []
-        for i in range(len(to_write)):
+        for i, _ in enumerate(to_write):
             if to_write[i] not in to_write[i + 1 :]:
                 res_list.append(to_write[i])
 
@@ -166,9 +166,9 @@ class Alias:
                     f'Same id, different names ({file["id"]}, {file["new"]}, {real})'
                 )
 
-        if os.path.isfile(real):
+        if isfile(real):
             type_ = "f"
-        elif os.path.isdir(real):
+        elif isdir(real):
             type_ = "d"
         else:
             type_ = "?"
