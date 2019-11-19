@@ -60,6 +60,33 @@ Settings:
 * **use-base64-icons** - If true, the icons will be sent as base64 data. If false, the icons will be sent as direct download links from google drive. Note that Gmail does not render base64 data. Defaults to false.
 * **email** - Recipient of the notify email. Must be set, it lacks of a default value.
 
+### Settings file example
+
+***vcm-settings.toml***
+```toml
+[general]
+root-folder = "/home/user/virtual-campus-data"
+logging-level = "INFO"
+timeout = 30
+retries = 10
+exclude-urls = [
+    https://campusvirtual.uva.es/course/view.php?id=89712, # don't parse this subject
+]
+
+[download]
+forum-subfolders = true
+disable-section-indexing = [
+    "https://campusvirtual.uva.es/course/view.php?id=16942", # comments
+    "https://campusvirtual.uva.es/course/view.php?id=82645", # are
+    "https://campusvirtual.uva.es/course/view.php?id=45651", # allowed
+]
+
+[notify]
+use-base64-icons = false
+email = "email@example.com"
+
+```
+
 ## Credentials file
 The credentials file path is `C:\Users\%USERNAME%\vcm-credentials.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
 **Note that the credentials will be stored in plain text.**
