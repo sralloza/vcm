@@ -14,7 +14,20 @@ from .settings import GeneralSettings
 logger = logging.getLogger(__name__)
 
 
-class Connection:
+class MetaSingleton(type):
+    """Metaclass to always make class return the same instance."""
+
+    def __init__(cls, name, bases, dict):
+        super(MetaSingleton, cls).__init__(name, bases, dict)
+        cls._instance = None
+
+    def __call__(cls, *args, **kw):
+        if cls._instance is None:
+            cls._instance = super(MetaSingleton, cls).__call__(*args, **kw)
+        return cls._instance
+
+
+class Connection(metaclass=MetaSingleton):
     def __init__(self):
         self._downloader = Downloader()
         self._logout_response: requests.Response = None
@@ -64,7 +77,7 @@ class Connection:
             self._login_attempts += 1
 
             if self._login_attempts >= 10:
-                raise LoginError("10 login attempts, unkwown error. See logs.")
+                raise LoginError("10 login attempts, unkwown error. See logs.") from exc
             return self.login()
 
     def _login(self):
@@ -158,3 +171,6 @@ class Downloader(requests.Session):
 
         self.logger.critical("Download error in POST %r", url)
         raise DownloaderError("max retries failed.")
+
+
+connection = Connection()

@@ -28,8 +28,8 @@ def notify(send_to: A, use_icons=True, nthreads=20, status_server=True):
     if status_server:
         runserver(queue, threads)
 
-    with Connection() as connection:
-        subjects = get_subjects(connection, queue)
+    with Connection():
+        subjects = get_subjects(queue)
 
         for i, _ in enumerate(subjects):
             queue.put(subjects[i])

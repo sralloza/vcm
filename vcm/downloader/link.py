@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import warnings
-from abc import ABC
 from pathlib import Path
 
 import unidecode
@@ -15,6 +14,7 @@ from vcm.core.modules import Modules
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Patterns, secure_filename
+from vcm.core.networking import Connection
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -29,33 +29,33 @@ class DownloadsRecorder:
             fh.write(something % args + "\n")
 
 
-class _Notify(ABC):
-    _NOTIFY = False
+class _Notify:
+    NOTIFY = False
 
     @property
     def notify(self):
-        return self._NOTIFY
+        return self.NOTIFY
 
 
 class BaseLink(_Notify):
     """Base class for Links."""
 
-    def __init__(self, name, url, icon_url, subject, connection, parent=None):
+    def __init__(self, name, section, url, icon_url, subject, parent=None):
         """
         Args:
             name (str): name of the url.
             url (str): URL of the url.
             icon_url (str or None): URL of the icon.
             subject (vcm.subject.Subject): subject of the url.
-            connection (vcm.requests.Downloader): connection to download resources.
             parent (BaseLink): object that created self.
         """
 
         self.name = name.strip()
+        self.section = section
         self.url = url
-        self._icon_url = icon_url
+        self.icon_url = icon_url
         self.subject = subject
-        self.connection = connection
+        self.connection = Connection()
         self.parent = parent
 
         self.response: Response = None
@@ -194,15 +194,17 @@ class BaseLink(_Notify):
         if self.response is None:
             raise RuntimeError("Request not launched")
 
-        filename = (
+        filename = secure_filename(
             self._process_filename(self.name) + "." + self._get_ext_from_response()
         )
-        filename = secure_filename(filename)
 
         temp_filepath = self.subject.folder
 
         if self.subfolders:
             temp_filepath.joinpath(*self.subfolders)
+
+        if self.section:
+            temp_filepath /= self.section.name
 
         temp_filepath /= filename
 
@@ -294,10 +296,10 @@ class BaseLink(_Notify):
 class Resource(BaseLink):
     """Representation of a resource."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, connection, parent=None):
-        super().__init__(name, url, icon_url, subject, connection, parent)
+    def __init__(self, name, section, url, icon_url, subject, parent=None):
+        super().__init__(name, section, url, icon_url, subject, parent)
         self.resource_type = "unknown"
 
     def set_resource_type(self, new):
@@ -426,16 +428,11 @@ class Resource(BaseLink):
         name = self.soup.find("div", {"role": "main"}).h2.text
 
         # Self does not contain the file, only a link to the real file.
-        self._NOTIFY = False
+        self.NOTIFY = False
 
         try:
             resource = Resource(
-                name,
-                resource["data"],
-                self._icon_url,
-                self.subject,
-                self.connection,
-                self,
+                name, self.section, resource["data"], self.icon_url, self.subject, self
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -448,12 +445,7 @@ class Resource(BaseLink):
         try:
             resource = self.soup.find("iframe", {"id": "resourceobject"})
             resource = Resource(
-                name,
-                resource["src"],
-                self._icon_url,
-                self.subject,
-                self.connection,
-                self,
+                name, self.section, resource["src"], self.icon_url, self.subject, self
             )
             self.logger.debug(
                 "Created resource from HTML: %r, %s", resource.name, resource.url
@@ -467,10 +459,10 @@ class Resource(BaseLink):
             resource = self.soup.find("div", {"class": "resourceworkaround"})
             resource = Resource(
                 name,
+                self.section,
                 resource.a["href"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
-                self.connection,
                 self,
             )
             self.logger.debug(
@@ -491,10 +483,10 @@ class Resource(BaseLink):
 class Folder(BaseLink):
     """Representation of a folder."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
-    def __init__(self, name, url, icon_url, subject, connection, id_, parent=None):
-        super().__init__(name, url, icon_url, subject, connection, parent)
+    def __init__(self, name, section, url, icon_url, subject, id_, parent=None):
+        super().__init__(name, section, url, icon_url, subject, parent)
         self.id = id_
 
     def make_request(self):
@@ -535,10 +527,10 @@ class ForumList(BaseForum):
         for theme in themes:
             forum = ForumDiscussion(
                 theme.text,
+                self.section,
                 theme.a["href"],
-                self._icon_url,
+                self.icon_url,
                 self.subject,
-                self.connection,
                 self,
             )
 
@@ -551,7 +543,7 @@ class ForumList(BaseForum):
 
 
 class ForumDiscussion(BaseForum):
-    # _NOTIFY = True
+    # NOTIFY = True
 
     def download(self):
         self.logger.debug("Downloading forum discussion %s", self.name)
@@ -565,10 +557,10 @@ class ForumDiscussion(BaseForum):
             try:
                 resource = Resource(
                     Path(attachment.text).stem,
+                    self.section,
                     attachment.a["href"],
                     attachment.a.img["src"],
                     self.subject,
-                    self.connection,
                     self,
                 )
                 resource.subfolders = self.subfolders
@@ -595,7 +587,7 @@ class ForumDiscussion(BaseForum):
                     raise RuntimeError
 
                 resource = Resource(
-                    Path(url).stem, url, icon_url, self.subject, self.connection, self
+                    Path(url).stem, self.section, url, icon_url, self.subject, self
                 )
                 resource.subfolders = self.subfolders
 
@@ -610,7 +602,7 @@ class ForumDiscussion(BaseForum):
 class Delivery(BaseLink):
     """Representation of a delivery link."""
 
-    _NOTIFY = True
+    NOTIFY = True
 
     def download(self):
         """Downloads the resources found in the delivery."""
@@ -627,22 +619,22 @@ class Delivery(BaseLink):
                 icon_url = container.parent.img["src"]
                 valid = True
             else:
-                icon_url = self._icon_url
+                icon_url = self.icon_url
                 valid = False
 
             resource = Resource(
                 Path(container.text).stem,
+                self.section,
                 container["href"],
                 icon_url,
                 self.subject,
-                self.connection,
                 self,
             )
             resource.subfolders = self.subfolders
 
             # If the resource is not in campusvirtual.uva.es, then don't include in email
             if not valid:
-                resource._NOTIFY = False
+                resource.NOTIFY = False
 
             self.logger.debug(
                 "Created resource from delivery: %r, %s", resource.name, resource.url

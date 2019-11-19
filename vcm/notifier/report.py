@@ -74,7 +74,7 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
                 if NotifySettings.use_base64_icons:
                     message += f"<img src='data:image/png;base64,{link.icon_data_64}' width='24' alt='{link.icon_type.name}' "
                 else:
-                    message += f'<img src="{link.icon_url}" width="24" alt="{link.icon_type.name}" '
+                    message += f'<img src="{link.generated_icon_url}" width="24" alt="{link.icon_type.name}" '
 
                 message += 'height="24" style="margin-bottom: -0.5em;">'
 

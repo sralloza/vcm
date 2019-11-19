@@ -5,6 +5,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import current_thread
+from traceback import format_exc
 
 import psutil
 from colorama import Fore, init
@@ -128,12 +129,15 @@ def exception_exit(exception, to_stderr=False, red=True):
         raise TypeError("exception should be a subclass of Exception")
 
     message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
+    message += "\n" + format_exc()
+
 
     if red:
         message = Fore.RED + message + Fore.RESET
 
     if to_stderr:
         return exit(message)
+
     print(message)
     return exit(-1)
 
