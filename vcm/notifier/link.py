@@ -71,6 +71,7 @@ class NotifierLink(BaseLink):
     def __init__(
         self,
         name,
+        section,
         url,
         icon_url,
         subject,
@@ -78,7 +79,7 @@ class NotifierLink(BaseLink):
         super_class=None,
         id=None,
     ):
-        super().__init__(name, url, icon_url, subject, parent)
+        super().__init__(name, section, url, icon_url, subject, parent)
         self._icon_type = None
         self.super_class = super_class
         self.id = id
@@ -87,6 +88,7 @@ class NotifierLink(BaseLink):
     def from_link(cls, link: BaseLink):
         dir_notifier_link = [
             "name",
+            "section",
             "url",
             "icon_url",
             "subject",
