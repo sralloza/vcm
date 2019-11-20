@@ -236,7 +236,6 @@ class BaseLink(_Notify):
         if Modules.current() == Modules.notify:
             return
 
-        self.create_subject_folder()
         self.create_subfolder()
 
         self.logger.debug(
