@@ -20,21 +20,8 @@ from .alias import Alias
 from .filecache import REAL_FILE_CACHE
 
 
-class DownloadsRecorder:
-    _downloads_record_path = GeneralSettings.root_folder / "downloads.log"
-
-    @staticmethod
-    def write(something: str, *args):
-        with DownloadsRecorder._downloads_record_path.open("at") as fh:
-            fh.write(something % args + "\n")
-
-
 class _Notify:
     NOTIFY = False
-
-    @property
-    def notify(self):
-        return self.NOTIFY
 
 
 class BaseLink(_Notify):
@@ -282,9 +269,6 @@ class BaseLink(_Notify):
             with self.filepath.open("wb") as file_handler:
                 file_handler.write(self.response.content)
             self.logger.debug("File downloaded and saved: %s", self.filepath)
-            DownloadsRecorder.write(
-                "Downloaded %s -- %s", self.subject.name, self.filepath.name
-            )
         except PermissionError:
             self.logger.warning(
                 "File couldn't be downloaded due to permission error: %s",
