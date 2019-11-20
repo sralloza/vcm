@@ -204,7 +204,7 @@ class BaseLink(_Notify):
             temp_filepath.joinpath(*self.subfolders)
 
         if self.section:
-            temp_filepath /= secure_filename(self.section.name)
+            temp_filepath /= self.section.name
 
         temp_filepath /= filename
 
@@ -215,7 +215,9 @@ class BaseLink(_Notify):
 
         self.filepath = Path(
             Alias.real_to_alias(
-                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix(), folder_id=folder_id
+                sha1(self.url.encode()).hexdigest(),
+                temp_filepath.as_posix(),
+                folder_id=folder_id,
             )
         )
 

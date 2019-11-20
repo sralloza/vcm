@@ -10,6 +10,7 @@ from requests import Response
 from _sha1 import sha1
 from vcm.core.networking import Connection
 from vcm.core.settings import DownloadSettings, GeneralSettings
+from vcm.core.utils import secure_filename
 
 from .alias import Alias
 from .link import BaseLink, Delivery, Folder, ForumList, Resource
@@ -149,7 +150,9 @@ class Subject:
             elif "folder" in url:
                 real_url = "https://campusvirtual.uva.es/mod/folder/download_folder.php"
                 id_ = self.url_to_query_args(url)["id"][0]
-                self.logger.debug("Created Folder (subject search): %r, id=%r", name, id_)
+                self.logger.debug(
+                    "Created Folder (subject search): %r, id=%r", name, id_
+                )
                 self.add_link(Folder(name, section, real_url, icon_url, self, id_))
             elif "forum" in url:
                 self.logger.debug("Created Forum (subject search): %r, %s", name, url)
@@ -167,6 +170,9 @@ class Section:
     def __init__(self, name, url=None):
         self.name = self.filter_name(name)
         self.url = url
+
+        if DownloadSettings.secure_section_filename:
+            self.name = secure_filename(self.name)
 
     def __str__(self):
         if self.url:
