@@ -55,6 +55,7 @@ Settings:
 Settings:
 * **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a sepparate folder. Defaults to true.
 * **disable-section-indexing** - List of subject's urls that will have section indexing disabled.
+* **secure-section-filename** - If true, section's folder's name will have its whitespaces replaced with low bars.
 
 ### Notify section
 Settings:
