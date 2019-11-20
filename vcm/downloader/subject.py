@@ -171,8 +171,9 @@ class Section:
         self.name = self.filter_name(name)
         self.url = url
 
-        if DownloadSettings.secure_section_filename:
-            self.name = secure_filename(self.name)
+        self.name = secure_filename(
+            self.name, parse_spaces=DownloadSettings.secure_section_filename
+        )
 
     def __str__(self):
         if self.url:
