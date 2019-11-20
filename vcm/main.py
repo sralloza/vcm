@@ -10,8 +10,6 @@ from vcm.core.settings import (
 )
 from vcm.core.utils import (
     Printer,
-    create_desktop_cmds,
-    is_called_from_shell,
     more_settings_check,
     safe_exit,
     setup_vcm,
@@ -82,11 +80,6 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            if not is_called_from_shell():
-                create_desktop_cmds()
-                print("Created desktop cmds")
-                time.sleep(10)
-                return
             return parser.error("Invalid use: use download or notify")
 
     if opt.command == Command.download and opt.quiet:
