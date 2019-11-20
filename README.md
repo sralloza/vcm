@@ -1,18 +1,9 @@
 # How to install
-There are 3 diferent ways: using the exe, normal instalation and virtualv instalation.
-- People who don't want to use a Command Line Interface should get the exe instalation.
+There are 2 diferent ways: normal instalation and virtualv instalation.
 - Developers who prefer to use a single interpreter should get the normal instalation.
 - Developers who doesn't want to have dependency problems and like to manage projects in sepparate virtual environment should get the virtualenv instalation.
 
-_Note: normal and virtualenv instalation both need to have Python 3.6+ installed._
-
-### Exe install
-1. Go to the [last release](https://github.com/sralloza/vcm/releases/latest) web page and download the zip file (`vcm.zip`)
-2. Extract the zip whenever you want.
-3. Run manually once the `vcm.exe` file (double click) inside the folder where you just extracted the zip.
-    3.1. If you have moved the desktop folder outside the default, you need to copy `download.cmd` and `notify.cmd` from `C:\Users\%USERNAME%\desktop` to your real desktop folder. If you haven't moved the desktop folder, you don't have to do this step.
-4. You will have 2 new files in the desktop, `download.cmd` and `notify.cmd`. The first one is the downloader, and the second one is the notificator.
-5. You need to set-up the settings. To do that, change the files `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml`. See [Settings File](#settings-file) and [Credential File](#credentials-file) for more info.
+_Note: both installations need to have Python 3.6+ installed._
 
 
 ### Virtualenv install
@@ -35,7 +26,7 @@ _Note: normal and virtualenv instalation both need to have Python 3.6+ installed
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
-Al execute the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.ini` and `C:\Users\%USERNAME%\vcm-credentials.ini`.
+When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml` (you may need to execute the program twice).
 
 ## Settings File
 The settings file path is `C:\Users\%USERNAME%\vcm-settings.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
@@ -52,12 +43,42 @@ Settings:
 
 ### Download section
 Settings:
-* **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a sepparate folder. Defaults to true.
+* **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a separate folder. Defaults to true.
+* **disable-section-indexing** - List of subject's urls that will have section indexing disabled.
+* **secure-section-filename** - If true, sections folder's name will have its white spaces replaced with low bars.
 
 ### Notify section
 Settings:
 * **use-base64-icons** - If true, the icons will be sent as base64 data. If false, the icons will be sent as direct download links from google drive. Note that Gmail does not render base64 data. Defaults to false.
 * **email** - Recipient of the notify email. Must be set, it lacks of a default value.
+
+### Settings file example
+
+***vcm-settings.toml***
+```toml
+[general]
+root-folder = "/home/user/virtual-campus-data"
+logging-level = "INFO"
+timeout = 30
+retries = 10
+exclude-urls = [
+    https://campusvirtual.uva.es/course/view.php?id=89712, # don't parse this subject
+]
+
+[download]
+forum-subfolders = true
+disable-section-indexing = [
+    "https://campusvirtual.uva.es/course/view.php?id=16942", # comments
+    "https://campusvirtual.uva.es/course/view.php?id=82645", # are
+    "https://campusvirtual.uva.es/course/view.php?id=45651", # allowed
+]
+secure-section-filename = false
+
+[notify]
+use-base64-icons = false
+email = "email@example.com"
+
+```
 
 ## Credentials file
 The credentials file path is `C:\Users\%USERNAME%\vcm-credentials.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
@@ -75,14 +96,15 @@ Settings:
 
 * **username** - email address to send the report from.
 * **password** - password of the email.
-* **smtp_server** - stmp server name. For Gmail is smtp.gmail.com.
-* **smtp_port** - stmp port. For Gmail is 587
+* **smtp_server** - stmp server name. For Gmail is `smtp.gmail.com`.
+* **smtp_port** - stmp port. For Gmail is `587`
 
 
 ## Command Line Interface arguments
 There are 3 commands: download, notify and settings.
 
 Arguments:
+- `-v`, `--version` - Prints the current version and exits.
 - `-nss`, `--no-status-server` - Disables the status server. See [During the Execution](#during-the-execution) for more info.
 
 Note: place the general arguments before the command.
@@ -108,7 +130,7 @@ Arguments:
 * `--nthreads NTHREADS` - Select the number of threads to use. Default value is 20.
 * `--no-icons` - Disable the icons in the email.
 
-Note: this command will not start the killer thread, because it's design to avoid using stdin and stdout, so it can be used with tasks managers like cron.
+Note: this command will not start the killer thread, because it's design to avoid using stdin and stdout, so it can be used with [tasks managers](#cron-integration-task-scheduler) like cron.
 
 To view the command help, use `vcm notify -h` or `vcm notify --help`.
 
@@ -116,7 +138,9 @@ To view the command help, use `vcm notify -h` or `vcm notify --help`.
 It can show or change settings.
 
 Uses:
-* **List settings:** `vcm settings list`.
+* **List all settings:** `vcm settings list`.
+* **List one specific setting:** `vcm settings show <setting>`
+* **List key settings (not values):** `vcm settings keys`
 * **Set settings value:** `vcm settings set section.key value`.
     * *Section* is the settings section, can be one of `general`, `download` or `notify`.
     * *Key* is the settings key you want to change. It depends on the section.
@@ -129,7 +153,31 @@ Uses:
 During the execution you can open a web browser in localhost to access to real time information of the threading status. It is shown what is the state of each thread and what it's downloading each thread.
 
 To view the status of a thread, a color code is used:
+- Blue: thread is idle (ready to work).
 - Green: thread downloading for less than 30 seconds.
-- Yellow: thread downloading between 30 seconds and 1 minute.
+- Orange: thread downloading between 30 seconds and 1 minute.
 - Red: thread downloading between 1 minute and 1 and a half minutes.
 - Magenta: thread downloading for more than 1 and a half minutes. The total time is shown in this case.
+- Black: thread was killed (not working anymore, the program is closing).
+
+
+## Cron integration (Task Scheduler)
+VCM is designed to work with a task scheduler. Commands are:
+* Download: `virtualenv/path/bin/python -m vcm -nss download -q`
+* Notify: `virtualenv/path/bin/python -m vcm -nss notify`
+
+
+# How are notes stored (downloaded)
+Inside the root folder, a folder will be created for each subject.
+A section is how notes are classified in the virtual campus.
+For each subject, if its url is not in the `disable-section-indexing` list, a folder will be created for each section. The files will be downloaded inside the section's folder, which is inside the subject's folder.
+
+The setting `general.secure-section-filename` will replace white spaces with low bars.
+
+To sum up:
+**`/root-folder-path/subject-name/section-name/filename.extension`**
+
+
+## What is a section
+![example](https://github.com/sralloza/master/blob/dev/.github/example.png)
+A section is how notes are classified in the virtual campus. In this example, you can see the title **`Tema 1`**, and then 3 resources (2 pdfs and 1 zip file). The title **`Tema 1`** is the section.

@@ -10,15 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class NotifierSubject(Subject):
-    def __init__(self, name, url, connection, queue):
-        super().__init__(name, url, connection, queue)
+    def __init__(self, name, url, queue):
+        super().__init__(name, url, queue)
         self.new_links: NL = []
 
     @classmethod
     def from_subject(cls, subject: Subject):
-        ns = NotifierSubject(
-            subject.name, subject.url, subject.connection, subject.queue
-        )
+        ns = NotifierSubject(subject.name, subject.url, subject.queue)
         ns.notes_links = [x for x in subject.notes_links if x.notify]
         logger.debug("%d - %d", len(subject.notes_links), len(ns.notes_links))
         ns.determine_new_links()

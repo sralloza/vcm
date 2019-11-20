@@ -10,8 +10,6 @@ from vcm.core.settings import (
 )
 from vcm.core.utils import (
     Printer,
-    create_desktop_cmds,
-    is_called_from_shell,
     more_settings_check,
     safe_exit,
     setup_vcm,
@@ -26,10 +24,10 @@ class Command(Enum):
     settings = 3
 
 
-@safe_exit
-def main(args=None):
+def parse_args(args=None, parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
     parser.add_argument("-nss", "--no-status-server", action="store_true")
+    parser.add_argument("-v", "--version", action="store_true", dest="version")
 
     subparsers = parser.add_subparsers(title="commands", dest="command")
 
@@ -55,9 +53,26 @@ def main(args=None):
     set_sub_subparser.add_argument("key", help="settings key (section.key)")
     set_sub_subparser.add_argument("value", help="new settings value")
 
+    show_sub_subparser = settings_subparser.add_parser("show")
+    show_sub_subparser.add_argument("key", help="settings key (section.key)")
+
+    settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
 
-    opt = parser.parse_args(args)
+    if parser:
+        return parser.parse_args(args), parser
+
+    return parser.parse_args(args)
+
+
+@safe_exit
+def main(args=None):
+    opt, parser = parse_args(args, parser=True)
+
+    if opt.version:
+        from vcm import version
+
+        exit("Version: %s" % version)
 
     try:
         opt.command = Command(opt.command)
@@ -65,11 +80,6 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            if not is_called_from_shell():
-                create_desktop_cmds()
-                print("Created desktop cmds")
-                time.sleep(10)
-                return
             return parser.error("Invalid use: use download or notify")
 
     if opt.command == Command.download and opt.quiet:
@@ -84,9 +94,20 @@ def main(args=None):
             more_settings_check()
             exit("Checked")
 
+        if opt.settings_subcommand == "keys":
+            keys = []
+            for setting_class in SETTINGS_CLASSES:
+                for key in settings_name_to_class[setting_class].keys():
+                    keys.append(' - ' +setting_class + '.' + key)
+
+            for key in keys:
+                print(key)
+            exit()
+
         if opt.key.count(".") != 1:
             return parser.error("Invalid key (must be section.setting)")
 
+        # Now command can be show or set, both need to split the key
         cls, key = opt.key.split(".")
 
         try:
@@ -104,7 +125,10 @@ def main(args=None):
             )
             parser.error(message)
 
-        setattr(settings_class, key, opt.value)
+        if opt.settings_subcommand == "set":
+            setattr(settings_class, key, opt.value)
+        elif opt.settings_subcommand == "show":
+            print("%s: %r" % (opt.key, getattr(settings_class, key)))
         exit()
 
     # Command executed is not 'settings', so check settings

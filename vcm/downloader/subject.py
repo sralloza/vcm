@@ -1,14 +1,16 @@
 """Contains all related to subjects."""
-
 import logging
 import os
 from threading import Lock
+from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 from requests import Response
 
 from _sha1 import sha1
-from vcm.core.settings import GeneralSettings
+from vcm.core.networking import Connection
+from vcm.core.settings import DownloadSettings, GeneralSettings
+from vcm.core.utils import secure_filename
 
 from .alias import Alias
 from .link import BaseLink, Delivery, Folder, ForumList, Resource
@@ -17,13 +19,12 @@ from .link import BaseLink, Delivery, Folder, ForumList, Resource
 class Subject:
     """Representation of a subject."""
 
-    def __init__(self, name, url, connection, queue):
+    def __init__(self, name, url, queue):
         """
 
         Args:
             name (str): name of the subject.
             url (str): url of the subject.
-            connection (Connection): connection to download files.
             queue (Queue): queue to controll threads.
         """
 
@@ -31,8 +32,12 @@ class Subject:
 
         self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
-        self.connection = connection
+        self.connection = Connection()
         self.queue = queue
+
+        self.disable_section_indexing = (
+            self.url in DownloadSettings.disable_section_indexing
+        )
 
         self.response: Response = None
         self.soup: BeautifulSoup = None
@@ -77,11 +82,30 @@ class Subject:
         else:
             self.logger.debug("Folder already exists: %r", self.name)
 
-    def add_link(self, url: BaseLink):
-        """Adds a note url to the list."""
-        self.logger.debug("Adding url: %s", url.name)
-        self.notes_links.append(url)
-        self.queue.put(url)
+    def add_link(self, link: BaseLink):
+        """Adds a note link to the list."""
+        self.logger.debug("Adding link: %s", link.name)
+        if self.disable_section_indexing:
+            link.section = None
+
+        self.notes_links.append(link)
+        self.queue.put(link)
+
+    @staticmethod
+    def find_section_by_child(child):
+        try:
+            section_h3 = child.find_parent("li", class_="section main clearfix").find(
+                "h3", class_="sectionname"
+            )
+        except AttributeError:
+            section_h3 = child.find_parent(
+                "li", class_="section main clearfix current"
+            ).find("h3", class_="sectionname")
+        return Section(section_h3.text, section_h3.a["href"])
+
+    @staticmethod
+    def url_to_query_args(url: str):
+        return parse_qs(urlparse(url).query)
 
     def find_and_download_links(self):
         """Finds the links downloading the primary page."""
@@ -91,48 +115,74 @@ class Subject:
         _ = [x.extract() for x in self.soup.findAll("span", {"class": "accesshide"})]
         _ = [x.extract() for x in self.soup.findAll("div", {"class": "mod-indent"})]
 
-        search = self.soup.findAll("li", class_="activity")
+        for folder in self.soup.find_all("div", class_="singlebutton"):
+            folder_name = folder.parent.parent.div.find(
+                "span", class_="fp-filename"
+            ).text
 
-        for li in search:
-            try:
-                div = li.find("div", class_="activityinstance")
-                id_ = None
+            section = self.find_section_by_child(folder)
 
-                if not div:  # Folder
-                    div = li.find("div", class_="singlebutton")
-                    name = li.find("span", class_="fp-filename").text
-                    url = div.form["action"]
-                    id_ = div.find("input", {"name": "id"})["value"]
-                    icon_url = li.find("span", class_="fp-icon").img["src"]
-                else:
-                    name = div.a.span.text
-                    url = div.a["href"]
-                    icon_url = div.a.img["src"]
+            folder_url = folder.form["action"]
+            folder_icon_url = folder.find_parent(
+                "div", class_="contentwithoutlink"
+            ).find("img", class_="icon")["src"]
+            id_ = folder.form.find("input", {"name": "id"})["value"]
 
-                if "resource" in url:
-                    self.logger.debug(
-                        "Created Resource (subject search): %r, %s", name, url
-                    )
-                    self.add_link(Resource(name, url, icon_url, self, self.connection))
-                elif "folder" in url:
-                    self.logger.debug(
-                        "Created Folder (subject search): %r, %s", name, url
-                    )
-                    self.add_link(
-                        Folder(name, url, icon_url, self, self.connection, id_)
-                    )
-                elif "forum" in url:
-                    self.logger.debug(
-                        "Created Forum (subject search): %r, %s", name, url
-                    )
-                    self.add_link(ForumList(name, url, icon_url, self, self.connection))
-                elif "assign" in url:
-                    self.logger.debug(
-                        "Created Delivery (subject search): %r, %s", name, url
-                    )
-                    self.add_link(Delivery(name, url, icon_url, self, self.connection))
+            self.logger.debug(
+                "Created Folder (subject search): %r, %s", folder_name, folder_url
+            )
+            self.add_link(
+                Folder(folder_name, section, folder_url, folder_icon_url, self, id_)
+            )
 
-            except AttributeError:
-                pass
+        for resource in self.soup.find_all("div", class_="activityinstance"):
+            section = self.find_section_by_child(resource)
+
+            name = resource.a.span.text
+            url = resource.a["href"]
+            icon_url = resource.a.img["src"]
+
+            if "resource" in url:
+                self.logger.debug(
+                    "Created Resource (subject search): %r, %s", name, url
+                )
+                self.add_link(Resource(name, section, url, icon_url, self))
+            elif "folder" in url:
+                real_url = "https://campusvirtual.uva.es/mod/folder/download_folder.php"
+                id_ = self.url_to_query_args(url)["id"][0]
+                self.logger.debug(
+                    "Created Folder (subject search): %r, id=%r", name, id_
+                )
+                self.add_link(Folder(name, section, real_url, icon_url, self, id_))
+            elif "forum" in url:
+                self.logger.debug("Created Forum (subject search): %r, %s", name, url)
+                self.add_link(ForumList(name, section, url, icon_url, self))
+            elif "assign" in url:
+                self.logger.debug(
+                    "Created Delivery (subject search): %r, %s", name, url
+                )
+                self.add_link(Delivery(name, section, url, icon_url, self))
 
         self.logger.debug("Downloading files for subject %r", self.name)
+
+
+class Section:
+    def __init__(self, name, url=None):
+        self.name = self.filter_name(name)
+        self.url = url
+
+        self.name = secure_filename(
+            self.name, parse_spaces=DownloadSettings.secure_section_filename
+        )
+
+    def __str__(self):
+        if self.url:
+            return "Section(%r, url=%r)" % (self.name, self.url)
+        return "Section(%r)" % self.name
+
+    @staticmethod
+    def filter_name(name):
+        name = name.replace("\t", " ").strip()
+        while "  " in name:
+            name = name.replace("  ", " ")
+        return name

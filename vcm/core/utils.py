@@ -5,6 +5,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import current_thread
+from traceback import format_exc
 
 import psutil
 from colorama import Fore, init
@@ -63,7 +64,7 @@ class _GetchWindows:
 getch = _Getch()
 
 
-def secure_filename(filename):
+def secure_filename(filename, parse_spaces=True):
     if isinstance(filename, str):
         from unicodedata import normalize
 
@@ -87,9 +88,16 @@ def secure_filename(filename):
         "PRN",
         "NUL",
     )
-    filename = str(_filename_ascii_strip_re.sub("", "_".join(filename.split()))).strip(
-        "._"
-    )
+
+    if parse_spaces:
+        temp_str = "_".join(filename.split())
+    else:
+        temp_str = " ".join(filename.split())
+        _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_. -]")
+
+
+    filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
+
     if (
         os.name == "nt"
         and filename
@@ -101,7 +109,7 @@ def secure_filename(filename):
 
 
 class Patterns:
-    FILENAME_PATTERN = re.compile('filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
+    FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
 
 
 def exception_exit(exception, to_stderr=False, red=True):
@@ -128,12 +136,14 @@ def exception_exit(exception, to_stderr=False, red=True):
         raise TypeError("exception should be a subclass of Exception")
 
     message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
+    message += "\n" + format_exc()
 
     if red:
         message = Fore.RED + message + Fore.RESET
 
     if to_stderr:
         return exit(message)
+
     print(message)
     return exit(-1)
 
