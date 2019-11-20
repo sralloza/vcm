@@ -184,6 +184,10 @@ class _DownloadSettings(BaseSettings):
     def disable_section_indexing(self) -> list:
         return self["disable-section-indexing"]
 
+    @property
+    def secure_section_filename(self) -> bool:
+        return self["secure-section-filename"]
+
 
 class _NotifySettings(BaseSettings):
     @property
