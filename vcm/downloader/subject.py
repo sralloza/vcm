@@ -148,7 +148,7 @@ class Subject:
                 self.add_link(Resource(name, section, url, icon_url, self))
             elif "folder" in url:
                 real_url = "https://campusvirtual.uva.es/mod/folder/download_folder.php"
-                id_ = self.url_to_query_args(url)["id"]
+                id_ = self.url_to_query_args(url)["id"][0]
                 self.logger.debug("Created Folder (subject search): %r, id=%r", name, id_)
                 self.add_link(Folder(name, section, real_url, icon_url, self, id_))
             elif "forum" in url:
