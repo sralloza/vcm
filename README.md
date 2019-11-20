@@ -26,7 +26,7 @@ _Note: both installations need to have Python 3.6+ installed._
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
-Al execute the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml`.
+When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml` (you may need to execute the program twice).
 
 ## Settings File
 The settings file path is `C:\Users\%USERNAME%\vcm-settings.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
@@ -43,9 +43,9 @@ Settings:
 
 ### Download section
 Settings:
-* **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a sepparate folder. Defaults to true.
+* **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a separate folder. Defaults to true.
 * **disable-section-indexing** - List of subject's urls that will have section indexing disabled.
-* **secure-section-filename** - If true, section's folder's name will have its whitespaces replaced with low bars.
+* **secure-section-filename** - If true, sections folder's name will have its white spaces replaced with low bars.
 
 ### Notify section
 Settings:
@@ -72,6 +72,7 @@ disable-section-indexing = [
     "https://campusvirtual.uva.es/course/view.php?id=82645", # are
     "https://campusvirtual.uva.es/course/view.php?id=45651", # allowed
 ]
+secure-section-filename = false
 
 [notify]
 use-base64-icons = false
@@ -95,8 +96,8 @@ Settings:
 
 * **username** - email address to send the report from.
 * **password** - password of the email.
-* **smtp_server** - stmp server name. For Gmail is smtp.gmail.com.
-* **smtp_port** - stmp port. For Gmail is 587
+* **smtp_server** - stmp server name. For Gmail is `smtp.gmail.com`.
+* **smtp_port** - stmp port. For Gmail is `587`
 
 
 ## Command Line Interface arguments
@@ -171,10 +172,12 @@ Inside the root folder, a folder will be created for each subject.
 A section is how notes are classified in the virtual campus.
 For each subject, if its url is not in the `disable-section-indexing` list, a folder will be created for each section. The files will be downloaded inside the section's folder, which is inside the subject's folder.
 
+The setting `general.secure-section-filename` will replace white spaces with low bars.
+
 To sum up:
 **`/root-folder-path/subject-name/section-name/filename.extension`**
 
 
 ## What is a section
-![example](https://github.com/sralloza/vcm/blob/dev/.github/example.png)
+![example](https://github.com/sralloza/master/blob/dev/.github/example.png)
 A section is how notes are classified in the virtual campus. In this example, you can see the title **`Tema 1`**, and then 3 resources (2 pdfs and 1 zip file). The title **`Tema 1`** is the section.
