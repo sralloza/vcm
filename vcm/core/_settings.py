@@ -21,7 +21,11 @@ defaults = {
         "retries": 10,
         "exclude-urls": [],
     },
-    "download": {"forum-subfolders": True, "disable-section-indexing": []},
+    "download": {
+        "forum-subfolders": True,
+        "disable-section-indexing": [],
+        "secure-section-filename": False,
+    },
     "notify": {"use-base64-icons": False, "email": "insert-email"},
 }
 
@@ -33,7 +37,11 @@ types = {
         "retries": int,
         "exclude-urls": list,
     },
-    "download": {"forum-subfolders": bool, "disable-section-indexing": list},
+    "download": {
+        "forum-subfolders": bool,
+        "disable-section-indexing": list,
+        "secure-section-filename": False,
+    },
     "notify": {"use-base64-icons": bool, "email": str},
 }
 
@@ -46,7 +54,11 @@ constructors = {
         "retries": int,
         "exclude-urls": list,
     },
-    "download": {"forum-subfolders": str2bool, "disable-section-indexing": list},
+    "download": {
+        "forum-subfolders": str2bool,
+        "disable-section-indexing": list,
+        "secure-section-filename": str2bool,
+    },
     "notify": {"use-base64-icons": str2bool, "email": str},
 }
 
@@ -62,6 +74,7 @@ setters = {
     "download": {
         "forum-subfolders": str2bool,
         "disable-section-indexing": disable_section_indexing_setter,
+        "secure-section-filename": str2bool,
     },
     "notify": {"use-base64-icons": str2bool, "email": str},
 }

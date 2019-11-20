@@ -1,15 +1,16 @@
 """Contains all related to subjects."""
-
 import logging
 import os
 from threading import Lock
+from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 from requests import Response
 
 from _sha1 import sha1
 from vcm.core.networking import Connection
-from vcm.core.settings import GeneralSettings, DownloadSettings
+from vcm.core.settings import DownloadSettings, GeneralSettings
+from vcm.core.utils import secure_filename
 
 from .alias import Alias
 from .link import BaseLink, Delivery, Folder, ForumList, Resource
@@ -102,6 +103,10 @@ class Subject:
             ).find("h3", class_="sectionname")
         return Section(section_h3.text, section_h3.a["href"])
 
+    @staticmethod
+    def url_to_query_args(url: str):
+        return parse_qs(urlparse(url).query)
+
     def find_and_download_links(self):
         """Finds the links downloading the primary page."""
         self.logger.debug("Finding links of %s", self.name)
@@ -109,8 +114,6 @@ class Subject:
 
         _ = [x.extract() for x in self.soup.findAll("span", {"class": "accesshide"})]
         _ = [x.extract() for x in self.soup.findAll("div", {"class": "mod-indent"})]
-
-        search = self.soup.findAll("li", class_="activity")
 
         for folder in self.soup.find_all("div", class_="singlebutton"):
             folder_name = folder.parent.parent.div.find(
@@ -145,8 +148,12 @@ class Subject:
                 )
                 self.add_link(Resource(name, section, url, icon_url, self))
             elif "folder" in url:
-                self.logger.debug("Created Folder (subject search): %r, %s", name, url)
-                self.add_link(Folder(name, section, url, icon_url, self, id_))
+                real_url = "https://campusvirtual.uva.es/mod/folder/download_folder.php"
+                id_ = self.url_to_query_args(url)["id"][0]
+                self.logger.debug(
+                    "Created Folder (subject search): %r, id=%r", name, id_
+                )
+                self.add_link(Folder(name, section, real_url, icon_url, self, id_))
             elif "forum" in url:
                 self.logger.debug("Created Forum (subject search): %r, %s", name, url)
                 self.add_link(ForumList(name, section, url, icon_url, self))
@@ -163,6 +170,10 @@ class Section:
     def __init__(self, name, url=None):
         self.name = self.filter_name(name)
         self.url = url
+
+        self.name = secure_filename(
+            self.name, parse_spaces=DownloadSettings.secure_section_filename
+        )
 
     def __str__(self):
         if self.url:

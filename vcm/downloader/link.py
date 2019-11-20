@@ -9,7 +9,7 @@ import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
-from _sha1 import sha1
+from hashlib import sha1
 from vcm.core.modules import Modules
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
@@ -20,21 +20,8 @@ from .alias import Alias
 from .filecache import REAL_FILE_CACHE
 
 
-class DownloadsRecorder:
-    _downloads_record_path = GeneralSettings.root_folder / "downloads.log"
-
-    @staticmethod
-    def write(something: str, *args):
-        with DownloadsRecorder._downloads_record_path.open("at") as fh:
-            fh.write(something % args + "\n")
-
-
 class _Notify:
     NOTIFY = False
-
-    @property
-    def notify(self):
-        return self.NOTIFY
 
 
 class BaseLink(_Notify):
@@ -208,9 +195,16 @@ class BaseLink(_Notify):
 
         temp_filepath /= filename
 
+        try:
+            folder_id = self.id
+        except AttributeError:
+            folder_id = None
+
         self.filepath = Path(
             Alias.real_to_alias(
-                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix()
+                sha1(self.url.encode()).hexdigest(),
+                temp_filepath.as_posix(),
+                folder_id=folder_id,
             )
         )
 
@@ -242,7 +236,6 @@ class BaseLink(_Notify):
         if Modules.current() == Modules.notify:
             return
 
-        self.create_subject_folder()
         self.create_subfolder()
 
         self.logger.debug(
@@ -275,9 +268,6 @@ class BaseLink(_Notify):
             with self.filepath.open("wb") as file_handler:
                 file_handler.write(self.response.content)
             self.logger.debug("File downloaded and saved: %s", self.filepath)
-            DownloadsRecorder.write(
-                "Downloaded %s -- %s", self.subject.name, self.filepath.name
-            )
         except PermissionError:
             self.logger.warning(
                 "File couldn't be downloaded due to permission error: %s",
