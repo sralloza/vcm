@@ -23,6 +23,10 @@ from .filecache import REAL_FILE_CACHE
 class _Notify:
     NOTIFY = False
 
+    @property
+    def notify(self):
+        return self.NOTIFY
+
 
 class BaseLink(_Notify):
     """Base class for Links."""
