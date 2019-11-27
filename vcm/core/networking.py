@@ -61,6 +61,7 @@ class Connection(metaclass=MetaSingleton):
         return self._downloader.delete(url, **kwargs)
 
     def logout(self):
+        logger.debug("Logging out")
         self._logout_response = self.post(
             "https://campusvirtual.uva.es/login/logout.php?sesskey=%s" % self.sesskey,
             data={"sesskey": self.sesskey},
@@ -69,9 +70,13 @@ class Connection(metaclass=MetaSingleton):
         if "Usted no se ha identificado" not in self._logout_response.text:
             raise LogoutError
 
+        logger.info("Logged out")
+
     def login(self):
         try:
+            logger.debug("Logging in")
             self._login()
+            logger.info("Logged in")
         except (KeyError, TypeError, LoginError) as exc:
             logger.warning("Needed to call again Connection.login() due to %r", exc)
             self._login_attempts += 1
