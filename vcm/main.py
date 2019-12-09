@@ -1,5 +1,4 @@
 import argparse
-import time
 from enum import Enum
 
 from vcm.core.settings import (
@@ -10,6 +9,7 @@ from vcm.core.settings import (
 )
 from vcm.core.utils import (
     Printer,
+    check_updates,
     more_settings_check,
     safe_exit,
     setup_vcm,
@@ -26,8 +26,15 @@ class Command(Enum):
 
 def parse_args(args=None, parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
-    parser.add_argument("-nss", "--no-status-server", action="store_true")
-    parser.add_argument("-v", "--version", action="store_true", dest="version")
+    parser.add_argument(
+        "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
+    )
+    parser.add_argument(
+        "-v", "--version", action="store_true", dest="version", help="Show version"
+    )
+    parser.add_argument(
+        "--check-updates", action="store_true", help="Check for updates"
+    )
 
     subparsers = parser.add_subparsers(title="commands", dest="command")
 
@@ -74,6 +81,10 @@ def main(args=None):
 
         exit("Version: %s" % version)
 
+    if opt.check_updates:
+        check_updates()
+        exit()
+
     try:
         opt.command = Command(opt.command)
     except ValueError:
@@ -98,7 +109,7 @@ def main(args=None):
             keys = []
             for setting_class in SETTINGS_CLASSES:
                 for key in settings_name_to_class[setting_class].keys():
-                    keys.append(' - ' +setting_class + '.' + key)
+                    keys.append(" - " + setting_class + "." + key)
 
             for key in keys:
                 print(key)
