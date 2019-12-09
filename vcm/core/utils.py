@@ -10,6 +10,7 @@ from traceback import format_exc
 import psutil
 from colorama import Fore, init
 from decorator import decorator
+from packaging import version
 
 from .time_operations import seconds_to_str
 
@@ -94,7 +95,6 @@ def secure_filename(filename, parse_spaces=True):
     else:
         temp_str = " ".join(filename.split())
         _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_. -]")
-
 
     filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
 
@@ -269,3 +269,24 @@ class Printer:
     @classmethod
     def print(cls, *args, **kwargs):
         return cls._print(*args, **kwargs)
+
+
+def check_updates():
+    from vcm import version as current_version
+    from .networking import connection
+
+    response = connection.get(
+        "https://raw.githubusercontent.com/sralloza/vcm/master/vcm/VERSION"
+    )
+    newer_version = version.parse(response.text.strip())
+    current_version = version.parse(current_version)
+
+    if newer_version > current_version:
+        Printer.print(
+            "Newer version available: %s (current version: %s)"
+            % (newer_version, current_version)
+        )
+        return True
+
+    Printer.print("No updates available (current version: %s)" % current_version)
+    return False
