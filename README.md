@@ -103,11 +103,12 @@ Settings:
 ## Command Line Interface arguments
 There are 3 commands: download, notify and settings.
 
-Arguments:
+General arguments:
 - `-v`, `--version` - Prints the current version and exits.
 - `-nss`, `--no-status-server` - Disables the status server. See [During the Execution](#during-the-execution) for more info.
+- `--check-updates` - Check for updates
 
-Note: place the general arguments before the command.
+**Note**: place the general arguments before the command.
 Example: `vcm --no-status-server download --nthreads 23 --no-killer`
 
 To see more info use `vcm -h` or `vcm --help`
