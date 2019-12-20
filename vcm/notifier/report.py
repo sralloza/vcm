@@ -89,4 +89,13 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
     message += "</body></html>"
     subject = "Se han encontrado %d enlaces nuevos" % nlinks
 
-    return send_email(send_to, subject, message, origin="Rpi-VCM")
+    result = send_email(send_to, subject, message, origin="Rpi-VCM")
+
+    if not result:
+        logger.error("Error in email, removing new links")
+        for subject in new_subjects:
+            for link in subject.new_links:
+                logger.info("Removing %s", link.name)
+                link.delete()
+
+    return result
