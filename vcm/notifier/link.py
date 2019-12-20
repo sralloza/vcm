@@ -115,6 +115,9 @@ class NotifierLink(BaseLink):
     def save(self):
         return DatabaseLinkInterface.save(self)
 
+    def delete(self):
+        return DatabaseLinkInterface.delete(self)
+
     def gen_icon_type(self):
         return self.icon_type
 
