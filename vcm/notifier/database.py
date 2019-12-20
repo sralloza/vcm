@@ -46,9 +46,18 @@ class DatabaseInterface:
         except sqlite3.IntegrityError:
             return False
 
+    def delete_link(self, link):
+        self.cursor.execute("DELETE FROM database_links WHERE url=?", (link.url,))
+        return True
+
 
 class DatabaseLinkInterface:
     @staticmethod
     def save(link):
         with DatabaseInterface() as connection:
             return connection.save_link(link)
+
+    @staticmethod
+    def delete(link):
+        with DatabaseInterface() as connection:
+            return connection.delete_link(link)
