@@ -9,6 +9,20 @@ logger = logging.getLogger(__name__)
 
 
 def send_email(destinations, subject, message, origin="Rpi-VCM", retries=5):
+    try:
+        return _send_email(
+            destinations=destinations,
+            subject=subject,
+            message=message,
+            origin=origin,
+            retries=retries,
+        )
+    except:
+        logger.exception("Catched unexpected exception in send_email()")
+        return False
+
+
+def _send_email(destinations, subject, message, origin="Rpi-VCM", retries=5):
     logger.debug("Sending email")
 
     username = Credentials.Email.username
@@ -37,7 +51,12 @@ def send_email(destinations, subject, message, origin="Rpi-VCM", retries=5):
 
         server.starttls()
 
-        server.login(username, password)
+        try:
+            server.login(username, password)
+        except smtplib.SMTPAuthenticationError:
+            logger.warning("SMTP Authentication Error, retries=%d", retries)
+            retries -= 1
+            continue
 
         server.sendmail(username, destinations, msg.as_string())
         server.quit()
