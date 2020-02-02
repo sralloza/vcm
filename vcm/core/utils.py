@@ -160,9 +160,20 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     name = name or func.__name__
     t0 = time.time()
-    result = func(*args, **kwargs)
+    raise_exc = False
+    exception = None
+
+    try:
+        result = func(*args, **kwargs)
+    except SystemExit as exc:
+        raise_exc = True
+        exception = exc
+
     delta_t = time.time() - t0
     logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
+
+    if raise_exc:
+        raise exception
     return result
 
 
