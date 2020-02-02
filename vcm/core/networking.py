@@ -87,6 +87,14 @@ class Connection(metaclass=MetaSingleton):
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
+        if response.status_code == 503 and "maintenance" in response.reason:
+            logger.critical(
+                "Moodle under maintenance (%d - %s)",
+                response.status_code,
+                response.reason,
+            )
+            exit(-1)
+
         soup = BeautifulSoup(response.text, "html.parser")
 
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
