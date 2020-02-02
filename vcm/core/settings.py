@@ -160,6 +160,10 @@ class _GeneralSettings(BaseSettings):
     def retries(self) -> int:
         return self["retries"]
 
+    @property
+    def exclude_urls(self) -> list:
+        return self["exclude-urls"]
+
     # DEPENDANT SETTINGS
 
     @property
