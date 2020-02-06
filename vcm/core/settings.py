@@ -163,6 +163,9 @@ class _GeneralSettings(BaseSettings):
     @property
     def exclude_urls(self) -> list:
         return self["exclude-urls"]
+    def exclude_subjects_ids(self) -> List[int]:
+        return self["exclude-subjects-ids"]
+
 
     # DEPENDANT SETTINGS
 
