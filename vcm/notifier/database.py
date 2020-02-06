@@ -23,6 +23,7 @@ class DatabaseInterface:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 url TEXT UNIQUE NOT NULL,
                 subject TEXT NOT NULL,
+                name TEXT NOT NULL,
                 datetime TEXT NOT NULL
                 )"""
         )
