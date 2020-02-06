@@ -37,6 +37,7 @@ defaults = {
         "logging-level": "INFO",
         "timeout": 30,
         "retries": 10,
+        "max-logs": 5,
         "exclude-subjects-ids": [],
     },
     "download": {
@@ -53,6 +54,7 @@ types = {
         "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         "timeout": int,
         "retries": int,
+        "max-logs": int,
         "exclude-subjects-ids": list,
     },
     "download": {
@@ -70,6 +72,7 @@ constructors = {
         "logging-level": logging._nameToLevel.__getitem__,
         "timeout": int,
         "retries": int,
+        "max-logs": int,
         "exclude-subjects-ids": list,
     },
     "download": {
@@ -87,6 +90,7 @@ setters = {
         "logging-level": str,
         "timeout": int,
         "retries": int,
+        "max-logs": int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
