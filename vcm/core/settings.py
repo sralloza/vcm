@@ -161,11 +161,13 @@ class _GeneralSettings(BaseSettings):
         return self["retries"]
 
     @property
-    def exclude_urls(self) -> list:
-        return self["exclude-urls"]
     def exclude_subjects_ids(self) -> List[int]:
         return self["exclude-subjects-ids"]
 
+    @property
+    def exclude_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.exclude_subjects_ids]
 
     # DEPENDANT SETTINGS
 
