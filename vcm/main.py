@@ -4,6 +4,7 @@ from enum import Enum
 from vcm.core.settings import (
     SETTINGS_CLASSES,
     NotifySettings,
+    exclude,
     settings_name_to_class,
     settings_to_string,
 )
@@ -63,6 +64,11 @@ def parse_args(args=None, parser=False):
     show_sub_subparser = settings_subparser.add_parser("show")
     show_sub_subparser.add_argument("key", help="settings key (section.key)")
 
+    exclude_sub_subparser = settings_subparser.add_parser("exclude")
+    exclude_sub_subparser.add_argument(
+        "subject_id", help="subject ID to exclude", type=int
+    )
+
     settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
 
@@ -104,6 +110,10 @@ def main(args=None):
         if opt.settings_subcommand == "check":
             more_settings_check()
             exit("Checked")
+
+        if opt.settings_subcommand == "exclude":
+            exclude(opt.subject_id)
+            exit()
 
         if opt.settings_subcommand == "keys":
             keys = []
