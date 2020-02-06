@@ -6,7 +6,7 @@ from typing import List
 import toml
 from colorama.ansi import Fore
 
-from vcm.core.exceptions import AlreadyExcludedError
+from vcm.core.exceptions import AlreadyExcludedError, NotExcludedError
 
 from ._settings import constructors, defaults, setters, types
 from .exceptions import InvalidSettingsFileError
@@ -64,6 +64,17 @@ def exclude(subject_id: int):
     all_excluded.sort()
     GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
+
+
+def include(subject_id: int):
+    if subject_id not in GeneralSettings.exclude_subjects_ids:
+        raise NotExcludedError("Subject ID '%d' is not excluded" % subject_id)
+
+    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded.remove(subject_id)
+    all_excluded = list(set(all_excluded))
+    all_excluded.sort()
+    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
 class _CoreSettings(dict):
     settings_path: Path = Path.home() / "vcm-settings.toml"
