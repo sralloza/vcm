@@ -206,7 +206,7 @@ def configure_logging():
             filename=GeneralSettings.log_path,
             maxBytes=2_500_000,
             encoding="utf-8",
-            backupCount=5,
+            backupCount=GeneralSettings.max_logs,
         )
 
         current_thread().setName("MT")
