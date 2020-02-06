@@ -56,3 +56,7 @@ class InvalidSettingsFileError(VcmError):
 
 class SettingsError(VcmError):
     """Settings error."""
+
+
+class AlreadyExcludedError(VcmError):
+    """Already excluded error."""

@@ -6,6 +6,8 @@ from typing import List
 import toml
 from colorama.ansi import Fore
 
+from vcm.core.exceptions import AlreadyExcludedError
+
 from ._settings import constructors, defaults, setters, types
 from .exceptions import InvalidSettingsFileError
 
@@ -51,6 +53,15 @@ def settings_to_string():
         output += "    %s: %r\n" % (key, value)
 
     return output
+
+def exclude(subject_id: int):
+    if subject_id in GeneralSettings.exclude_urls:
+        raise AlreadyExcludedError("%d is already excluded" % subject_id)
+
+    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded.append(subject_id)
+    all_excluded.sort()
+    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
 
 class _CoreSettings(dict):
