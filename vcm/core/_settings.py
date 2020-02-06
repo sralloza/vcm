@@ -19,7 +19,7 @@ defaults = {
         "logging-level": "INFO",
         "timeout": 30,
         "retries": 10,
-        "exclude-urls": [],
+        "exclude-subjects-ids": [],
     },
     "download": {
         "forum-subfolders": True,
@@ -35,7 +35,7 @@ types = {
         "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": bool,
@@ -52,7 +52,7 @@ constructors = {
         "logging-level": logging._nameToLevel.__getitem__,
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -69,7 +69,7 @@ setters = {
         "logging-level": str,
         "timeout": int,
         "retries": int,
-        "exclude-urls": exclude_urls_setter,
+        "exclude-subjects-ids": exclude_urls_setter,
     },
     "download": {
         "forum-subfolders": str2bool,
