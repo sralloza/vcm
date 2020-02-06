@@ -180,6 +180,10 @@ class _GeneralSettings(BaseSettings):
         return self["retries"]
 
     @property
+    def max_logs(self) -> int:
+        return self["max-logs"]
+
+    @property
     def exclude_subjects_ids(self) -> List[int]:
         return self["exclude-subjects-ids"]
 
