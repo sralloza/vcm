@@ -128,13 +128,14 @@ class BaseSettings(dict, metaclass=MetaSettings):
     def __setattr__(self, key, value):
         self[key] = value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value, force=False):
+        # TODO: add support to check types like List[int]
         key = self._parse_key(key)
         expected_type = self.types_dict[key]
         if isinstance(expected_type, tuple):
             if value not in expected_type:
                 raise TypeError("%r must be one of %r" % (key, expected_type))
-        value = self.setters[key](value)
+        value = self.setters[key](value, force=force)
         super().__setitem__(key, value)
         save_settings()
 
