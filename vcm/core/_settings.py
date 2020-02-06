@@ -19,6 +19,15 @@ def exclude_subjects_ids_setter(*args, **kwargs):
 
 
 def disable_section_indexing_setter(*args, **kwargs):
+    if kwargs.pop("force", False):
+        exclude_list = args[0]
+        for element in exclude_list:
+            if not isinstance(element, int):
+                raise TypeError(
+                    "%r element of disable-section-indexing must be int, not %s"
+                    % (element, type(element).__name__)
+                )
+        return exclude_list
     raise SettingsError("download.disable-section-indexing can't be set using the CLI")
 
 
@@ -78,7 +87,7 @@ setters = {
         "logging-level": str,
         "timeout": int,
         "retries": int,
-        "exclude-subjects-ids": exclude_urls_setter,
+        "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
         "forum-subfolders": str2bool,
