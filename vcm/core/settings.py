@@ -147,7 +147,13 @@ class BaseSettings(dict, metaclass=MetaSettings):
         if isinstance(expected_type, tuple):
             if value not in expected_type:
                 raise TypeError("%r must be one of %r" % (key, expected_type))
-        value = self.setters[key](value, force=force)
+        try:
+            value = self.setters[key](value, force=force)
+        except TypeError as exc:
+            if "'force'" not in exc.args[0]:
+                raise
+            value = self.setters[key](value)
+
         super().__setitem__(key, value)
         save_settings()
 
@@ -172,6 +178,10 @@ class _GeneralSettings(BaseSettings):
     @property
     def retries(self) -> int:
         return self["retries"]
+
+    @property
+    def max_logs(self) -> int:
+        return self["max-logs"]
 
     @property
     def exclude_subjects_ids(self) -> List[int]:
