@@ -139,7 +139,7 @@ def exception_exit(exception, to_stderr=False, red=True):
     message += "\n" + format_exc()
 
     if red:
-        message = Fore.RED + message + Fore.RESET
+        message = Fore.LIGHTRED_EX + message + Fore.RESET
 
     if to_stderr:
         return exit(message)

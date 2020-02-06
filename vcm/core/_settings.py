@@ -5,11 +5,29 @@ from .utils import str2bool
 from .exceptions import SettingsError
 
 
-def exclude_urls_setter(*args, **kwargs):
-    raise SettingsError("general.exclude-urls can't be set using the CLI.")
+def exclude_subjects_ids_setter(*args, **kwargs):
+    if kwargs.pop("force", False):
+        exclude_list = args[0]
+        for element in exclude_list:
+            if not isinstance(element, int):
+                raise TypeError(
+                    "%r element of exclude-subjects-ids must be int, not %s"
+                    % (element, type(element).__name__)
+                )
+        return exclude_list
+    raise SettingsError("general.exclude-subjects-ids can't be set using the CLI.")
 
 
 def disable_section_indexing_setter(*args, **kwargs):
+    if kwargs.pop("force", False):
+        exclude_list = args[0]
+        for element in exclude_list:
+            if not isinstance(element, int):
+                raise TypeError(
+                    "%r element of disable-section-indexing must be int, not %s"
+                    % (element, type(element).__name__)
+                )
+        return exclude_list
     raise SettingsError("download.disable-section-indexing can't be set using the CLI")
 
 
@@ -19,7 +37,7 @@ defaults = {
         "logging-level": "INFO",
         "timeout": 30,
         "retries": 10,
-        "exclude-urls": [],
+        "exclude-subjects-ids": [],
     },
     "download": {
         "forum-subfolders": True,
@@ -35,7 +53,7 @@ types = {
         "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": bool,
@@ -52,7 +70,7 @@ constructors = {
         "logging-level": logging._nameToLevel.__getitem__,
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -69,7 +87,7 @@ setters = {
         "logging-level": str,
         "timeout": int,
         "retries": int,
-        "exclude-urls": exclude_urls_setter,
+        "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
         "forum-subfolders": str2bool,

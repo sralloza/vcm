@@ -1,6 +1,7 @@
 import os
 from copy import deepcopy
 from pathlib import Path
+from typing import List
 
 import toml
 from colorama.ansi import Fore
@@ -128,13 +129,14 @@ class BaseSettings(dict, metaclass=MetaSettings):
     def __setattr__(self, key, value):
         self[key] = value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value, force=False):
+        # TODO: add support to check types like List[int]
         key = self._parse_key(key)
         expected_type = self.types_dict[key]
         if isinstance(expected_type, tuple):
             if value not in expected_type:
                 raise TypeError("%r must be one of %r" % (key, expected_type))
-        value = self.setters[key](value)
+        value = self.setters[key](value, force=force)
         super().__setitem__(key, value)
         save_settings()
 
@@ -161,8 +163,13 @@ class _GeneralSettings(BaseSettings):
         return self["retries"]
 
     @property
-    def exclude_urls(self) -> list:
-        return self["exclude-urls"]
+    def exclude_subjects_ids(self) -> List[int]:
+        return self["exclude-subjects-ids"]
+
+    @property
+    def exclude_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.exclude_subjects_ids]
 
     # DEPENDANT SETTINGS
 
