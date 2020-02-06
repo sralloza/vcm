@@ -55,11 +55,12 @@ def settings_to_string():
     return output
 
 def exclude(subject_id: int):
-    if subject_id in GeneralSettings.exclude_urls:
-        raise AlreadyExcludedError("%d is already excluded" % subject_id)
+    if subject_id in GeneralSettings.exclude_subjects_ids:
+        raise AlreadyExcludedError("Subject ID '%d' is already excluded" % subject_id)
 
     all_excluded = list(GeneralSettings.exclude_subjects_ids)
     all_excluded.append(subject_id)
+    all_excluded = list(set(all_excluded))
     all_excluded.sort()
     GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
