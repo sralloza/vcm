@@ -23,6 +23,7 @@ class DatabaseInterface:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 url TEXT UNIQUE NOT NULL,
                 subject TEXT NOT NULL,
+                name TEXT NOT NULL,
                 datetime TEXT NOT NULL
                 )"""
         )
@@ -38,10 +39,11 @@ class DatabaseInterface:
         data = [
             link.url,
             link.subject.name,
+            link.name,
             datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
         ]
         try:
-            self.cursor.execute("INSERT INTO database_links VALUES (NULL,?,?,?)", data)
+            self.cursor.execute("INSERT INTO database_links VALUES (NULL,?,?,?,?)", data)
             return True
         except sqlite3.IntegrityError:
             return False
