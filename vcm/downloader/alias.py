@@ -44,35 +44,35 @@ class Alias(metaclass=Singleton):
 
     def __init__(self):
         self.alias_path = GeneralSettings.root_folder / "alias.json"
-        self.json = []
+        self.alias_entries = []
         self.load()
 
     def __len__(self):
-        return len(self.json)
+        return len(self.alias_entries)
 
     def load(self):
         """Loads the alias configuration."""
 
         if not self.alias_path.exists():
-            self.json = []
+            self.alias_entries = []
             return
         try:
             Events.acquire()
             with self.alias_path.open(encoding="utf-8") as file_handler:
-                self.json = json.load(file_handler) or []
+                self.alias_entries = json.load(file_handler) or []
         except json.JSONDecodeError as ex:
             raise AliasFatalError("Raised JSONDecodeError") from ex
         except UnicodeDecodeError as ex:
             raise AliasFatalError("Raised UnicodeDecodeError") from ex
 
-        if not isinstance(self.json, list):
-            raise TypeError(f"alias file invalid ({type(self.json).__name__})")
+        if not isinstance(self.alias_entries, list):
+            raise TypeError(f"Alias file invalid ({type(self.alias_entries).__name__})")
 
-        for alias in self.json:
+        for alias in self.alias_entries:
             if "id" not in alias or "alias" not in alias or "original" not in alias:
                 raise TypeError(f"alias file invalid: {alias!r}")
 
-        self.json = [AliasEntry(**x) for x in self.json]
+        self.alias_entries = [AliasEntry(**x) for x in self.alias_entries]
 
         Events.release()
 
@@ -83,7 +83,7 @@ class Alias(metaclass=Singleton):
         self = cls()
         Events.acquire()
 
-        self.json = []
+        self.alias_entries = []
         with self.alias_path.open("wt", encoding="utf-8") as file_handler:
             json.dump([], file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
@@ -98,7 +98,7 @@ class Alias(metaclass=Singleton):
         except (FileNotFoundError, json.JSONDecodeError):
             temp = []
 
-        to_write = [x.json() for x in self.json]
+        to_write = [x.to_json() for x in self.alias_entries]
         to_write += temp
 
         res_list = []
@@ -126,7 +126,7 @@ class Alias(metaclass=Singleton):
             temp = self._create_name(something, index)
 
             done = True
-            for file in self.json:
+            for file in self.alias_entries:
                 if temp == file.alias:
                     done = False
                     break
@@ -175,7 +175,7 @@ class Alias(metaclass=Singleton):
         self.__init__()
         Events.acquire()
 
-        for file in self.json:
+        for file in self.alias_entries:
             if file.id == id_:
                 Events.release()
 
@@ -188,12 +188,12 @@ class Alias(metaclass=Singleton):
 
         alias = original
 
-        for file in self.json:
+        for file in self.alias_entries:
             if file.original == original:
                 alias = self._increment(alias)
                 break
 
-        self.json.append(AliasEntry(id_, original, alias))
+        self.alias_entries.append(AliasEntry(id_, original, alias))
         self.save()
 
         Events.release()
@@ -216,7 +216,7 @@ class Alias(metaclass=Singleton):
         self = Alias.__new__(Alias)
         self.__init__()
 
-        for file in self.json:
+        for file in self.alias_entries:
             if file.alias == alias:
                 return file.original
 
@@ -239,7 +239,7 @@ class Alias(metaclass=Singleton):
         self = Alias.__new__(Alias)
         self.__init__()
 
-        for file in self.json:
+        for file in self.alias_entries:
             if file.id == id_:
                 return file.original
 
