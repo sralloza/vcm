@@ -178,5 +178,5 @@ To sum up:
 
 
 ## What is a section
-![example](https://github.com/sralloza/master/blob/dev/.github/example.png)
+![example](https://raw.githubusercontent.com/sralloza/vcm/dev/.github/example.png)
 A section is how notes are classified in the virtual campus. In this example, you can see the title **`Tema 1`**, and then 3 resources (2 pdfs and 1 zip file). The title **`Tema 1`** is the section.
