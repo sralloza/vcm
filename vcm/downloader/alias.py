@@ -58,12 +58,7 @@ class Alias(metaclass=Singleton):
             raise TypeError(f"alias file invalid ({type(self.json).__name__})")
 
         for alias in self.json:
-            if (
-                "id" not in alias
-                or "new" not in alias
-                or "old" not in alias
-                or "type" not in alias
-            ):
+            if "id" not in alias or "alias" not in alias or "original" not in alias:
                 raise TypeError(f"alias file invalid: {alias!r}")
 
         Events.release()
