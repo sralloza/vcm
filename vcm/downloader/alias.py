@@ -19,13 +19,13 @@ class Events:
 
     access = Semaphore()
 
-    @staticmethod
-    def acquire():
-        Events.access.acquire()
+    @classmethod
+    def acquire(cls):
+        cls.access.acquire()
 
-    @staticmethod
-    def release():
-        Events.access.release()
+    @classmethod
+    def release(cls):
+        cls.access.release()
 
 
 class Alias(metaclass=Singleton):
@@ -68,12 +68,11 @@ class Alias(metaclass=Singleton):
 
         Events.release()
 
-    @staticmethod
-    def destroy():
+    @classmethod
+    def destroy(cls):
         """Destroys the alias database."""
 
-        self = Alias.__new__(Alias)
-        self.__init__()
+        self = cls()
         Events.acquire()
 
         self.json = []
@@ -126,8 +125,8 @@ class Alias(metaclass=Singleton):
             if done:
                 return temp
 
-    @staticmethod
-    def _create_name(template: str, index: int):
+    @classmethod
+    def _create_name(cls, template: str, index: int):
         """Given a filename and an index, creates the filename.
 
         Examples
@@ -144,8 +143,8 @@ class Alias(metaclass=Singleton):
         else:
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
-    @staticmethod
-    def real_to_alias(id_, real, folder_id=None):
+    @classmethod
+    def real_to_alias(cls, id_, real, folder_id=None):
         """Returns the alias given the real name.
 
         Args:
@@ -198,8 +197,8 @@ class Alias(metaclass=Singleton):
         Events.release()
         return new
 
-    @staticmethod
-    def alias_to_real(alias):
+    @classmethod
+    def alias_to_real(cls, alias):
         """Returns the real name given the alias.
 
         Args:
@@ -221,8 +220,8 @@ class Alias(metaclass=Singleton):
 
         raise AliasNotFoundError(f"Alias not found: {alias!r}")
 
-    @staticmethod
-    def get_real_from_id(id_):
+    @classmethod
+    def get_real_from_id(cls, id_):
         """Returns the real name given the id.
 
         Args:
