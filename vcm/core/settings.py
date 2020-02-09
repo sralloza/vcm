@@ -54,6 +54,7 @@ def settings_to_string():
 
     return output
 
+
 def exclude(subject_id: int):
     if subject_id in GeneralSettings.exclude_subjects_ids:
         raise AlreadyExcludedError("Subject ID '%d' is already excluded" % subject_id)
@@ -65,7 +66,6 @@ def exclude(subject_id: int):
     GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
 
-
 def include(subject_id: int):
     if subject_id not in GeneralSettings.exclude_subjects_ids:
         raise NotExcludedError("Subject ID '%d' is not excluded" % subject_id)
@@ -75,6 +75,7 @@ def include(subject_id: int):
     all_excluded = list(set(all_excluded))
     all_excluded.sort()
     GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
+
 
 class _CoreSettings(dict):
     settings_path: Path = Path.home() / "vcm-settings.toml"
@@ -225,8 +226,13 @@ class _DownloadSettings(BaseSettings):
         return self["forum-subfolders"]
 
     @property
-    def disable_section_indexing(self) -> list:
+    def disable_section_indexing_ids(self) -> List[int]:
         return self["disable-section-indexing"]
+
+    @property
+    def disable_section_indexing_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.disable_section_indexing_ids]
 
     @property
     def secure_section_filename(self) -> bool:
