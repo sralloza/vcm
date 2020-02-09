@@ -6,6 +6,7 @@ from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
 from vcm.core.settings import GeneralSettings
+from vcm.core.utils import Singleton
 
 
 def calculate_hash(byte_data):
@@ -28,7 +29,7 @@ class Events:
         Events.access.release()
 
 
-class Alias:
+class Alias(metaclass=Singleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
