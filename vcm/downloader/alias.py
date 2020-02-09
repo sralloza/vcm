@@ -1,7 +1,6 @@
 """Alias manager for signatures."""
 import json
 from hashlib import sha1
-from os.path import isdir, isfile
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
@@ -43,7 +42,7 @@ class Alias(metaclass=Singleton):
     def load(self):
         """Loads the alias configuration."""
 
-        if isfile(self.alias_path) is False:
+        if not self.alias_path.exists():
             self.json = []
             return
         try:
