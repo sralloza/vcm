@@ -60,3 +60,7 @@ class SettingsError(VcmError):
 
 class AlreadyExcludedError(VcmError):
     """Already excluded error."""
+
+
+class NotExcludedError(VcmError):
+    """Not excluded error."""

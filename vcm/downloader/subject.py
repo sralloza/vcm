@@ -36,7 +36,7 @@ class Subject:
         self.queue = queue
 
         self.disable_section_indexing = (
-            self.url in DownloadSettings.disable_section_indexing
+            self.url in DownloadSettings.disable_section_indexing_urls
         )
 
         self.response: Response = None

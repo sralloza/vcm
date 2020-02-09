@@ -5,6 +5,7 @@ from vcm.core.settings import (
     SETTINGS_CLASSES,
     NotifySettings,
     exclude,
+    include,
     settings_name_to_class,
     settings_to_string,
 )
@@ -69,6 +70,11 @@ def parse_args(args=None, parser=False):
         "subject_id", help="subject ID to exclude", type=int
     )
 
+    include_sub_subparser = settings_subparser.add_parser("include")
+    include_sub_subparser.add_argument(
+        "subject_id", help="subject ID to include", type=int
+    )
+
     settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
 
@@ -113,6 +119,10 @@ def main(args=None):
 
         if opt.settings_subcommand == "exclude":
             exclude(opt.subject_id)
+            exit()
+
+        if opt.settings_subcommand == "include":
+            include(opt.subject_id)
             exit()
 
         if opt.settings_subcommand == "keys":

@@ -39,7 +39,8 @@ Settings:
 * **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
 * **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
 * **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
-* **exclude-urls** - List of urls to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter.
+* **max-logs** - Max number of log files. Defaults to 5.
+* **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter.
 
 ### Download section
 Settings:
@@ -61,17 +62,12 @@ root-folder = "/home/user/virtual-campus-data"
 logging-level = "INFO"
 timeout = 30
 retries = 10
-exclude-urls = [
-    https://campusvirtual.uva.es/course/view.php?id=89712, # don't parse this subject
-]
+max-logs = 7
+exclude-urls = [ 89712, ]
 
 [download]
 forum-subfolders = true
-disable-section-indexing = [
-    "https://campusvirtual.uva.es/course/view.php?id=16942", # comments
-    "https://campusvirtual.uva.es/course/view.php?id=82645", # are
-    "https://campusvirtual.uva.es/course/view.php?id=45651", # allowed
-]
+disable-section-indexing = [16942, 82645, 45651, ]
 secure-section-filename = false
 
 [notify]
@@ -147,6 +143,8 @@ Uses:
     * *Key* is the settings key you want to change. It depends on the section.
     * *Value* is the settings value you want to set.
     * To view the comand help, use `vcm settings set -h` or `vcm settings set --help`.
+* **Exclude a subject in parsing:** `vcm settings exclude <subject_id>`
+* **Include a subject in parsing:** `vcm settings include <subject_id>`
 
 
 
