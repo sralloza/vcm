@@ -1,5 +1,6 @@
 """Alias manager for signatures."""
 import json
+from dataclasses import dataclass
 from hashlib import sha1
 from threading import Semaphore
 
@@ -26,6 +27,16 @@ class Events:
     @classmethod
     def release(cls):
         cls.access.release()
+
+
+@dataclass
+class AliasEntry:
+    id: str
+    original: str
+    alias: str
+
+    def to_json(self):
+        return {"id": self.id, "original": self.original, "alias": self.alias}
 
 
 class Alias(metaclass=Singleton):
@@ -61,6 +72,8 @@ class Alias(metaclass=Singleton):
             if "id" not in alias or "alias" not in alias or "original" not in alias:
                 raise TypeError(f"alias file invalid: {alias!r}")
 
+        self.json = [AliasEntry(**x) for x in self.json]
+
         Events.release()
 
     @classmethod
@@ -85,7 +98,8 @@ class Alias(metaclass=Singleton):
         except (FileNotFoundError, json.JSONDecodeError):
             temp = []
 
-        to_write = self.json + temp
+        to_write = [x.json() for x in self.json]
+        to_write += temp
 
         res_list = []
         for i, _ in enumerate(to_write):
@@ -113,7 +127,7 @@ class Alias(metaclass=Singleton):
 
             done = True
             for file in self.json:
-                if temp == file["new"]:
+                if temp == file.alias:
                     done = False
                     break
 
@@ -139,68 +153,61 @@ class Alias(metaclass=Singleton):
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
     @classmethod
-    def real_to_alias(cls, id_, real, folder_id=None):
-        """Returns the alias given the real name.
+    def original_to_alias(cls, id_, original, folder_id=None):
+        """Returns the alias given the original name.
 
         Args:
             id_ (str | int): id.
-            real (str): real name.
+            original (str): original name.
 
         Returns:
-            str: the alias if the real name is found in the alias database. If it is not found, the
-                real name will be returned.
+            str: the alias if the original name is found in the alias database. If it
+                is not found, the original name will be returned.
 
         """
 
         is_folder = id_ == "744efab6c9423088e7f5c0bc83f9e7b92c604309"
 
         if is_folder:
-            id_ = calculate_hash(real + str(folder_id))
+            id_ = calculate_hash(original + str(folder_id))
 
         self = Alias.__new__(Alias)
         self.__init__()
         Events.acquire()
 
         for file in self.json:
-            if file["id"] == id_:
+            if file.id == id_:
                 Events.release()
 
-                if file["old"] == real:
-                    return file["new"]
+                if file.original == original:
+                    return file.alias
 
                 raise IdError(
-                    f'Same id, different names ({file["id"]}, {file["new"]}, {real})'
+                    f"Same id, different names ({file.id}, {file.alias}, {original})"
                 )
 
-        if isfile(real):
-            type_ = "f"
-        elif isdir(real):
-            type_ = "d"
-        else:
-            type_ = "?"
-
-        new = real
+        alias = original
 
         for file in self.json:
-            if file["old"] == real:
-                new = self._increment(new)
+            if file.original == original:
+                alias = self._increment(alias)
                 break
 
-        self.json.append({"id": id_, "old": real, "new": new, "type": type_})
+        self.json.append(AliasEntry(id_, original, alias))
         self.save()
 
         Events.release()
-        return new
+        return alias
 
     @classmethod
-    def alias_to_real(cls, alias):
-        """Returns the real name given the alias.
+    def alias_to_original(cls, alias):
+        """Returns the original name given the alias.
 
         Args:
             alias (str): alias.
 
         Returns:
-            str: the real name if the alias is found in the alias database.
+            str: the original name if the alias is found in the alias database.
 
         Raises
             AliasNotFoundError: if the alias is not in the database.
@@ -210,20 +217,20 @@ class Alias(metaclass=Singleton):
         self.__init__()
 
         for file in self.json:
-            if file["new"] == alias:
-                return file["old"]
+            if file.alias == alias:
+                return file.original
 
         raise AliasNotFoundError(f"Alias not found: {alias!r}")
 
     @classmethod
-    def get_real_from_id(cls, id_):
-        """Returns the real name given the id.
+    def get_original_from_id(cls, id_):
+        """Returns the original name given the id.
 
         Args:
             id_ (str | int): id.
 
         Returns:
-            str: the real name if the id is found in the alias database.
+            str: the original name if the id is found in the alias database.
 
         Raises
             IdError: if the id is not in the database.
@@ -233,7 +240,7 @@ class Alias(metaclass=Singleton):
         self.__init__()
 
         for file in self.json:
-            if file["id"] == id_:
-                return file["old"]
+            if file.id == id_:
+                return file.original
 
         raise IdError(f"Id not found: {id_}")

@@ -30,7 +30,7 @@ class Subject:
 
         name = name.capitalize().strip()
 
-        self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
+        self.name = Alias.original_to_alias(sha1(url.encode()).hexdigest(), name)
         self.url = url
         self.connection = Connection()
         self.queue = queue

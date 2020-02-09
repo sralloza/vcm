@@ -205,7 +205,7 @@ class BaseLink(_Notify):
             folder_id = None
 
         self.filepath = Path(
-            Alias.real_to_alias(
+            Alias.original_to_alias(
                 sha1(self.url.encode()).hexdigest(),
                 temp_filepath.as_posix(),
                 folder_id=folder_id,
