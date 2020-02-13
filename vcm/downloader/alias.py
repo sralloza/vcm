@@ -2,6 +2,7 @@
 import json
 from dataclasses import dataclass
 from hashlib import sha1
+from pathlib import Path
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
@@ -32,11 +33,20 @@ class Events:
 @dataclass
 class AliasEntry:
     id: str
-    original: str
-    alias: str
+    original: Path
+    alias: Path
+
+    def __init__(self, id, original, alias):
+        self.id = id
+        self.original = Path(original)
+        self.alias = Path(alias)
 
     def to_json(self):
-        return {"id": self.id, "original": self.original, "alias": self.alias}
+        return {
+            "id": self.id,
+            "original": self.original.as_posix(),
+            "alias": self.alias.as_posix(),
+        }
 
 
 class Alias(metaclass=Singleton):
