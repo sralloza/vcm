@@ -24,6 +24,7 @@ class Command(Enum):
     notify = 1
     download = 2
     settings = 3
+    discover = 4
 
 
 def parse_args(args=None, parser=False):
@@ -77,6 +78,8 @@ def parse_args(args=None, parser=False):
 
     settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
+
+    subparsers.add_parser("discover")
 
     if parser:
         return parser.parse_args(args), parser
@@ -165,7 +168,12 @@ def main(args=None):
     # Command executed is not 'settings', so check settings
     setup_vcm()
 
-    if opt.command == Command.download:
+    if opt.command == Command.discover:
+        Printer.silence()
+        return download(
+            nthreads=1, no_killer=True, status_server=False, discover_only=True
+        )
+    elif opt.command == Command.download:
         if opt.debug:
             import webbrowser
 
