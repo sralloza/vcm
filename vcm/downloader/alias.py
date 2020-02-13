@@ -186,7 +186,7 @@ class Alias(metaclass=Singleton):
             if file.id == id_:
                 Events.release()
 
-                    return file.alias
+                return file.alias
 
         new = AliasEntry(id_, original)
         self.alias_entries.append(new)
