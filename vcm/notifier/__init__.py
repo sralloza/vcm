@@ -7,8 +7,8 @@ from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
-from vcm.core.utils import timing, Printer
-from vcm.downloader import get_subjects
+from vcm.core.utils import Printer, timing
+from vcm.downloader import find_subjects
 from vcm.downloader.subject import Subject
 from vcm.notifier.report import send_report
 
@@ -29,11 +29,6 @@ def notify(send_to: A, use_icons=True, nthreads=20, status_server=True):
         runserver(queue, threads)
 
     with Connection():
-        subjects = get_subjects(queue)
-
-        for i, _ in enumerate(subjects):
-            queue.put(subjects[i])
-
+        subjects = find_subjects(queue)
         queue.join()
-
         send_report(subjects, use_icons, send_to)
