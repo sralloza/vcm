@@ -32,14 +32,15 @@ def get_subjects(queue):
     subjects = []
 
     for li in lis:
-        course_id = re.search(r"course=(\d+)", li.a["href"]).group(1)
-        subject_url = "https://campusvirtual.uva.es/course/view.php?id=%s" % course_id
+        course_id = int(re.search(r"course=(\d+)", li.a["href"]).group(1))
+        subject_url = "https://campusvirtual.uva.es/course/view.php?id=%d" % course_id
         name = re.search(r"^([\w\s]+?)\s?\(", li.text).group(1)
 
-        if subject_url in GeneralSettings.exclude_urls:
-            logger.info("Excluding subject %s (%s)", name, subject_url)
+        if course_id in GeneralSettings.exclude_subjects_ids:
+            logger.info("Excluding subject %s (%d)", name, course_id)
             continue
 
+        # Don't consider subject if 'grado' is in the name (it is the degree itself)
         if "grado" in name.lower():
             continue
 

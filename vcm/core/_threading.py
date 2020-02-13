@@ -193,6 +193,8 @@ class Worker(Thread):
                         exc,
                     )
 
+                    raise
+
                 logger.info(
                     "Worker %r completed work of Link %r",
                     self.name,
@@ -211,6 +213,8 @@ class Worker(Thread):
                         self.current_object.name,
                         exc,
                     )
+
+                    raise
 
                 logger.info(
                     "Worker %r completed work of Subject %r",

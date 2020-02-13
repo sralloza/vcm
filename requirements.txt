@@ -1,10 +1,11 @@
 beautifulsoup4
 colorama
+dataclasses
 decorator
 Flask
+packaging
 psutil
 requests
 toml
 unidecode
 waitress
-packaging

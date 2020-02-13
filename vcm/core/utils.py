@@ -135,7 +135,7 @@ def exception_exit(exception, to_stderr=False, red=True):
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
-    message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, ", ".join((str(x) for x in exception.args)))
     message += "\n" + format_exc()
 
     if red:
@@ -301,3 +301,12 @@ def check_updates():
 
     Printer.print("No updates available (current version: %s)" % current_version)
     return False
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

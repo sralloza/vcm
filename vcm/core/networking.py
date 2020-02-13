@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """Custom downloader with retries control."""
-
 import logging
+from time import asctime
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,13 +17,16 @@ logger = logging.getLogger(__name__)
 class MetaSingleton(type):
     """Metaclass to always make class return the same instance."""
 
-    def __init__(cls, name, bases, dict):
-        super(MetaSingleton, cls).__init__(name, bases, dict)
+    def __init__(cls, name, bases, attrs):
+        super(MetaSingleton, cls).__init__(name, bases, attrs)
         cls._instance = None
 
-    def __call__(cls, *args, **kw):
+    def __call__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(MetaSingleton, cls).__call__(*args, **kw)
+            cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
+
+        # Uncomment line to check possible singleton errors
+        # logger.info("Requested Connection (id=%d)", id(cls._instance))
         return cls._instance
 
 
@@ -82,6 +85,9 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= 10:
+                GeneralSettings.root_folder.joinpath(
+                    "login.error.%s.html" % asctime()
+                ).write_text(self._login_response.text, encoding="utf-8")
                 raise LoginError("10 login attempts, unkwown error. See logs.") from exc
             return self.login()
 
@@ -96,6 +102,12 @@ class Connection(metaclass=MetaSingleton):
             exit(-1)
 
         soup = BeautifulSoup(response.text, "html.parser")
+
+        # Detect if user is already logged in
+        if "Usted ya está en el sistema" in response.text:
+            logger.info("User already logged in")
+            self.find_sesskey_and_user_url(soup)
+            return
 
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
         login_token = login_token["value"]
@@ -124,6 +136,9 @@ class Connection(metaclass=MetaSingleton):
         if "Usted se ha identificado" not in self._login_response.text:
             raise LoginError
 
+        self.find_sesskey_and_user_url(soup)
+
+    def find_sesskey_and_user_url(self, soup: BeautifulSoup):
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
             "value"
         ]

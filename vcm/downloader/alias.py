@@ -1,11 +1,13 @@
 """Alias manager for signatures."""
 import json
+from dataclasses import dataclass
 from hashlib import sha1
-from os.path import isdir, isfile
+from pathlib import Path
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
 from vcm.core.settings import GeneralSettings
+from vcm.core.utils import Singleton
 
 
 def calculate_hash(byte_data):
@@ -19,64 +21,76 @@ class Events:
 
     access = Semaphore()
 
-    @staticmethod
-    def acquire():
-        Events.access.acquire()
+    @classmethod
+    def acquire(cls):
+        cls.access.acquire()
 
-    @staticmethod
-    def release():
-        Events.access.release()
+    @classmethod
+    def release(cls):
+        cls.access.release()
 
 
-class Alias:
+@dataclass
+class AliasEntry:
+    id: str
+    alias: Path
+
+    def __init__(self, id, alias):
+        self.id = id
+        self.alias = Path(alias)
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "alias": self.alias.as_posix(),
+        }
+
+
+class Alias(metaclass=Singleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
         self.alias_path = GeneralSettings.root_folder / "alias.json"
-        self.json = []
+        self.alias_entries = []
         self.load()
 
     def __len__(self):
-        return len(self.json)
+        return len(self.alias_entries)
 
     def load(self):
         """Loads the alias configuration."""
 
-        if isfile(self.alias_path) is False:
-            self.json = []
+        if not self.alias_path.exists():
+            self.alias_entries = []
             return
         try:
             Events.acquire()
             with self.alias_path.open(encoding="utf-8") as file_handler:
-                self.json = json.load(file_handler) or []
+                self.alias_entries = json.load(file_handler) or []
         except json.JSONDecodeError as ex:
             raise AliasFatalError("Raised JSONDecodeError") from ex
         except UnicodeDecodeError as ex:
             raise AliasFatalError("Raised UnicodeDecodeError") from ex
 
-        if not isinstance(self.json, list):
-            raise TypeError(f"alias file invalid ({type(self.json).__name__})")
+        if not isinstance(self.alias_entries, list):
+            raise TypeError(f"Alias file invalid ({type(self.alias_entries).__name__})")
 
-        for alias in self.json:
-            if (
-                "id" not in alias
-                or "new" not in alias
-                or "old" not in alias
-                or "type" not in alias
-            ):
+        for alias in self.alias_entries:
+            if "id" not in alias or "alias" not in alias:
                 raise TypeError(f"alias file invalid: {alias!r}")
+
+        self.alias_entries = [AliasEntry(**x) for x in self.alias_entries]
 
         Events.release()
 
-    @staticmethod
-    def destroy():
+    @classmethod
+    def destroy(cls):
         """Destroys the alias database."""
 
-        self = Alias.__new__(Alias)
-        self.__init__()
+        self = cls()
         Events.acquire()
 
-        self.json = []
+        self.alias_entries = []
         with self.alias_path.open("wt", encoding="utf-8") as file_handler:
             json.dump([], file_handler, indent=4, sort_keys=True, ensure_ascii=False)
 
@@ -91,7 +105,8 @@ class Alias:
         except (FileNotFoundError, json.JSONDecodeError):
             temp = []
 
-        to_write = self.json + temp
+        to_write = [x.to_json() for x in self.alias_entries]
+        to_write += temp
 
         res_list = []
         for i, _ in enumerate(to_write):
@@ -118,16 +133,16 @@ class Alias:
             temp = self._create_name(something, index)
 
             done = True
-            for file in self.json:
-                if temp == file["new"]:
+            for file in self.alias_entries:
+                if temp == file.alias:
                     done = False
                     break
 
             if done:
                 return temp
 
-    @staticmethod
-    def _create_name(template: str, index: int):
+    @classmethod
+    def _create_name(cls, template: str, index: int):
         """Given a filename and an index, creates the filename.
 
         Examples
@@ -144,69 +159,51 @@ class Alias:
         else:
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
-    @staticmethod
-    def real_to_alias(id_, real, folder_id=None):
-        """Returns the alias given the real name.
+    @classmethod
+    def id_to_alias(cls, id_, original, folder_id=None):
+        """Returns the alias given the id name.
 
         Args:
             id_ (str | int): id.
-            real (str): real name.
+            original (str): original name.
 
         Returns:
-            str: the alias if the real name is found in the alias database. If it is not found, the
-                real name will be returned.
+            str: the alias if the original name is found in the alias database. If it
+                is not found, the original name will be returned.
 
         """
 
         is_folder = id_ == "744efab6c9423088e7f5c0bc83f9e7b92c604309"
 
         if is_folder:
-            id_ = calculate_hash(real + str(folder_id))
+            id_ = calculate_hash(original + str(folder_id))
 
         self = Alias.__new__(Alias)
         self.__init__()
         Events.acquire()
 
-        for file in self.json:
-            if file["id"] == id_:
+        for file in self.alias_entries:
+            if file.id == id_:
                 Events.release()
 
-                if file["old"] == real:
-                    return file["new"]
+                return file.alias
 
-                raise IdError(
-                    f'Same id, different names ({file["id"]}, {file["new"]}, {real})'
-                )
-
-        if isfile(real):
-            type_ = "f"
-        elif isdir(real):
-            type_ = "d"
-        else:
-            type_ = "?"
-
-        new = real
-
-        for file in self.json:
-            if file["old"] == real:
-                new = self._increment(new)
-                break
-
-        self.json.append({"id": id_, "old": real, "new": new, "type": type_})
+        new = AliasEntry(id_, original)
+        self.alias_entries.append(new)
         self.save()
 
         Events.release()
-        return new
+        return new.alias
 
-    @staticmethod
-    def alias_to_real(alias):
-        """Returns the real name given the alias.
+    @classmethod
+    def alias_to_original(cls, alias):
+        """Returns the original name given the alias.
 
         Args:
             alias (str): alias.
 
         Returns:
-            str: the real name if the alias is found in the alias database.
+            str: the original name if the alias is found in the alias database.
 
         Raises
             AliasNotFoundError: if the alias is not in the database.
@@ -215,21 +212,21 @@ class Alias:
         self = Alias.__new__(Alias)
         self.__init__()
 
-        for file in self.json:
-            if file["new"] == alias:
-                return file["old"]
+        for file in self.alias_entries:
+            if file.alias == alias:
+                return file.original
 
         raise AliasNotFoundError(f"Alias not found: {alias!r}")
 
-    @staticmethod
-    def get_real_from_id(id_):
-        """Returns the real name given the id.
+    @classmethod
+    def get_original_from_id(cls, id_):
+        """Returns the original name given the id.
 
         Args:
             id_ (str | int): id.
 
         Returns:
-            str: the real name if the id is found in the alias database.
+            str: the original name if the id is found in the alias database.
 
         Raises
             IdError: if the id is not in the database.
@@ -238,8 +235,8 @@ class Alias:
         self = Alias.__new__(Alias)
         self.__init__()
 
-        for file in self.json:
-            if file["id"] == id_:
-                return file["old"]
+        for file in self.alias_entries:
+            if file.id == id_:
+                return file.original
 
         raise IdError(f"Id not found: {id_}")
