@@ -135,7 +135,7 @@ def exception_exit(exception, to_stderr=False, red=True):
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
-    message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, ", ".join((str(x) for x in exception.args)))
     message += "\n" + format_exc()
 
     if red:
