@@ -2,7 +2,7 @@
 
 """Custom downloader with retries control."""
 import logging
-from time import asctime
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -85,8 +85,9 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= 10:
+                now = datetime.now()
                 GeneralSettings.root_folder.joinpath(
-                    "login.error.%s.html" % asctime()
+                    "login.error.%s.html" % now.strftime("%Y.%m.%d-%H.%M.%S")
                 ).write_text(self._login_response.text, encoding="utf-8")
                 raise LoginError("10 login attempts, unkwown error. See logs.") from exc
             return self.login()
