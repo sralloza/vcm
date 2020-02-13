@@ -464,6 +464,23 @@ class Resource(BaseLink):
             )
             self.subject.add_link(resource)
             return
+        except AttributeError:
+            pass
+
+        try:
+            resource = self.soup.find("div", class_="resourcecontent resourceimg")
+            resource = Resource(
+                name,
+                self.section,
+                resource.img["src"],
+                self.icon_url,
+                self.subject,
+                self,
+            )
+            self.logger.debug(
+                "Created resource from HTML: %r, %s", resource.name, resource.url
+            )
+            self.subject.add_link(resource)
         except TypeError:
             random_name = str(random.randint(0, 1000))
             self.logger.exception("HTML ERROR (ID=%s)", random_name)
