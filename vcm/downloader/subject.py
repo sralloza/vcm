@@ -30,7 +30,9 @@ class Subject:
 
         name = name.capitalize().strip()
 
-        self.name = Alias.original_to_alias(sha1(url.encode()).hexdigest(), GeneralSettings.root_folder / name).name
+        self.name = Alias.id_to_alias(
+            sha1(url.encode()).hexdigest(), GeneralSettings.root_folder / name
+        ).name
         self.url = url
         self.connection = Connection()
         self.queue = queue

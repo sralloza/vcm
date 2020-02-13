@@ -33,18 +33,15 @@ class Events:
 @dataclass
 class AliasEntry:
     id: str
-    original: Path
     alias: Path
 
-    def __init__(self, id, original, alias):
+    def __init__(self, id, alias):
         self.id = id
-        self.original = Path(original)
         self.alias = Path(alias)
 
     def to_json(self):
         return {
             "id": self.id,
-            "original": self.original.as_posix(),
             "alias": self.alias.as_posix(),
         }
 
@@ -79,7 +76,7 @@ class Alias(metaclass=Singleton):
             raise TypeError(f"Alias file invalid ({type(self.alias_entries).__name__})")
 
         for alias in self.alias_entries:
-            if "id" not in alias or "alias" not in alias or "original" not in alias:
+            if "id" not in alias or "alias" not in alias:
                 raise TypeError(f"alias file invalid: {alias!r}")
 
         self.alias_entries = [AliasEntry(**x) for x in self.alias_entries]
@@ -163,8 +160,8 @@ class Alias(metaclass=Singleton):
             return f'{".".join(splitted[:-1])}.{index}.{splitted[-1]}'
 
     @classmethod
-    def original_to_alias(cls, id_, original, folder_id=None):
-        """Returns the alias given the original name.
+    def id_to_alias(cls, id_, original, folder_id=None):
+        """Returns the alias given the id name.
 
         Args:
             id_ (str | int): id.
@@ -189,25 +186,14 @@ class Alias(metaclass=Singleton):
             if file.id == id_:
                 Events.release()
 
-                if file.original == original:
                     return file.alias
 
-                raise IdError(
-                    f"Same id, different names ({file.id}, {file.alias}, {original})"
-                )
-
-        alias = original
-
-        for file in self.alias_entries:
-            if file.original == original:
-                alias = self._increment(alias)
-                break
-
-        self.alias_entries.append(AliasEntry(id_, original, alias))
+        new = AliasEntry(id_, original)
+        self.alias_entries.append(new)
         self.save()
 
         Events.release()
-        return alias
+        return new.alias
 
     @classmethod
     def alias_to_original(cls, alias):
