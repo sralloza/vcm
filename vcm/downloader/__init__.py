@@ -52,7 +52,7 @@ def get_subjects(queue):
     return subjects
 
 
-def find_subjects(queue):
+def find_subjects(queue, discover_only=False):
     """Starts finding subjects.
 
     Args:
@@ -63,6 +63,10 @@ def find_subjects(queue):
 
     subjects = get_subjects(queue)
 
+    if discover_only:
+        logger.info("Discovery done")
+        return subjects
+
     for i, _ in enumerate(subjects):
         queue.put(subjects[i])
 
@@ -70,7 +74,7 @@ def find_subjects(queue):
 
 
 @timing(name="VCM downloader")
-def download(nthreads=20, no_killer=False, status_server=True):
+def download(nthreads=20, no_killer=False, status_server=True, discover_only=False):
     """Starts the app.
 
     Args:
@@ -93,6 +97,6 @@ def download(nthreads=20, no_killer=False, status_server=True):
         runserver(queue, threads)
 
     with Connection():
-        find_subjects(queue)
+        find_subjects(queue, discover_only=discover_only)
         logger.debug("Waiting for queue to empty")
         queue.join()

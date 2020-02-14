@@ -6,6 +6,7 @@
 * Add `general.max-logs` setting.
 * Add `exclude` option to CLI.
 * Add `include` option to CLI.
+* Add `discover` command to CLI to only discover subjects, so then the user can rename them.
 * Improve alias database (`alias.json`): now it only has two attributes for each entry: id and alias.
 
 ## 2.1.1
