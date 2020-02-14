@@ -18,17 +18,17 @@ def exclude_subjects_ids_setter(*args, **kwargs):
     raise SettingsError("general.exclude-subjects-ids can't be set using the CLI.")
 
 
-def disable_section_indexing_setter(*args, **kwargs):
+def section_indexing_setter(*args, **kwargs):
     if kwargs.pop("force", False):
         exclude_list = args[0]
         for element in exclude_list:
             if not isinstance(element, int):
                 raise TypeError(
-                    "%r element of disable-section-indexing must be int, not %s"
+                    "%r element of section-indexing must be int, not %s"
                     % (element, type(element).__name__)
                 )
         return exclude_list
-    raise SettingsError("download.disable-section-indexing can't be set using the CLI")
+    raise SettingsError("download.section-indexing can't be set using the CLI")
 
 
 defaults = {
@@ -42,7 +42,7 @@ defaults = {
     },
     "download": {
         "forum-subfolders": True,
-        "disable-section-indexing": [],
+        "section-indexing": [],
         "secure-section-filename": False,
     },
     "notify": {"use-base64-icons": False, "email": "insert-email"},
@@ -59,7 +59,7 @@ types = {
     },
     "download": {
         "forum-subfolders": bool,
-        "disable-section-indexing": list,
+        "section-indexing": list,
         "secure-section-filename": False,
     },
     "notify": {"use-base64-icons": bool, "email": str},
@@ -77,7 +77,7 @@ constructors = {
     },
     "download": {
         "forum-subfolders": str2bool,
-        "disable-section-indexing": list,
+        "section-indexing": list,
         "secure-section-filename": str2bool,
     },
     "notify": {"use-base64-icons": str2bool, "email": str},
@@ -95,7 +95,7 @@ setters = {
     },
     "download": {
         "forum-subfolders": str2bool,
-        "disable-section-indexing": disable_section_indexing_setter,
+        "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
     "notify": {"use-base64-icons": str2bool, "email": str},

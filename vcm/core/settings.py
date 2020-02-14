@@ -226,13 +226,13 @@ class _DownloadSettings(BaseSettings):
         return self["forum-subfolders"]
 
     @property
-    def disable_section_indexing_ids(self) -> List[int]:
-        return self["disable-section-indexing"]
+    def section_indexing_ids(self) -> List[int]:
+        return self["section-indexing"]
 
     @property
-    def disable_section_indexing_urls(self) -> List[str]:
+    def section_indexing_urls(self) -> List[str]:
         template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-        return [template % x for x in self.disable_section_indexing_ids]
+        return [template % x for x in self.section_indexing_ids]
 
     @property
     def secure_section_filename(self) -> bool:
