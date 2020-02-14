@@ -64,3 +64,11 @@ class AlreadyExcludedError(VcmError):
 
 class NotExcludedError(VcmError):
     """Not excluded error."""
+
+
+class AlreadyIndexedError(VcmError):
+    """Already indexed error."""
+
+
+class NotIndexedError(VcmError):
+    """Not indexed error."""
