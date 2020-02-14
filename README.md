@@ -97,7 +97,7 @@ Settings:
 
 
 ## Command Line Interface arguments
-There are 3 commands: download, notify and settings.
+There are 4 commands: `download`, `notify`, `settings` and `discover`.
 
 General arguments:
 - `-v`, `--version` - Prints the current version and exits.
@@ -146,6 +146,9 @@ Uses:
 * **Exclude a subject in parsing:** `vcm settings exclude <subject_id>`
 * **Include a subject in parsing:** `vcm settings include <subject_id>`
 
+
+### Discover command
+It will only discover subjects, and insert their alias in the alias database (`alias.json`), so the user can change the subject's alias to easily rename all the files in the subject's folder.
 
 
 ## During the execution
