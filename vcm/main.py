@@ -6,8 +6,10 @@ from vcm.core.settings import (
     NotifySettings,
     exclude,
     include,
+    section_index,
     settings_name_to_class,
     settings_to_string,
+    un_section_index,
 )
 from vcm.core.utils import (
     Printer,
@@ -76,6 +78,12 @@ def parse_args(args=None, parser=False):
         "subject_id", help="subject ID to include", type=int
     )
 
+    section_index_subparser = settings_subparser.add_parser("index")
+    section_index_subparser.add_argument("subject_id", type=int)
+
+    un_section_index_subparser = settings_subparser.add_parser("unindex")
+    un_section_index_subparser.add_argument("subject_id", type=int)
+
     settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
 
@@ -126,6 +134,22 @@ def main(args=None):
 
         if opt.settings_subcommand == "include":
             include(opt.subject_id)
+            exit()
+
+        if opt.settings_subcommand == "index":
+            section_index(opt.subject_id)
+            Printer.print(
+                "Done. Remember removing alias entries for subject with id=%d."
+                % opt.subject_id
+            )
+            exit()
+
+        if opt.settings_subcommand == "unindex":
+            un_section_index(opt.subject_id)
+            Printer.print(
+                "Done. Remember removing alias entries for subject with id=%d."
+                % opt.subject_id
+            )
             exit()
 
         if opt.settings_subcommand == "keys":
