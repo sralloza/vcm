@@ -107,7 +107,8 @@ class Connection(metaclass=MetaSingleton):
         # Detect if user is already logged in
         if "Usted ya está en el sistema" in response.text:
             logger.info("User already logged in")
-            self.find_sesskey_and_user_url(soup)
+            response = self.get("https://campusvirtual.uva.es/my/")
+            self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
             return
 
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
