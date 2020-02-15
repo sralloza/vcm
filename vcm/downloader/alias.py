@@ -196,8 +196,8 @@ class Alias(metaclass=Singleton):
         return new.alias
 
     @classmethod
-    def alias_to_original(cls, alias):
-        """Returns the original name given the alias.
+    def alias_to_id(cls, alias):
+        """Returns the alias's id given the alias.
 
         Args:
             alias (str): alias.
@@ -214,7 +214,6 @@ class Alias(metaclass=Singleton):
 
         for file in self.alias_entries:
             if file.alias == alias:
-                return file.original
+                return file.id
 
         raise AliasNotFoundError(f"Alias not found: {alias!r}")
-
