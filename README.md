@@ -26,10 +26,12 @@ _Note: both installations need to have Python 3.6+ installed._
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
-When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\%USERNAME%\vcm-settings.toml` and `C:\Users\%USERNAME%\vcm-credentials.toml` (you may need to execute the program twice).
+When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\<username>\vcm-settings.toml` and `C:\Users\<username>\vcm-credentials.toml` (you may need to execute the program twice).
+
+If you are using Linux, the settings and credential files will be created in  and `/home/<username>/vcm-credentials.toml`.
 
 ## Settings File
-The settings file path is `C:\Users\%USERNAME%\vcm-settings.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml)
+The settings file path is `C:\Users\<username>\vcm-settings.toml` (or `/home/<username>/vcm-settings.toml` in Linux). It's written in [TOML](https://github.com/toml-lang/toml#toml). Changing a setting can be done editing the settings file (discouraged, because a syntax error will make the hole program to fail) or using the [`settings` command](#settings-command).
 
 It has 3 sections: general, download and notify.
 
@@ -40,12 +42,12 @@ Settings:
 * **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
 * **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
 * **max-logs** - Max number of log files. Defaults to 5.
-* **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter.
+* **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter. You can change its content using the commands `vcm settings exclude <subject_id>` and `vcm settings include <subject_id>`, because it can't be changed using `vcm settings set general.exclude-subjects-ids <value>`.
 
 ### Download section
 Settings:
 * **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a separate folder. Defaults to true.
-* **disable-section-indexing** - List of subject's urls that will have section indexing disabled.
+* **section-indexing** - List of subject's ids that will have section indexing enabled. You can change its content using the commands `vcm settings index <subject_id>` and `vcm settings unindex <subject_id>`, because it can't be changed using `vcm settings set download.section-indexing <value>`. For more info read [What is a section](#what-is-a-section).
 * **secure-section-filename** - If true, sections folder's name will have its white spaces replaced with low bars.
 
 ### Notify section
@@ -67,7 +69,7 @@ exclude-urls = [ 89712, ]
 
 [download]
 forum-subfolders = true
-disable-section-indexing = [16942, 82645, 45651, ]
+section-indexing = [16942, 82645, 45651, ]
 secure-section-filename = false
 
 [notify]
@@ -77,7 +79,7 @@ email = "email@example.com"
 ```
 
 ## Credentials file
-The credentials file path is `C:\Users\%USERNAME%\vcm-credentials.toml`. It's written in [TOML](https://github.com/toml-lang/toml#toml).
+The credentials file path is `C:\Users\<username>\vcm-credentials.toml` (or `/home/<username>/vcm-credentials.toml` if you are using Linux). It's written in [TOML](https://github.com/toml-lang/toml#toml).
 **Note that the credentials will be stored in plain text.**
 
 It has 2 sections: VirtualCampus and Email.
@@ -143,8 +145,13 @@ Uses:
     * *Key* is the settings key you want to change. It depends on the section.
     * *Value* is the settings value you want to set.
     * To view the comand help, use `vcm settings set -h` or `vcm settings set --help`.
-* **Exclude a subject in parsing:** `vcm settings exclude <subject_id>`
-* **Include a subject in parsing:** `vcm settings include <subject_id>`
+* **Excluding and including subjects in parsing:**
+    * *Exclude a subject in parsing:* `vcm settings exclude <subject_id>`
+    * *Include a subject in parsing:* `vcm settings include <subject_id>` (to include a subject it must be previously excluded)
+* **Index and unindex subjects using section names:**
+    * *Index subject using its sections:* `vcm settings index <subject_id>`
+    * *Unindex subject using its sections:* `vcm settings unindex <subject_id>` (to unindex a subject it must be previously indexed)
+* **Check integrity of the settings file:** `vcm settings check`
 
 
 ### Discover command
