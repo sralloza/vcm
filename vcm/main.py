@@ -4,8 +4,12 @@ from enum import Enum
 from vcm.core.settings import (
     SETTINGS_CLASSES,
     NotifySettings,
+    exclude,
+    include,
+    section_index,
     settings_name_to_class,
     settings_to_string,
+    un_section_index,
 )
 from vcm.core.utils import (
     Printer,
@@ -22,6 +26,7 @@ class Command(Enum):
     notify = 1
     download = 2
     settings = 3
+    discover = 4
 
 
 def parse_args(args=None, parser=False):
@@ -63,8 +68,26 @@ def parse_args(args=None, parser=False):
     show_sub_subparser = settings_subparser.add_parser("show")
     show_sub_subparser.add_argument("key", help="settings key (section.key)")
 
+    exclude_sub_subparser = settings_subparser.add_parser("exclude")
+    exclude_sub_subparser.add_argument(
+        "subject_id", help="subject ID to exclude", type=int
+    )
+
+    include_sub_subparser = settings_subparser.add_parser("include")
+    include_sub_subparser.add_argument(
+        "subject_id", help="subject ID to include", type=int
+    )
+
+    section_index_subparser = settings_subparser.add_parser("index")
+    section_index_subparser.add_argument("subject_id", type=int)
+
+    un_section_index_subparser = settings_subparser.add_parser("unindex")
+    un_section_index_subparser.add_argument("subject_id", type=int)
+
     settings_subparser.add_parser("keys")
     settings_subparser.add_parser("check")
+
+    subparsers.add_parser("discover")
 
     if parser:
         return parser.parse_args(args), parser
@@ -104,6 +127,30 @@ def main(args=None):
         if opt.settings_subcommand == "check":
             more_settings_check()
             exit("Checked")
+
+        if opt.settings_subcommand == "exclude":
+            exclude(opt.subject_id)
+            exit()
+
+        if opt.settings_subcommand == "include":
+            include(opt.subject_id)
+            exit()
+
+        if opt.settings_subcommand == "index":
+            section_index(opt.subject_id)
+            Printer.print(
+                "Done. Remember removing alias entries for subject with id=%d."
+                % opt.subject_id
+            )
+            exit()
+
+        if opt.settings_subcommand == "unindex":
+            un_section_index(opt.subject_id)
+            Printer.print(
+                "Done. Remember removing alias entries for subject with id=%d."
+                % opt.subject_id
+            )
+            exit()
 
         if opt.settings_subcommand == "keys":
             keys = []
@@ -145,7 +192,12 @@ def main(args=None):
     # Command executed is not 'settings', so check settings
     setup_vcm()
 
-    if opt.command == Command.download:
+    if opt.command == Command.discover:
+        Printer.silence()
+        return download(
+            nthreads=1, no_killer=True, status_server=False, discover_only=True
+        )
+    elif opt.command == Command.download:
         if opt.debug:
             import webbrowser
 

@@ -1,9 +1,5 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
-import logging
-import os
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from threading import current_thread
 
 from .core.settings import GeneralSettings
 

@@ -5,12 +5,30 @@ from .utils import str2bool
 from .exceptions import SettingsError
 
 
-def exclude_urls_setter(*args, **kwargs):
-    raise SettingsError("general.exclude-urls can't be set using the CLI.")
+def exclude_subjects_ids_setter(*args, **kwargs):
+    if kwargs.pop("force", False):
+        exclude_list = args[0]
+        for element in exclude_list:
+            if not isinstance(element, int):
+                raise TypeError(
+                    "%r element of exclude-subjects-ids must be int, not %s"
+                    % (element, type(element).__name__)
+                )
+        return exclude_list
+    raise SettingsError("general.exclude-subjects-ids can't be set using the CLI.")
 
 
-def disable_section_indexing_setter(*args, **kwargs):
-    raise SettingsError("download.disable-section-indexing can't be set using the CLI")
+def section_indexing_setter(*args, **kwargs):
+    if kwargs.pop("force", False):
+        exclude_list = args[0]
+        for element in exclude_list:
+            if not isinstance(element, int):
+                raise TypeError(
+                    "%r element of section-indexing must be int, not %s"
+                    % (element, type(element).__name__)
+                )
+        return exclude_list
+    raise SettingsError("download.section-indexing can't be set using the CLI")
 
 
 defaults = {
@@ -19,11 +37,12 @@ defaults = {
         "logging-level": "INFO",
         "timeout": 30,
         "retries": 10,
-        "exclude-urls": [],
+        "max-logs": 5,
+        "exclude-subjects-ids": [],
     },
     "download": {
         "forum-subfolders": True,
-        "disable-section-indexing": [],
+        "section-indexing": [],
         "secure-section-filename": False,
     },
     "notify": {"use-base64-icons": False, "email": "insert-email"},
@@ -35,11 +54,12 @@ types = {
         "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "max-logs": int,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": bool,
-        "disable-section-indexing": list,
+        "section-indexing": list,
         "secure-section-filename": False,
     },
     "notify": {"use-base64-icons": bool, "email": str},
@@ -52,11 +72,12 @@ constructors = {
         "logging-level": logging._nameToLevel.__getitem__,
         "timeout": int,
         "retries": int,
-        "exclude-urls": list,
+        "max-logs": int,
+        "exclude-subjects-ids": list,
     },
     "download": {
         "forum-subfolders": str2bool,
-        "disable-section-indexing": list,
+        "section-indexing": list,
         "secure-section-filename": str2bool,
     },
     "notify": {"use-base64-icons": str2bool, "email": str},
@@ -69,11 +90,12 @@ setters = {
         "logging-level": str,
         "timeout": int,
         "retries": int,
-        "exclude-urls": exclude_urls_setter,
+        "max-logs": int,
+        "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
         "forum-subfolders": str2bool,
-        "disable-section-indexing": disable_section_indexing_setter,
+        "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
     "notify": {"use-base64-icons": str2bool, "email": str},

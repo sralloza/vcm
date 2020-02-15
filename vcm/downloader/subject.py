@@ -30,13 +30,15 @@ class Subject:
 
         name = name.capitalize().strip()
 
-        self.name = Alias.real_to_alias(sha1(url.encode()).hexdigest(), name)
+        self.name = Alias.id_to_alias(
+            sha1(url.encode()).hexdigest(), GeneralSettings.root_folder / name
+        ).name
         self.url = url
         self.connection = Connection()
         self.queue = queue
 
-        self.disable_section_indexing = (
-            self.url in DownloadSettings.disable_section_indexing
+        self.enable_section_indexing = (
+            self.url in DownloadSettings.section_indexing_urls
         )
 
         self.response: Response = None
@@ -85,7 +87,7 @@ class Subject:
     def add_link(self, link: BaseLink):
         """Adds a note link to the list."""
         self.logger.debug("Adding link: %s", link.name)
-        if self.disable_section_indexing:
+        if not self.enable_section_indexing:
             link.section = None
 
         self.notes_links.append(link)

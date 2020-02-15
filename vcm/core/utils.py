@@ -135,11 +135,11 @@ def exception_exit(exception, to_stderr=False, red=True):
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
-    message = "%s: %s" % (exception.__class__.__name__, ", ".join(exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, ", ".join((str(x) for x in exception.args)))
     message += "\n" + format_exc()
 
     if red:
-        message = Fore.RED + message + Fore.RESET
+        message = Fore.LIGHTRED_EX + message + Fore.RESET
 
     if to_stderr:
         return exit(message)
@@ -206,7 +206,7 @@ def configure_logging():
             filename=GeneralSettings.log_path,
             maxBytes=2_500_000,
             encoding="utf-8",
-            backupCount=5,
+            backupCount=GeneralSettings.max_logs,
         )
 
         current_thread().setName("MT")
@@ -301,3 +301,12 @@ def check_updates():
 
     Printer.print("No updates available (current version: %s)" % current_version)
     return False
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

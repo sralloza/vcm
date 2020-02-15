@@ -1,9 +1,17 @@
 import os
 from copy import deepcopy
 from pathlib import Path
+from typing import List
 
 import toml
 from colorama.ansi import Fore
+
+from vcm.core.exceptions import (
+    AlreadyExcludedError,
+    AlreadyIndexedError,
+    NotExcludedError,
+    NotIndexedError,
+)
 
 from ._settings import constructors, defaults, setters, types
 from .exceptions import InvalidSettingsFileError
@@ -50,6 +58,52 @@ def settings_to_string():
         output += "    %s: %r\n" % (key, value)
 
     return output
+
+
+def section_index(subject_id: int):
+    if subject_id in DownloadSettings.section_indexing_ids:
+        raise AlreadyIndexedError(
+            "Subject ID '%d' is already section-indexed" % subject_id
+        )
+
+    index = list(DownloadSettings.section_indexing_ids)
+    index.append(subject_id)
+    index = list(set(index))
+    index.sort()
+    DownloadSettings.__setitem__("section-indexing", index, force=True)
+
+
+def un_section_index(subject_id: int):
+    if subject_id not in DownloadSettings.section_indexing_ids:
+        raise NotIndexedError("Subject ID '%d' is not section-indexed" % subject_id)
+
+    index = list(DownloadSettings.section_indexing_ids)
+    index.remove(subject_id)
+    index = list(set(index))
+    index.sort()
+    DownloadSettings.__setitem__("section_indexing", index, force=True)
+
+
+def exclude(subject_id: int):
+    if subject_id in GeneralSettings.exclude_subjects_ids:
+        raise AlreadyExcludedError("Subject ID '%d' is already excluded" % subject_id)
+
+    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded.append(subject_id)
+    all_excluded = list(set(all_excluded))
+    all_excluded.sort()
+    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
+
+
+def include(subject_id: int):
+    if subject_id not in GeneralSettings.exclude_subjects_ids:
+        raise NotExcludedError("Subject ID '%d' is not excluded" % subject_id)
+
+    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded.remove(subject_id)
+    all_excluded = list(set(all_excluded))
+    all_excluded.sort()
+    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
 
 
 class _CoreSettings(dict):
@@ -128,13 +182,20 @@ class BaseSettings(dict, metaclass=MetaSettings):
     def __setattr__(self, key, value):
         self[key] = value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value, force=False):
+        # TODO: add support to check types like List[int]
         key = self._parse_key(key)
         expected_type = self.types_dict[key]
         if isinstance(expected_type, tuple):
             if value not in expected_type:
                 raise TypeError("%r must be one of %r" % (key, expected_type))
-        value = self.setters[key](value)
+        try:
+            value = self.setters[key](value, force=force)
+        except TypeError as exc:
+            if "'force'" not in exc.args[0]:
+                raise
+            value = self.setters[key](value)
+
         super().__setitem__(key, value)
         save_settings()
 
@@ -161,8 +222,17 @@ class _GeneralSettings(BaseSettings):
         return self["retries"]
 
     @property
-    def exclude_urls(self) -> list:
-        return self["exclude-urls"]
+    def max_logs(self) -> int:
+        return self["max-logs"]
+
+    @property
+    def exclude_subjects_ids(self) -> List[int]:
+        return self["exclude-subjects-ids"]
+
+    @property
+    def exclude_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.exclude_subjects_ids]
 
     # DEPENDANT SETTINGS
 
@@ -185,8 +255,13 @@ class _DownloadSettings(BaseSettings):
         return self["forum-subfolders"]
 
     @property
-    def disable_section_indexing(self) -> list:
-        return self["disable-section-indexing"]
+    def section_indexing_ids(self) -> List[int]:
+        return self["section-indexing"]
+
+    @property
+    def section_indexing_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.section_indexing_ids]
 
     @property
     def secure_section_filename(self) -> bool:

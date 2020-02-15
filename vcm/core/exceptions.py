@@ -56,3 +56,19 @@ class InvalidSettingsFileError(VcmError):
 
 class SettingsError(VcmError):
     """Settings error."""
+
+
+class AlreadyExcludedError(VcmError):
+    """Already excluded error."""
+
+
+class NotExcludedError(VcmError):
+    """Not excluded error."""
+
+
+class AlreadyIndexedError(VcmError):
+    """Already indexed error."""
+
+
+class NotIndexedError(VcmError):
+    """Not indexed error."""

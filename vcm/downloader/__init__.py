@@ -32,14 +32,15 @@ def get_subjects(queue):
     subjects = []
 
     for li in lis:
-        course_id = re.search(r"course=(\d+)", li.a["href"]).group(1)
-        subject_url = "https://campusvirtual.uva.es/course/view.php?id=%s" % course_id
+        course_id = int(re.search(r"course=(\d+)", li.a["href"]).group(1))
+        subject_url = "https://campusvirtual.uva.es/course/view.php?id=%d" % course_id
         name = re.search(r"^([\w\s]+?)\s?\(", li.text).group(1)
 
-        if subject_url in GeneralSettings.exclude_urls:
-            logger.info("Excluding subject %s (%s)", name, subject_url)
+        if course_id in GeneralSettings.exclude_subjects_ids:
+            logger.info("Excluding subject %s (%d)", name, course_id)
             continue
 
+        # Don't consider subject if 'grado' is in the name (it is the degree itself)
         if "grado" in name.lower():
             continue
 
@@ -51,7 +52,7 @@ def get_subjects(queue):
     return subjects
 
 
-def find_subjects(queue):
+def find_subjects(queue, discover_only=False):
     """Starts finding subjects.
 
     Args:
@@ -62,6 +63,10 @@ def find_subjects(queue):
 
     subjects = get_subjects(queue)
 
+    if discover_only:
+        logger.info("Discovery done")
+        return subjects
+
     for i, _ in enumerate(subjects):
         queue.put(subjects[i])
 
@@ -69,7 +74,7 @@ def find_subjects(queue):
 
 
 @timing(name="VCM downloader")
-def download(nthreads=20, no_killer=False, status_server=True):
+def download(nthreads=20, no_killer=False, status_server=True, discover_only=False):
     """Starts the app.
 
     Args:
@@ -92,6 +97,6 @@ def download(nthreads=20, no_killer=False, status_server=True):
         runserver(queue, threads)
 
     with Connection():
-        find_subjects(queue)
+        find_subjects(queue, discover_only=discover_only)
         logger.debug("Waiting for queue to empty")
         queue.join()
