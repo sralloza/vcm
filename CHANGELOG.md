@@ -1,6 +1,8 @@
 # What's New
 
 ## Unreleased
+
+## 3.0.0
 * Add `--check-updates` option to CLI, to check for new updates of the VCM.
 * Add `names` attribute to links database.
 * Add `general.max-logs` setting.
