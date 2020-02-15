@@ -37,8 +37,8 @@ class Subject:
         self.connection = Connection()
         self.queue = queue
 
-        self.disable_section_indexing = (
-            self.url in DownloadSettings.disable_section_indexing_urls
+        self.enable_section_indexing = (
+            self.url in DownloadSettings.section_indexing_urls
         )
 
         self.response: Response = None
@@ -87,7 +87,7 @@ class Subject:
     def add_link(self, link: BaseLink):
         """Adds a note link to the list."""
         self.logger.debug("Adding link: %s", link.name)
-        if self.disable_section_indexing:
+        if not self.enable_section_indexing:
             link.section = None
 
         self.notes_links.append(link)

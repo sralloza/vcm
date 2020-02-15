@@ -6,7 +6,12 @@ from typing import List
 import toml
 from colorama.ansi import Fore
 
-from vcm.core.exceptions import AlreadyExcludedError, NotExcludedError
+from vcm.core.exceptions import (
+    AlreadyExcludedError,
+    AlreadyIndexedError,
+    NotExcludedError,
+    NotIndexedError,
+)
 
 from ._settings import constructors, defaults, setters, types
 from .exceptions import InvalidSettingsFileError
@@ -53,6 +58,30 @@ def settings_to_string():
         output += "    %s: %r\n" % (key, value)
 
     return output
+
+
+def section_index(subject_id: int):
+    if subject_id in DownloadSettings.section_indexing_ids:
+        raise AlreadyIndexedError(
+            "Subject ID '%d' is already section-indexed" % subject_id
+        )
+
+    index = list(DownloadSettings.section_indexing_ids)
+    index.append(subject_id)
+    index = list(set(index))
+    index.sort()
+    DownloadSettings.__setitem__("section-indexing", index, force=True)
+
+
+def un_section_index(subject_id: int):
+    if subject_id not in DownloadSettings.section_indexing_ids:
+        raise NotIndexedError("Subject ID '%d' is not section-indexed" % subject_id)
+
+    index = list(DownloadSettings.section_indexing_ids)
+    index.remove(subject_id)
+    index = list(set(index))
+    index.sort()
+    DownloadSettings.__setitem__("section_indexing", index, force=True)
 
 
 def exclude(subject_id: int):
@@ -226,13 +255,13 @@ class _DownloadSettings(BaseSettings):
         return self["forum-subfolders"]
 
     @property
-    def disable_section_indexing_ids(self) -> List[int]:
-        return self["disable-section-indexing"]
+    def section_indexing_ids(self) -> List[int]:
+        return self["section-indexing"]
 
     @property
-    def disable_section_indexing_urls(self) -> List[str]:
+    def section_indexing_urls(self) -> List[str]:
         template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-        return [template % x for x in self.disable_section_indexing_ids]
+        return [template % x for x in self.section_indexing_ids]
 
     @property
     def secure_section_filename(self) -> bool:
