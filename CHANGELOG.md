@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 3.0.0
+## [3.0.0]
 * Add `--check-updates` option to CLI, to check for new updates of the VCM.
 * Add `names` attribute to links database.
 * Add `general.max-logs` setting.
@@ -11,11 +11,16 @@
 * Add `discover` command to CLI to only discover subjects, so then the user can rename them.
 * Improve alias database (`alias.json`). Now it only has two attributes for each entry: id and alias. No ID
 
-## 2.1.1
+## [2.1.1]
 * Detect if final servers are under maintenance
 
-## 2.1.0
+## [2.1.0]
 * If email not sent successfully, database will remain untouched.
 
-## 2.0.1
+## [2.0.1]
 * Fix notifier error.
+
+[3.0.0]: https://github.com/sralloza/vcm/compare/v2.1.1...v3.0.0
+[2.1.1]: https://github.com/sralloza/vcm/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/sralloza/vcm/compare/v2.0.1...v2.1.0
+[2.0.1]: https://github.com/sralloza/vcm/compare/v2.0.0...v2.0.1
