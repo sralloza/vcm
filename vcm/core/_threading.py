@@ -9,6 +9,8 @@ from threading import enumerate as enumerate_threads
 from time import time
 from webbrowser import get as getwebbrowser
 
+from colorama import Fore
+
 from vcm.core.modules import Modules
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
@@ -112,11 +114,7 @@ class Worker(Thread):
                 self._state = ThreadStates.idle
                 return
 
-        # try:
         exec_time = time() - self.timestamp
-        # except TypeError:
-        #     print(vars(), vars(self))
-        #     exit()
 
         if exec_time < 30:
             state = ThreadStates.working_0
@@ -140,7 +138,8 @@ class Worker(Thread):
         status = f'<font color="{color.name}">{self.name}: {state.alias} - '
 
         if state == ThreadStates.working_3:
-            status += f"[{seconds_to_str(time() - self.timestamp, integer=integer)}] "
+            timestamp = -float("inf") if not self.timestamp else self.timestamp
+            status += f"[{seconds_to_str(time() - timestamp, integer=integer)}] "
 
         if isinstance(self.current_object, BaseLink):
             status += f"{self.current_object.subject.name} → {self.current_object.name}"
@@ -186,14 +185,7 @@ class Worker(Thread):
                 try:
                     self.current_object.download()
                 except Exception as exc:
-                    logger.exception(
-                        "%s in url %s (%r)",
-                        type(exc).__name__,
-                        self.current_object.url,
-                        exc,
-                    )
-
-                    raise
+                    print_fatal_error(exc, self.current_object)
 
                 logger.info(
                     "Worker %r completed work of Link %r",
@@ -207,14 +199,7 @@ class Worker(Thread):
                 try:
                     self.current_object.find_and_download_links()
                 except Exception as exc:
-                    logger.exception(
-                        "%s in subject %s (%r)",
-                        type(exc).__name__,
-                        self.current_object.name,
-                        exc,
-                    )
-
-                    raise
+                    print_fatal_error(exc, self.current_object)
 
                 logger.info(
                     "Worker %r completed work of Subject %r",
@@ -300,3 +285,24 @@ def start_workers(queue, nthreads=20, no_killer=False):
         thread_list.append(thread)
 
     return thread_list
+
+
+def print_fatal_error(exception, current_object):
+    logger.exception(
+        "%s in %r(url=%r) (%r)",
+        type(exception).__name__,
+        type(current_object),
+        current_object.url,
+        exception,
+    )
+
+    Printer.print(
+        "%sERROR: %s in url %s (%r)%s"
+        % (
+            Fore.LIGHTRED_EX,
+            type(exception).__name__,
+            current_object.url,
+            exception,
+            Fore.RESET,
+        )
+    )
