@@ -333,7 +333,7 @@ class Resource(BaseLink):
             self.set_resource_type("word")
             return self.save_response_content()
 
-        if "officedocument.spreadsheetml.sheet" in self.content_type:
+        if "officedocument.spreadsheetml.sheet" in self.content_type or "excel" in self.content_type:
             self.set_resource_type("excel")
             return self.save_response_content()
 
