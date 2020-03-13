@@ -419,7 +419,15 @@ class Resource(BaseLink):
         self.set_resource_type("html")
         self.logger.debug("Parsing HTML (%r)", self.url)
         resource = self.soup.find("object", {"id": "resourceobject"})
-        name = self.soup.find("div", {"role": "main"}).h2.text
+
+        try:
+            name = self.soup.find("div", {"role": "main"}).h2.text
+        except AttributeError:
+            # Check if it is a weird page
+            if self.soup.find("applet"):
+                self.logger.debug("Identified as weird page without content, skipping")
+                return
+            raise
 
         # Self does not contain the file, only a link to the real file.
         self.NOTIFY = False
