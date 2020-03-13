@@ -27,9 +27,6 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
     if not isinstance(seconds, (float, int)):
         raise TypeError(f"seconds must be float or int, not {type(seconds).__name__}")
 
-    if integer is True:
-        seconds = int(seconds)
-
     try:
         if abbreviated is True:
             day_str, hour_str, minute_str, second_str, final_s, s_last = ALPHABET[
@@ -41,6 +38,14 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
             ][language]
     except KeyError:
         raise InvalidLanguageError(f"{language!r} is not a valid language")
+
+    try:
+        int(seconds)
+    except OverflowError:
+        return "infinite %s%s" % (day_str, final_s)
+
+    if integer is True:
+        seconds = int(seconds)
 
     before = ", "
     s_last = " " + s_last + " "
