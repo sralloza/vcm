@@ -266,20 +266,20 @@ def create_desktop_cmds():
         file_handler.write(template % "download")
 
 
-def useless(*args, **kwargs):
-    pass
-
-
 class Printer:
     _print = print
 
     @classmethod
     def silence(cls):
-        cls._print = useless
+        cls._print = cls.useless
 
     @classmethod
     def print(cls, *args, **kwargs):
         return cls._print(*args, **kwargs)
+
+    @staticmethod
+    def useless(*args, **kwargs):
+        pass
 
 
 def check_updates():
