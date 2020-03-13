@@ -333,7 +333,7 @@ class Resource(BaseLink):
             self.set_resource_type("word")
             return self.save_response_content()
 
-        if "officedocument.spreadsheetml.sheet" in self.content_type:
+        if "officedocument.spreadsheetml.sheet" in self.content_type or "excel" in self.content_type:
             self.set_resource_type("excel")
             return self.save_response_content()
 
@@ -419,7 +419,15 @@ class Resource(BaseLink):
         self.set_resource_type("html")
         self.logger.debug("Parsing HTML (%r)", self.url)
         resource = self.soup.find("object", {"id": "resourceobject"})
-        name = self.soup.find("div", {"role": "main"}).h2.text
+
+        try:
+            name = self.soup.find("div", {"role": "main"}).h2.text
+        except AttributeError:
+            # Check if it is a weird page
+            if self.soup.find("applet"):
+                self.logger.debug("Identified as weird page without content, skipping")
+                return
+            raise
 
         # Self does not contain the file, only a link to the real file.
         self.NOTIFY = False
