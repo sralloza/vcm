@@ -18,3 +18,7 @@ dist/
 *.ini
 
 TODO.MD
+
+# coverage
+htmlcov/
+.coverage
