@@ -10,6 +10,7 @@ from vcm.core.utils import (
     Patterns,
     Printer,
     check_updates,
+    configure_logging,
     exception_exit,
     more_settings_check,
     secure_filename,
@@ -164,6 +165,73 @@ class TestStrToBool:
         else:
             with pytest.raises(ValueError, match="Invalid bool string"):
                 str2bool(input_str)
+
+
+class TestConfigureLogging:
+    @pytest.fixture
+    def mocks(self):
+        gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        lpe_m = gs_m.log_path.exists
+        ct_m = mock.patch("vcm.core.utils.current_thread").start()
+        rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
+        lbc_m = mock.patch("logging.basicConfig").start()
+        lgl_m = mock.patch("logging.getLogger").start()
+
+        yield gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m
+
+        mock.patch.stopall()
+
+    @pytest.mark.parametrize("do_roll", [True, False])
+    def test_testing_none(self, mocks, do_roll):
+        if os.environ.get("TESTING"):
+            del os.environ["TESTING"]
+        gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
+        lpe_m.return_value = do_roll
+
+        fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+        configure_logging()
+
+        rfh_m.assert_called_once_with(
+            filename=gs_m.log_path,
+            maxBytes=2500000,
+            encoding="utf-8",
+            backupCount=gs_m.max_logs,
+        )
+        handler = rfh_m.return_value
+
+        ct_m.return_value.setName.assert_called_with("MT")
+
+        if do_roll:
+            handler.doRollover.assert_called_once()
+        else:
+            handler.doRollover.assert_not_called()
+
+        lbc_m.assert_called_once_with(
+            handlers=[handler], level=gs_m.logging_level, format=fmt
+        )
+        lgl_m.assert_called_with("urllib3")
+        lgl_m.return_value.setLevel.assert_called_once_with(40)
+
+    @pytest.mark.parametrize("do_roll", [True, False])
+    def test_testing_true(self, mocks, do_roll):
+        os.environ["TESTING"] = "True"
+        gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
+        lpe_m.return_value = do_roll
+
+        fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
+        configure_logging()
+
+        rfh_m.assert_not_called()
+        handler = rfh_m.return_value
+
+        ct_m.return_value.setName.assert_not_called()
+
+        handler.doRollover.assert_not_called()
+
+        lbc_m.assert_not_called()
+        lgl_m.assert_called_with("urllib3")
+        lgl_m.return_value.setLevel.assert_called_once_with(40)
+
 
 class TestMoreSettingsCheck:
     @classmethod

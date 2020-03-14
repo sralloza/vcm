@@ -4,7 +4,6 @@ import re
 import sys
 import time
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 from threading import current_thread
 from traceback import format_exc
 
