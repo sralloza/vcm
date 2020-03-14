@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import sys
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -134,17 +135,18 @@ def exception_exit(exception, to_stderr=False, red=True):
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
-    message = "%s: %s" % (exception.__class__.__name__, ", ".join((str(x) for x in exception.args)))
+    exc_str = ", ".join((str(x) for x in exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, exc_str)
     message += "\n" + format_exc()
 
     if red:
         message = Fore.LIGHTRED_EX + message + Fore.RESET
 
     if to_stderr:
-        return exit(message)
+        return sys.exit(message)
 
     print(message)
-    return exit(-1)
+    return sys.exit(-1)
 
 
 @decorator
