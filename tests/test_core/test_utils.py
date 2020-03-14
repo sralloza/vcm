@@ -11,6 +11,7 @@ from vcm.core.utils import (
     check_updates,
     exception_exit,
     secure_filename,
+    setup_vcm,
 )
 
 
@@ -67,6 +68,7 @@ class TestPatterns:
 
 
 class TestExceptionExit:
+
     exceptions = (
         (ValueError, "Invalid path"),
         (TypeError, ("Invalid type", "Expected int")),
@@ -107,11 +109,26 @@ class TestExceptionExit:
                 assert Fore.LIGHTRED_EX not in captured.out
                 assert Fore.RESET not in captured.out
 
-    def test_error(self):
-        with pytest.raises(
-            TypeError, match="exception should be a subclass of Exception"
-        ):
+    def test_error_1(self):
+        match = "exception should be a subclass of Exception"
+        with pytest.raises(TypeError, match=match):
             exception_exit("hi")
+
+    def test_error_2(self):
+        class Dummy:
+            pass
+
+        match = "exception should be a subclass of Exception"
+        with pytest.raises(TypeError, match=match):
+            exception_exit(Dummy)
+
+
+@mock.patch("vcm.core.utils.configure_logging")
+@mock.patch("vcm.core.utils.more_settings_check")
+def test_setup_vcm(msc_mock, cl_mock):
+    setup_vcm()
+    msc_mock.assert_called_once_with()
+    cl_mock.assert_called_once_with()
 
 
 class TestPrinter:
