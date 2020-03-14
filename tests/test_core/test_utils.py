@@ -4,7 +4,13 @@ import pytest
 from colorama.ansi import Fore
 
 import vcm
-from vcm.core.utils import Patterns, Printer, check_updates, exception_exit
+from vcm.core.utils import (
+    MetaSingleton,
+    Patterns,
+    Printer,
+    check_updates,
+    exception_exit,
+)
 
 
 class TestPatterns:
@@ -154,3 +160,53 @@ class TestCheckUpdates:
         assert result == new_update
         print_mock.assert_called_once()
 
+
+class TestMetaSingleton:
+    def test_one_class(self):
+        class Class(metaclass=MetaSingleton):
+            def __init__(self, value):
+                self.value = value
+
+        instance_1 = Class(1)
+        instance_2 = Class(2)
+
+        assert instance_1.value == 1
+        assert instance_2.value == 1
+        assert instance_1 is instance_2
+
+    def test_multiple_classes(self):
+        class Class1(metaclass=MetaSingleton):
+            def __init__(self, value):
+                self.value = value
+
+        class Class2(metaclass=MetaSingleton):
+            def __init__(self, value):
+                self.value = value
+
+        class Class3(metaclass=MetaSingleton):
+            def __init__(self, value):
+                self.value = value
+
+        instance_11 = Class1(11)
+        instance_12 = Class1(12)
+        instance_13 = Class1(13)
+
+        instance_21 = Class2(21)
+        instance_22 = Class2(22)
+        instance_23 = Class2(23)
+
+        instance_31 = Class3(31)
+        instance_32 = Class3(32)
+        instance_33 = Class3(33)
+
+        assert instance_11.value == instance_12.value == instance_13.value == 11
+        assert instance_21.value == instance_22.value == instance_23.value == 21
+        assert instance_31.value == instance_32.value == instance_33.value == 31
+
+        assert instance_11 is instance_12 is instance_13
+        assert instance_21 is instance_22 is instance_23
+        assert instance_31 is instance_32 is instance_33
+
+        assert instance_11.value != instance_21.value != instance_31.value
+        assert instance_12.value != instance_22.value != instance_32.value
+        assert instance_13.value != instance_23.value != instance_33.value
