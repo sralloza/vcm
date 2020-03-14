@@ -7,7 +7,6 @@ from pathlib import Path
 from threading import current_thread
 from traceback import format_exc
 
-import psutil
 from colorama import Fore, init
 from decorator import decorator
 from packaging import version
@@ -243,12 +242,6 @@ def more_settings_check():
 def setup_vcm():
     more_settings_check()
     configure_logging()
-
-
-def is_called_from_shell():
-    ppid = os.getppid()  # Get parent process id
-    a = psutil.Process(ppid).name().lower()
-    return "bash" in a or "cmd" in a
 
 
 def create_desktop_cmds():

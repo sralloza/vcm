@@ -4,7 +4,6 @@ dataclasses
 decorator
 Flask
 packaging
-psutil
 requests
 toml
 unidecode
