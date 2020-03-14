@@ -109,7 +109,9 @@ def secure_filename(filename, parse_spaces=True):
 
 
 class Patterns:
-    FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
+    FILENAME_PATTERN = re.compile(
+        r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',´¨¡¿!@#·\$%€\/]+)"'
+    )
 
 
 def exception_exit(exception, to_stderr=False, red=True):
