@@ -23,20 +23,17 @@ class IconType(Enum):
     powerpoint = auto()
     quiz = auto()
     sourcecode = auto()
-    unkown = auto()
+    unknown = auto()
     url = auto()
     word = auto()
     workshop = auto()
     zip = auto()
-
-    not_id = -1
 
 
 base64path = Path(__file__).parent / "base64.json"
 
 with base64path.open() as f:
     data = json.load(f)
-    data["not_id"] = data["unkown"]
 
 IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
 del data
@@ -150,7 +147,7 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.workshop
 
         elif "/f/unknown" in self.icon_url:
-            self._icon_type = IconType.unkown
+            self._icon_type = IconType.unknown
         elif "/f/document" in self.icon_url:
             self._icon_type = IconType.word
         elif "/f/mpeg" in self.icon_url:
@@ -166,7 +163,7 @@ class NotifierLink(BaseLink):
         elif "/f/jpeg" in self.icon_url:
             self._icon_type = IconType.jpeg
         else:
-            self._icon_type = IconType.not_id
+            self._icon_type = IconType.unknown
 
         return self._icon_type
 
@@ -175,7 +172,7 @@ class NotifierLink(BaseLink):
         try:
             return URLS[self.icon_type]
         except KeyError:
-            return "https://invalid.invalid.es"
+            return str(self.icon_type)
 
     @property
     def icon_data_64(self):
