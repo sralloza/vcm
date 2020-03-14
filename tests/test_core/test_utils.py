@@ -10,7 +10,37 @@ from vcm.core.utils import (
     Printer,
     check_updates,
     exception_exit,
+    secure_filename,
 )
+
+
+class TestSecureFilename:
+    test_data_no_spaces = [
+        ("file name.txt", "file_name.txt"),
+        ("file/other.pdf", "file_other.pdf"),
+        ("file name_v2.pdf", "file_name_v2.pdf"),
+        ("My cool movie.mov", "My_cool_movie.mov"),
+        ("../../../etc/passwd", "etc_passwd"),
+        (u"i contain cool \xfcml\xe4uts.txt", "i_contain_cool_umlauts.txt"),
+    ]
+    test_data_spaces = [
+        ("file name.txt", "file name.txt"),
+        ("file/other.pdf", "file other.pdf"),
+        ("enigma_v3.zip", "enigma v3.zip"),
+        ("My cool movie.mov", "My cool movie.mov"),
+        ("../../../etc/passwd", "etc passwd"),
+        (u"i contain cool \xfcml\xe4uts.txt", "i contain cool umlauts.txt"),
+    ]
+
+    @pytest.mark.parametrize("input_str, expected", test_data_no_spaces)
+    def test_no_spaces(self, input_str, expected):
+        real = secure_filename(input_str, spaces=False)
+        assert real == expected
+
+    @pytest.mark.parametrize("input_str, expected", test_data_spaces)
+    def test_spaces(self, input_str, expected):
+        real = secure_filename(input_str, spaces=True)
+        assert real == expected
 
 
 class TestPatterns:
