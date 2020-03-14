@@ -200,20 +200,21 @@ def configure_logging():
 
 
 def more_settings_check():
-    from ._settings import defaults
-    from .settings import GeneralSettings, NotifySettings
+    from vcm.core._settings import defaults
+    from vcm.core.settings import GeneralSettings, NotifySettings
 
     os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
     if GeneralSettings.root_folder == defaults["general"]["root-folder"]:
+        del os.environ["VCM_DISABLE_CONSTRUCTS"]
         raise Exception("Must set 'general.root-folder'")
 
     if NotifySettings.email == defaults["notify"]["email"]:
+        del os.environ["VCM_DISABLE_CONSTRUCTS"]
         raise Exception("Must set 'notify.email'")
 
     del os.environ["VCM_DISABLE_CONSTRUCTS"]
 
     # Setup
-
     os.makedirs(GeneralSettings.root_folder, exist_ok=True)
     os.makedirs(GeneralSettings.logs_folder, exist_ok=True)
 

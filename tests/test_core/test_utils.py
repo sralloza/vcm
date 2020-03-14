@@ -1,3 +1,4 @@
+import os
 from unittest import mock
 
 import pytest
@@ -10,6 +11,7 @@ from vcm.core.utils import (
     Printer,
     check_updates,
     exception_exit,
+    more_settings_check,
     secure_filename,
     setup_vcm,
     str2bool,
@@ -162,6 +164,77 @@ class TestStrToBool:
         else:
             with pytest.raises(ValueError, match="Invalid bool string"):
                 str2bool(input_str)
+
+class TestMoreSettingsCheck:
+    @classmethod
+    def setup_class(cls):
+        cls.default_root_folder = "<default-root-folder>"
+        cls.no_default_root_folder = "<no-default-root-folder>"
+
+        cls.default_email = "<default-email>"
+        cls.no_default_email = "<no-default-email>"
+
+        cls.defaults = {
+            "general": {"root-folder": cls.default_root_folder},
+            "notify": {"email": cls.default_email},
+        }
+
+    @pytest.fixture(scope="function", autouse=True)
+    def ensure_default_environ(self):
+        assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
+        yield
+        assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
+
+    @pytest.fixture
+    def mocks(self):
+        gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
+        ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
+        mock.patch("vcm.core._settings.defaults", self.defaults).start()
+        mkdirs_mock = mock.patch("os.makedirs").start()
+
+        gs_mock.root_folder = self.no_default_root_folder
+        ns_mock.email = self.no_default_email
+
+        yield gs_mock, ns_mock, mkdirs_mock
+        mock.patch.stopall()
+
+    def test_ok(self, mocks):
+        gs_mock, _, mkdirs_mock = mocks
+        more_settings_check()
+
+        mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
+        mkdirs_mock.assert_any_call(gs_mock.logs_folder, exist_ok=True)
+        assert mkdirs_mock.call_count == 2
+
+    def test_default_root_folder(self, mocks):
+        gs_mock, _, mkdirs_mock = mocks
+        gs_mock.root_folder = self.default_root_folder
+
+        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
+            more_settings_check()
+
+        mkdirs_mock.assert_not_called()
+
+    def test_default_email(self, mocks):
+        _, ns_mock, mkdirs_mock = mocks
+        ns_mock.email = self.default_email
+
+        with pytest.raises(Exception, match="Must set 'notify.email'"):
+            more_settings_check()
+
+        mkdirs_mock.assert_not_called()
+        mkdirs_mock.assert_not_called()
+
+    def test_default_root_folder_and_email(self, mocks):
+        gs_mock, ns_mock, mkdirs_mock = mocks
+        gs_mock.root_folder = self.default_root_folder
+        ns_mock.email = self.default_email
+
+        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
+            more_settings_check()
+
+        mkdirs_mock.assert_not_called()
+
 
 @mock.patch("vcm.core.utils.configure_logging")
 @mock.patch("vcm.core.utils.more_settings_check")
