@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Use links of the [virtual campus](https://campusvirtual.uva.es/my) instead of [google drive](https://drive.google.com/drive).
 * Renamed `IconType.unkown` to `IconType.unknown` (**typo**).
+* Redesigned `utils.getch`.
 
 ### Removed
 * Removed `IconType.not_id`.
