@@ -1,9 +1,10 @@
 from unittest import mock
 
 import pytest
+from colorama.ansi import Fore
 
 import vcm
-from vcm.core.utils import Patterns, check_updates
+from vcm.core.utils import Patterns, check_updates, exception_exit
 
 
 class TestPatterns:
@@ -15,10 +16,10 @@ class TestPatterns:
         ('filename="IS_BI_2_20.xlsx"', "IS_BI_2_20.xlsx"),
         ('filename="important (2020_2021).pdf"', "important (2020_2021).pdf"),
         ('filename="accents [áéíóúñÁÉÍÓÚÑ]()"', "accents [áéíóúñÁÉÍÓÚÑ]()"),
-        ('filename="-.,_;~+`^´¨{[]\'¡¿!@#·$%&/€"', "-.,_;~+`^´¨{[]\'¡¿!@#·$%&/€"),
-        ('filename="-.,_:;~+`*^´¨{[]\'¡¿?!|@#·$%&/"', None)
-
+        ('filename="-.,_;~+`^´¨{[]\'¡¿!@#·$%&/€"', "-.,_;~+`^´¨{[]'¡¿!@#·$%&/€"),
+        ('filename="-.,_:;~+`*^´¨{[]\'¡¿?!|@#·$%&/"', None),
     )
+
     @pytest.mark.parametrize("input_str, expected", filename_data)
     def test_filename_pattern(self, input_str, expected):
         match = Patterns.FILENAME_PATTERN.search(input_str)
@@ -28,6 +29,53 @@ class TestPatterns:
         else:
             assert match is None
 
+
+class TestExceptionExit:
+    exceptions = (
+        (ValueError, "Invalid path"),
+        (TypeError, ("Invalid type", "Expected int")),
+        (ImportError, "Module not found: math"),
+    )
+
+    @pytest.mark.parametrize("red", [True, False])
+    @pytest.mark.parametrize("to_stderr", [True, False])
+    @pytest.mark.parametrize("exception, args", exceptions)
+    def test_ok(self, exception, args, to_stderr, red, capsys):
+        if not isinstance(args, str):
+            message = ", ".join(args)
+        else:
+            message = args
+            args = (args,)
+
+        with pytest.raises(SystemExit):
+            exception_exit(exception(*args), to_stderr=to_stderr, red=red)
+
+        captured = capsys.readouterr()
+
+        if to_stderr:
+            assert message in captured.err
+
+            if red:
+                assert Fore.LIGHTRED_EX in captured.err
+                assert Fore.RESET in captured.err
+            else:
+                assert Fore.LIGHTRED_EX not in captured.err
+                assert Fore.RESET not in captured.err
+        else:
+            assert message in captured.out
+
+            if red:
+                assert Fore.LIGHTRED_EX in captured.out
+                assert Fore.RESET in captured.out
+            else:
+                assert Fore.LIGHTRED_EX not in captured.out
+                assert Fore.RESET not in captured.out
+
+    def test_error(self):
+        with pytest.raises(
+            TypeError, match="exception should be a subclass of Exception"
+        ):
+            exception_exit("hi")
 
 
 class TestCheckUpdates:

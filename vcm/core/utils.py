@@ -145,7 +145,8 @@ def exception_exit(exception, to_stderr=False, red=True):
         message = Fore.LIGHTRED_EX + message + Fore.RESET
 
     if to_stderr:
-        return sys.exit(message)
+        print(message, file=sys.stderr)
+        return sys.exit(-1)
 
     print(message)
     return sys.exit(-1)
