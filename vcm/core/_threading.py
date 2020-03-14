@@ -208,7 +208,7 @@ class Worker(Thread):
                 )
                 self.queue.task_done()
             else:
-                raise ValueError("Unkown object in queue: %r" % self.current_object)
+                raise ValueError("Unknown object in queue: %r" % self.current_object)
 
             logger.info("%d unfinished tasks", self.queue.unfinished_tasks)
             self.current_object = None

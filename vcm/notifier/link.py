@@ -23,48 +23,42 @@ class IconType(Enum):
     powerpoint = auto()
     quiz = auto()
     sourcecode = auto()
-    unkown = auto()
+    unknown = auto()
     url = auto()
     word = auto()
     workshop = auto()
     zip = auto()
-
-    not_id = -1
 
 
 base64path = Path(__file__).parent / "base64.json"
 
 with base64path.open() as f:
     data = json.load(f)
-    data["not_id"] = data["unkown"]
 
 IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
 del data
 
 URLS = {
-    IconType.pdf: "1OBqjLDdO7newsN8gtLkUEc61kIVsCCI2",
-    IconType.zip: "1S4lRY6iDw8uqelEkOiEdTS5kiJJPdsjV",
-    IconType.word: "1VeGEeGyDZ7VTYhzXtb_k068urpeyie7-",
-    IconType.forum: "1ChuqxOgaSkOHNrABtWEulazaQt4gG6J_",
-    IconType.page: "1c9UZxb0vqP7QtgMdit_YqO5rdIe6oLNV",
-    IconType.url: "1LPTP1oKhtXvGu3oApLBXdqHZmkJK81el",
-    IconType.assign: "1l056BB9rIuvC_2DsClt81i2VsGtPLAqN",
-    IconType.feedback: "1uZLx-knwrtI1gwL44ehvLs2wOmsO5Isd",
-    IconType.quiz: "1Wfr3ube0J8ZAn5sHSjMtzNLatFTJmT6k",
-    IconType.unkown: "12BL-MLAEv5gEd2HqusEUE7ohR1kIZdLa",
-    IconType.choice: "10KReH-TLyBPMcerOQ4J7nZ-ARzYHYIet",
-    IconType.folder: "1QBcHalK6zRx_MX7H6_zDRuuJjte9dBMj",
-    IconType.workshop: "12yclWnyEiQpyuRR4cRJAGyMJHrcJabpz",
-    IconType.avi: "1Hd3sAjz6BX6RfOBg3X5E2VZ603KsMyZj",
-    IconType.mpeg: "1BpafvF0WBvGCjLCjUruBtyzAIDkgWOXx",
-    IconType.sourcecode: "1LOYPh2Z1YWlAX6kRuYdiYY_-QsOEfuEh",
-    IconType.excel: "12THl4cPW2phdmiQ9mHAKGg_6PP_ym8iS",
-    IconType.powerpoint: "1uXo1sjW24dDokCF2u7ek_Ylq_YBezvab",
-    IconType.jpeg: "1tXp7K0uv5vGxsPeudKcGxTr0q-I2GdJs",
+    IconType.assign: "https://campusvirtual.uva.es/theme/image.php/uva2017/assign/1577957563/icon",
+    IconType.avi: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/avi-24",
+    IconType.choice: "https://campusvirtual.uva.es/theme/image.php/uva2017/choice/1566299165/icon",
+    IconType.excel: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/spreadsheet-24",
+    IconType.feedback: "https://campusvirtual.uva.es/theme/image.php/uva2017/feedback/1566299165/icon",
+    IconType.folder: "https://campusvirtual.uva.es/theme/image.php/uva2017/folder/1577957563/icon",
+    IconType.forum: "https://campusvirtual.uva.es/theme/image.php/uva2017/forum/1577957563/icon",
+    IconType.jpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/jpeg-24",
+    IconType.mpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/mpeg-24",
+    IconType.page: "https://campusvirtual.uva.es/theme/image.php/uva2017/page/1577957563/icon",
+    IconType.pdf: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/pdf-24",
+    IconType.powerpoint: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/powerpoint-24",
+    IconType.quiz: "https://campusvirtual.uva.es/theme/image.php/uva2017/quiz/1577957563/icon",
+    IconType.sourcecode: IconType.unknown,
+    IconType.unknown: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/html-24",
+    IconType.url: "https://campusvirtual.uva.es/theme/image.php/uva2017/url/1577957563/icon",
+    IconType.word: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/document-24",
+    IconType.workshop: "https://campusvirtual.uva.es/theme/image.php/uva2017/workshop/1566299165/icon",
+    IconType.zip: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/archive-24",
 }
-
-for key in URLS.keys():
-    URLS[key] = "https://drive.google.com/uc?export=download&id=" + URLS[key]
 
 
 class NotifierLink(BaseLink):
@@ -93,7 +87,7 @@ class NotifierLink(BaseLink):
             "icon_url",
             "subject",
             "parent",
-            "icon_url"
+            "icon_url",
         ]
         new_vars = {}
 
@@ -150,7 +144,7 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.workshop
 
         elif "/f/unknown" in self.icon_url:
-            self._icon_type = IconType.unkown
+            self._icon_type = IconType.unknown
         elif "/f/document" in self.icon_url:
             self._icon_type = IconType.word
         elif "/f/mpeg" in self.icon_url:
@@ -166,7 +160,7 @@ class NotifierLink(BaseLink):
         elif "/f/jpeg" in self.icon_url:
             self._icon_type = IconType.jpeg
         else:
-            self._icon_type = IconType.not_id
+            self._icon_type = IconType.unknown
 
         return self._icon_type
 
@@ -175,7 +169,7 @@ class NotifierLink(BaseLink):
         try:
             return URLS[self.icon_type]
         except KeyError:
-            return "https://invalid.invalid.es"
+            return str(self.icon_type)
 
     @property
     def icon_data_64(self):
