@@ -4,7 +4,7 @@ import pytest
 from colorama.ansi import Fore
 
 import vcm
-from vcm.core.utils import Patterns, check_updates, exception_exit
+from vcm.core.utils import Patterns, Printer, check_updates, exception_exit
 
 
 class TestPatterns:
@@ -76,6 +76,47 @@ class TestExceptionExit:
             TypeError, match="exception should be a subclass of Exception"
         ):
             exception_exit("hi")
+
+
+class TestPrinter:
+    @pytest.fixture(scope="function", autouse=True)
+    def autoreset_printer(self):
+        Printer.reset()
+        yield
+        Printer.reset()
+
+    def test_reset(self):
+        assert Printer._print == print
+        Printer._print = 0.25
+        assert Printer._print == 0.25
+
+        Printer.reset()
+        assert Printer._print == print
+
+    def test_silence(self, capsys):
+        assert Printer._print == print
+        Printer.silence()
+        assert Printer._print == Printer.useless
+        Printer.print("hola")
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
+        assert captured.out == ""
+
+    def test_print(self, capsys):
+        assert Printer._print == print
+        Printer.print("hello")
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
+        assert captured.out == "hello\n"
+
+    def test_useless(self, capsys):
+        Printer.useless("a", 1, float=0.23, complex=1 + 2j)
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
+        assert captured.out == ""
 
 
 class TestCheckUpdates:

@@ -268,6 +268,10 @@ class Printer:
     _print = print
 
     @classmethod
+    def reset(cls):
+        cls._print = print
+
+    @classmethod
     def silence(cls):
         cls._print = cls.useless
 
@@ -275,8 +279,8 @@ class Printer:
     def print(cls, *args, **kwargs):
         return cls._print(*args, **kwargs)
 
-    @staticmethod
-    def useless(*args, **kwargs):
+    @classmethod
+    def useless(cls, *args, **kwargs):
         pass
 
 
