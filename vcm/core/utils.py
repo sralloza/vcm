@@ -8,61 +8,69 @@ from threading import current_thread
 from traceback import format_exc
 
 import psutil
-from colorama import Fore, init
+from colorama import Fore, init as start_colorama
 from decorator import decorator
 from packaging import version
 
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
-init()
+start_colorama()
 
 
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the
-screen."""
+class MetaGetch(type):
+    _instances = {}
 
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self):
-        return self.impl()
+    def __init__(cls, name, bases, attrs, **kwargs):
+        super().__init__(name, bases, attrs, **kwargs)
+        cls.__new__ = cls._getch
 
 
-class _GetchUnix:
-    def __init__(self):
-        import tty
-        import sys
+class getch(metaclass=MetaGetch):
+    def _getch(self, *args, **kwargs):
+        result = ord(getch._Getch()())
 
-    def __call__(self):
-        import sys
-        import tty
-        import termios
+        if result == 0:
+            return result, ord(getch._Getch()())
+        return result
 
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+    class _Getch:
+        """Gets a single character from standard input.  Does not echo to the
+    screen."""
 
+        def __init__(self):
+            try:
+                self.impl = self._GetchWindows()
+            except ImportError:
+                self.impl = self._GetchUnix()
 
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
+        def __call__(self):
+            return self.impl()
 
-    def __call__(self):
-        import msvcrt
+        class _GetchUnix:
+            def __init__(self):
+                import tty, sys
 
-        return msvcrt.getch()
+            def __call__(self):
+                import sys, tty, termios
 
+                fd = sys.stdin.fileno()
+                old_settings = termios.tcgetattr(fd)
+                try:
+                    tty.setraw(sys.stdin.fileno())
+                    ch = sys.stdin.read(1)
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                return ch
 
-getch = _Getch()
+        class _GetchWindows:
+            def __init__(self):
+                import msvcrt
+
+            def __call__(self):
+                import msvcrt
+
+                return msvcrt.getch()
 
 
 def secure_filename(filename, parse_spaces=True):
