@@ -11,6 +11,7 @@ from traceback import format_exc
 from colorama import Fore, init
 from decorator import decorator
 from packaging import version
+from werkzeug.utils import secure_filename as _secure_filename
 
 from .time_operations import seconds_to_str
 
@@ -19,8 +20,7 @@ init()
 
 
 class _Getch:
-    """Gets a single character from standard input.  Does not echo to the
-screen."""
+    """Gets a single character from standard input.  Does not echo to the screen."""
 
     def __init__(self):
         try:
@@ -65,47 +65,22 @@ class _GetchWindows:
 getch = _Getch()
 
 
-def secure_filename(filename, parse_spaces=True):
-    if isinstance(filename, str):
-        from unicodedata import normalize
+def secure_filename(filename, spaces=False):
+    """Makes the filename secure enough to be used as a filename.
 
-        filename = normalize("NFKD", filename).encode("ascii", "ignore")
-        filename = filename.decode("ascii")
-    for sep in os.path.sep, os.path.altsep:
-        if sep:
-            filename = filename.replace(sep, " ")
+    Args:
+        filename (str): the filename to secure.
+        spaces (bool, optional): If True, the low bars will be replaced with
+            spaces. If True, the spaces will be replaced with low bars.
+            Defaults to False.
 
-    _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
-    _windows_device_files = (
-        "CON",
-        "AUX",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "PRN",
-        "NUL",
-    )
-
-    if parse_spaces:
-        temp_str = "_".join(filename.split())
-    else:
-        temp_str = " ".join(filename.split())
-        _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_. -]")
-
-    filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
-
-    if (
-        os.name == "nt"
-        and filename
-        and filename.split(".")[0].upper() in _windows_device_files
-    ):
-        filename = "_" + filename
-
-    return filename
+    Returns:
+        str: secured filename.
+    """
+    filename = _secure_filename(filename)
+    if not spaces:
+        return filename
+    return filename.replace("_", " ")
 
 
 class Patterns:
@@ -181,11 +156,10 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     return result
 
 
-_true_set = {"yes", "true", "t", "y", "1"}
-_false_set = {"no", "false", "f", "n", "0"}
-
-
 def str2bool(value):
+    _true_set = {"yes", "true", "t", "y", "1"}
+    _false_set = {"no", "false", "f", "n", "0"}
+
     if value in (True, False):
         return value
 

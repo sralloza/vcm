@@ -174,7 +174,7 @@ class Section:
         self.url = url
 
         self.name = secure_filename(
-            self.name, parse_spaces=DownloadSettings.secure_section_filename
+            self.name, spaces=not DownloadSettings.secure_section_filename
         )
 
     def __str__(self):
