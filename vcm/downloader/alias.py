@@ -5,9 +5,9 @@ from hashlib import sha1
 from pathlib import Path
 from threading import Semaphore
 
-from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
+from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Singleton
+from vcm.core.utils import MetaSingleton
 
 
 def calculate_hash(byte_data):
@@ -40,13 +40,10 @@ class AliasEntry:
         self.alias = Path(alias)
 
     def to_json(self):
-        return {
-            "id": self.id,
-            "alias": self.alias.as_posix(),
-        }
+        return {"id": self.id, "alias": self.alias.as_posix()}
 
 
-class Alias(metaclass=Singleton):
+class Alias(metaclass=MetaSingleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
