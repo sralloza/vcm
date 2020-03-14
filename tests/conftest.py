@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -50,6 +51,8 @@ def pytest_configure():
     if not credentials_path.exists():
         with credentials_path.open("wt") as file_handler:
             toml.dump(CREDENTIALS_DEFAULT, file_handler)
+
+    os.environ["TESTING"] = "True"
 
 
 @pytest.fixture(scope="session", autouse=True)
