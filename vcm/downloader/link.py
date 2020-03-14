@@ -3,18 +3,18 @@ import logging
 import os
 import random
 import warnings
+from hashlib import sha1
 from pathlib import Path
 
 import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
-from hashlib import sha1
 from vcm.core.modules import Modules
+from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Patterns, secure_filename
-from vcm.core.networking import Connection
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -206,9 +206,7 @@ class BaseLink(_Notify):
 
         self.filepath = Path(
             Alias.id_to_alias(
-                sha1(self.url.encode()).hexdigest(),
-                temp_filepath.as_posix(),
-                folder_id,
+                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix(), folder_id
             )
         )
 
@@ -333,7 +331,10 @@ class Resource(BaseLink):
             self.set_resource_type("word")
             return self.save_response_content()
 
-        if "officedocument.spreadsheetml.sheet" in self.content_type or "excel" in self.content_type:
+        if (
+            "officedocument.spreadsheetml.sheet" in self.content_type
+            or "excel" in self.content_type
+        ):
             self.set_resource_type("excel")
             return self.save_response_content()
 
