@@ -1,25 +1,32 @@
 from pathlib import Path
 
+import pytest
 import toml
 
+
+def get_settings_defaults():
+    path = Path(__file__).parent.with_name("vcm").joinpath("core/_settings.py")
+
+    outfile = []
+    with path.open("rt", encoding="utf-8") as infile:
+        copy = False
+        for line in infile:
+            if line.strip() == "defaults = {":
+                copy = True
+                outfile.append("{\n")
+                continue
+            elif line.strip() == "}":
+                if copy:
+                    outfile.append(line)
+                copy = False
+                continue
+            elif copy:
+                outfile.append(line)
+    return eval("".join(outfile))
+
+
 # IMPORTED FROM vcm.core._settings
-# TODO: auto import
-SETTINGS_DEFAULTS = {
-    "general": {
-        "root-folder": "insert-root-folder",
-        "logging-level": "INFO",
-        "timeout": 30,
-        "retries": 10,
-        "max-logs": 5,
-        "exclude-subjects-ids": [],
-    },
-    "download": {
-        "forum-subfolders": True,
-        "section-indexing": [],
-        "secure-section-filename": False,
-    },
-    "notify": {"use-base64-icons": False, "email": "insert-email"},
-}
+SETTINGS_DEFAULTS = get_settings_defaults()
 
 CREDENTIALS_DEFAULT = {
     "VirtualCampus": {"username": "e12345678Z", "password": "password-vc"},
@@ -32,7 +39,7 @@ CREDENTIALS_DEFAULT = {
 }
 
 
-def pytest_configure(config):
+def pytest_configure():
     settings_path: Path = Path.home() / "vcm-settings.toml"
     credentials_path: Path = Path.home() / "vcm-credentials.toml"
 
@@ -43,3 +50,11 @@ def pytest_configure(config):
     if not credentials_path.exists():
         with credentials_path.open("wt") as file_handler:
             toml.dump(CREDENTIALS_DEFAULT, file_handler)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def check_settings():
+    from vcm.core._settings import defaults
+
+    yield
+    assert defaults == SETTINGS_DEFAULTS
