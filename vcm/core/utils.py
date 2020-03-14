@@ -157,7 +157,7 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
 
 
 def str2bool(value):
-    _true_set = {"yes", "true", "t", "y", "1"}
+    _true_set = {"yes", "true", "t", "y", "1", "s", "si", "sí"}
     _false_set = {"no", "false", "f", "n", "0"}
 
     if value in (True, False):

@@ -12,6 +12,7 @@ from vcm.core.utils import (
     exception_exit,
     secure_filename,
     setup_vcm,
+    str2bool,
 )
 
 
@@ -122,6 +123,45 @@ class TestExceptionExit:
         with pytest.raises(TypeError, match=match):
             exception_exit(Dummy)
 
+
+class TestStrToBool:
+    test_data = [
+        (True, True),
+        (False, False),
+        ("true", True),
+        ("True", True),
+        ("false", False),
+        ("False", False),
+        ("no", False),
+        ("n", False),
+        ("No", False),
+        ("N", False),
+        ("yes", True),
+        ("y", True),
+        ("Yes", True),
+        ("Y", True),
+        ("t", True),
+        ("T", True),
+        ("f", False),
+        ("F", False),
+        ("1", True),
+        ("0", False),
+        ("Sí", True),
+        ("Si", True),
+        ("si", True),
+        ("S", True),
+        ("s", True),
+        ("invalid", None),
+    ]
+
+    @pytest.mark.parametrize("input_str, expected", test_data)
+    def test_str2bool(self, input_str, expected):
+        if expected is not None:
+            real = str2bool(input_str)
+            assert real == expected
+        else:
+            with pytest.raises(ValueError, match="Invalid bool string"):
+                str2bool(input_str)
 
 @mock.patch("vcm.core.utils.configure_logging")
 @mock.patch("vcm.core.utils.more_settings_check")
