@@ -305,3 +305,28 @@ settings_name_to_class = {
     "download": DownloadSettings,
     "notify": NotifySettings,
 }
+
+
+def check_settings_type():
+    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
+    for settings_class in settings_name_to_class.values():
+        for setting in settings_class:
+            checker = settings_class.checkers_dict[setting]
+            result = checker(settings_class[setting])
+
+            if not result:
+                del os.environ["VCM_DISABLE_CONSTRUCTS"]
+                raise TypeError(
+                    "Invalid value for %s.%s: %r [Checkers.%s]"
+                    % (
+                        settings_class.__class__.__name__.strip("_"),
+                        setting,
+                        settings_class[setting],
+                        checker.__name__,
+                    )
+                )
+
+    del os.environ["VCM_DISABLE_CONSTRUCTS"]
+
+
+check_settings_type()
