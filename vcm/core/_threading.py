@@ -231,7 +231,7 @@ class Killer(Worker):
         Printer.print("Killer ready")
         while True:
             try:
-                char = getch()
+                char = getch().key1
                 real = char.decode().lower()
             except UnicodeError:
                 continue
