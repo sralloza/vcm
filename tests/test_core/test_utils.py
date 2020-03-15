@@ -4,7 +4,6 @@ from threading import Thread
 from time import sleep
 from unittest import mock
 
-import pyautogui
 import pytest
 from colorama.ansi import Fore
 
@@ -25,6 +24,14 @@ from vcm.core.utils import (
     str2bool,
     timing,
 )
+
+try:
+    import pyautogui
+
+    pyautogui_imported = True
+except KeyError:
+    pyautogui = None
+    pyautogui_imported = False
 
 
 class TestKey:
@@ -91,6 +98,7 @@ class TestKey:
         assert Key(49, 49).to_char() == Key(b"1", b"1")
 
 
+@pytest.mark.skipif(pyautogui_imported is False, reason="pyautogui can't be imported")
 class TestGetch:
     def press_key(self, key):
         def _press_key():
