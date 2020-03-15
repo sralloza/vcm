@@ -143,8 +143,8 @@ class TestTiming:
     @pytest.mark.parametrize("level", [10, 20, 30, 40, 50, None])
     def test_ok(self, mocks, caplog, name, level):
         @timing(name=name, level=level)
-        def custom_function():
-            pass
+        def custom_function(arg1="arg1"):
+            return arg1
 
         time_m, sts_m = mocks
         time_m.side_effect = [0, 30]
@@ -152,7 +152,7 @@ class TestTiming:
 
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
-        custom_function()
+        custom_function(arg1=25)
 
         log_name = name or "custom_function"
         log_level = level or 20
@@ -165,8 +165,8 @@ class TestTiming:
     @pytest.mark.parametrize("level", [10, 20, 30, 40, 50, None])
     def test_exception(self, mocks, caplog, name, level, exception):
         @timing(name=name, level=level)
-        def custom_function():
-            raise exception
+        def custom_function(arg1="arg1"):
+            raise exception(arg1)
 
         time_m, sts_m = mocks
         time_m.side_effect = [0, 30]
@@ -175,7 +175,7 @@ class TestTiming:
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
         with pytest.raises(exception):
-            custom_function()
+            custom_function(arg1=25)
 
         log_name = name or "custom_function"
         log_level = level or 20
