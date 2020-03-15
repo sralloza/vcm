@@ -6,8 +6,81 @@ import pytest
 from requests import exceptions as req_exc
 
 from vcm.core.exceptions import DownloaderError
-from vcm.core.networking import USER_AGENT, Downloader
+from vcm.core.networking import USER_AGENT, Connection, Downloader
 from vcm.core.utils import MetaSingleton
+
+
+class TestConnection:
+    def test_use_singleton(self):
+        assert type(Connection) == MetaSingleton
+
+        a = Connection()
+        b = Connection()
+        c = Connection()
+
+        assert a is b
+        assert b is c
+        assert c is a
+
+    def test_init_declaration(self):
+        connection = Connection()
+
+        assert hasattr(connection, "_downloader")
+        assert hasattr(connection, "_logout_response")
+        assert hasattr(connection, "_login_response")
+        assert hasattr(connection, "_sesskey")
+        assert hasattr(connection, "_user_url")
+        assert hasattr(connection, "_login_attempts")
+
+    def test_properties(self):
+        connection = Connection()
+
+        assert hasattr(connection, "sesskey")
+        assert hasattr(connection, "user_url")
+
+        assert connection.sesskey is None
+        assert connection.user_url is None
+
+    @mock.patch("vcm.core.networking.Connection.logout")
+    @mock.patch("vcm.core.networking.Connection.login")
+    def test_context_manager(self, login_m, logout_m):
+        with Connection():
+            login_m.assert_called()
+            logout_m.assert_not_called()
+
+        logout_m.assert_called_once()
+        login_m.assert_called_once()
+
+    @mock.patch("vcm.core.networking.Downloader.get")
+    def test_get(self, get_m):
+        connection = Connection()
+        connection.get("url")
+        get_m.assert_called_once_with("url")
+
+    @mock.patch("vcm.core.networking.Downloader.post")
+    def test_post(self, post_m):
+        connection = Connection()
+        connection.post("url", "data", "json")
+        post_m.assert_called_once_with("url", "data", "json")
+
+    @mock.patch("vcm.core.networking.Downloader.delete")
+    def test_delete(self, delete_m):
+        connection = Connection()
+        connection.delete("url")
+        delete_m.assert_called_once_with("url")
+
+    def test_logout(self):
+        assert 0, "Not implemented"
+
+    def test_login(self):
+        assert 0, "Not implemented"
+
+    def test_hidden_login(self):
+        assert 0, "Not implemented"
+
+    def test_find_sesskey_and_user_url(self):
+        assert 0, "Not implemented"
+
 
 REQUESTS_EXCEPTIONS = (
     req_exc.URLRequired,
