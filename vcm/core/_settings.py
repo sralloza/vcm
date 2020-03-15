@@ -31,6 +31,44 @@ def section_indexing_setter(*args, **kwargs):
     raise SettingsError("download.section-indexing can't be set using the CLI")
 
 
+class Checkers:
+    @staticmethod
+    def logging(item):
+        return item in (
+            "NOTSET",
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
+            50,
+            40,
+            30,
+            20,
+            10,
+        )
+
+    @staticmethod
+    def bool(item):
+        return isinstance(item, bool)
+
+    @staticmethod
+    def int(item):
+        return isinstance(item, int)
+
+    @staticmethod
+    def str(item):
+        return isinstance(item, str)
+
+    @staticmethod
+    def list(item):
+        return isinstance(item, list)
+
+    @staticmethod
+    def float(item):
+        return isinstance(item, float)
+
+
 defaults = {
     "general": {
         "root-folder": "insert-root-folder",
