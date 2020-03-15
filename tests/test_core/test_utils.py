@@ -102,7 +102,7 @@ class TestKey:
 class TestGetch:
     def press_key(self, key):
         def _press_key():
-            sleep(0.05)
+            sleep(0.1)
             pyautogui.press(key)
 
         t = Thread(target=_press_key)
