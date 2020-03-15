@@ -136,7 +136,7 @@ class Connection(metaclass=MetaSingleton):
         )
 
 
-class Downloader(requests.Session):
+class Downloader(requests.Session, metaclass=MetaSingleton):
     """Downloader with retries control."""
 
     def __init__(self, silenced=False):
