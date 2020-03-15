@@ -1,18 +1,23 @@
 import logging
 import os
+from threading import Thread
+from time import sleep
 from unittest import mock
 
+import pyautogui
 import pytest
 from colorama.ansi import Fore
 
 import vcm
 from vcm.core.utils import (
+    Key,
     MetaSingleton,
     Patterns,
     Printer,
     check_updates,
     configure_logging,
     exception_exit,
+    getch,
     more_settings_check,
     safe_exit,
     secure_filename,
@@ -20,6 +25,107 @@ from vcm.core.utils import (
     str2bool,
     timing,
 )
+
+
+class TestKey:
+    def test_attributes(self):
+        assert Key(b"a", b"a").is_int is False
+        assert Key(b"a").is_int is False
+        assert Key(25).is_int is True
+        assert Key(15, 15).is_int is True
+
+        with pytest.raises(TypeError, match="key1 must be bytes or int"):
+            Key(None)
+
+        with pytest.raises(TypeError, match="key1 must be bytes or int"):
+            Key(1 + 2j)
+
+        with pytest.raises(TypeError, match="key2 must be bytes or int"):
+            Key(1, 1 + 5j)
+
+        with pytest.raises(ValueError, match="key1 must have only one byte"):
+            Key(b"11")
+
+        with pytest.raises(ValueError, match="key2 must have only one byte"):
+            Key(b"1", b"11")
+
+        with pytest.raises(TypeError, match="key1 and key2 must be of the same type"):
+            Key(b"1", 5)
+
+    def test_string(self):
+        assert str(Key(b"r")) == "Key(key1=b'r', key2=None)"
+        assert str(Key(b"a", b"b")) == "Key(key1=b'a', key2=b'b')"
+        assert str(Key(22)) == "Key(key1=22, key2=None)"
+        assert str(Key(23, 26)) == "Key(key1=23, key2=26)"
+
+    def test_repr(self):
+        key = Key(12, 21)
+        assert repr(key) == str(key)
+
+    def test_eq(self):
+        kn1 = Key(1, 2)
+        kn2 = Key(1, 2)
+        kb1 = Key(b"1", b"2")
+        kb2 = Key(b"1", b"2")
+
+        assert kn1 != kb1
+        assert kn2 != kb2
+
+        assert kn1 == kn2
+        assert kb1 == kb2
+
+    def test_to_int(self):
+        with pytest.raises(ValueError, match="Key is already in int mode"):
+            Key(1, 1).to_int()
+
+        assert Key(b"\x01", b"\x01").to_int() == Key(1, 1)
+        assert Key(b"\x31", b"\x31").to_int() == Key(49, 49)
+        assert Key(b"1", b"1").to_int() == Key(49, 49)
+
+    def test_to_char(self):
+        with pytest.raises(ValueError, match="Key is already in char mode"):
+            Key(b"\x01", b"\x01").to_char()
+
+        assert Key(1, 1).to_char() == Key(b"\x01", b"\x01")
+        assert Key(49, 49).to_char() == Key(b"\x31", b"\x31")
+        assert Key(49, 49).to_char() == Key(b"1", b"1")
+
+
+class TestGetch:
+    def press_key(self, key):
+        def _press_key():
+            sleep(0.05)
+            pyautogui.press(key)
+
+        t = Thread(target=_press_key)
+        t.start()
+        return t
+
+    def test_simple_key(self):
+        t = self.press_key("n")
+        assert getch() == Key(b"n")
+        t.join()
+
+        t = self.press_key("n")
+        assert getch(to_int=True) == Key(110)
+        t.join()
+
+        t = self.press_key("N")
+        assert getch() == Key(b"N")
+        t.join()
+
+        t = self.press_key("N")
+        assert getch(to_int=True) == Key(78)
+        t.join()
+
+    def test_weird_keys(self):
+        t = self.press_key("f2")
+        assert getch() == Key(b"\x00", b"<")
+        t.join()
+
+        t = self.press_key("f2")
+        assert getch(to_int=True) == Key(0, 60)
+        t.join()
 
 
 class TestSecureFilename:
@@ -146,6 +252,7 @@ class TestSafeExit:
     @mock.patch("vcm.core.utils.exception_exit")
     def test_safe_exit(self, ee_m, red, to_stderr, exception):
         exc = exception()
+
         @safe_exit(to_stderr=to_stderr, red=red)
         def custom_function():
             raise exc
