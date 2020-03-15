@@ -130,6 +130,8 @@ def exception_exit(exception, to_stderr=False, red=True):
 def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
     try:
         return func(*args, **kwargs)
+    except SystemExit as exc:
+        return exception_exit(exc, to_stderr=to_stderr, red=red)
     except Exception as exc:
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 

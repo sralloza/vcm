@@ -14,6 +14,7 @@ from vcm.core.utils import (
     configure_logging,
     exception_exit,
     more_settings_check,
+    safe_exit,
     secure_filename,
     setup_vcm,
     str2bool,
@@ -127,6 +128,30 @@ class TestExceptionExit:
         match = "exception should be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
             exception_exit(Dummy)
+
+
+class TestSafeExit:
+    @pytest.fixture(params=[True, False])
+    def to_stderr(self, request):
+        return request.param
+
+    @pytest.fixture(params=[True, False])
+    def red(self, request):
+        return request.param
+
+    @pytest.fixture(params=[ValueError, TypeError, AttributeError, SystemExit])
+    def exception(self, request):
+        return request.param
+
+    @mock.patch("vcm.core.utils.exception_exit")
+    def test_safe_exit(self, ee_m, red, to_stderr, exception):
+        exc = exception()
+        @safe_exit(to_stderr=to_stderr, red=red)
+        def custom_function():
+            raise exc
+
+        custom_function()
+        ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
 
 
 class TestTiming:
