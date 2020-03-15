@@ -4,6 +4,7 @@ dataclasses
 decorator
 Flask
 packaging
+pyautogui
 requests
 toml
 unidecode
