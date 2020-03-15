@@ -86,21 +86,21 @@ defaults = {
     "notify": {"use-base64-icons": False, "email": "insert-email"},
 }
 
-types = {
+checkers = {
     "general": {
-        "root-folder": str,
-        "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
-        "timeout": int,
-        "retries": int,
-        "max-logs": int,
-        "exclude-subjects-ids": list,
+        "root-folder": Checkers.str,
+        "logging-level": Checkers.logging,
+        "timeout": Checkers.int,
+        "retries": Checkers.int,
+        "max-logs": Checkers.int,
+        "exclude-subjects-ids": Checkers.list,
     },
     "download": {
-        "forum-subfolders": bool,
-        "section-indexing": list,
-        "secure-section-filename": False,
+        "forum-subfolders": Checkers.bool,
+        "section-indexing": Checkers.list,
+        "secure-section-filename": Checkers.bool,
     },
-    "notify": {"use-base64-icons": bool, "email": str},
+    "notify": {"use-base64-icons": Checkers.bool, "email": Checkers.str},
 }
 
 # Transforms TOML → saved
