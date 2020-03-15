@@ -6,8 +6,10 @@ from time import time
 from logging.handlers import RotatingFileHandler
 from threading import current_thread
 from traceback import format_exc
+from typing import Union
 
-from colorama import Fore, init
+from colorama import Fore
+from colorama import init as start_colorama
 from decorator import decorator
 from packaging import version
 from werkzeug.utils import secure_filename as _secure_filename
@@ -15,53 +17,141 @@ from werkzeug.utils import secure_filename as _secure_filename
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
-init()
+start_colorama()
 
 
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the screen."""
+class MetaGetch(type):
+    _instances = {}
 
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self):
-        return self.impl()
+    def __init__(cls, name, bases, attrs, **kwargs):
+        super().__init__(name, bases, attrs, **kwargs)
+        cls.__new__ = cls._getch
 
 
-class _GetchUnix:
-    def __init__(self):
-        import tty
-        import sys
+class Key:
+    def __init__(self, key1, key2=None, is_int=None):
+        if not isinstance(key1, (bytes, int)):
+            raise TypeError("key1 must be bytes or int, not %r" % type(key1).__name__)
 
-    def __call__(self):
-        import sys
-        import tty
-        import termios
+        if not isinstance(key2, (bytes, int)) and key2 is not None:
+            raise TypeError("key2 must be bytes or int, not %r" % type(key1).__name__)
 
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+        if isinstance(key1, bytes):
+            if len(key1) != 1:
+                raise ValueError("key1 must have only one byte, not %d" % len(key1))
+
+        if isinstance(key2, bytes):
+            if len(key2) != 1:
+                raise ValueError("key2 must have only one byte, not %d" % len(key2))
+
+        if key2:
+            if type(key1) != type(key2):
+                raise TypeError(
+                    "key1 and key2 must be of the same type (%r - %r)"
+                    % (type(key1).__name__, type(key2).__name__)
+                )
+
+        self.is_int = is_int
+        if self.is_int is None:
+            key1_bytes = isinstance(key1, bytes)
+            key2_bytes = key2 is None or isinstance(key2, bytes)
+
+            key1_int = isinstance(key1, int)
+            key2_int = key2 is None or isinstance(key2, int)
+
+            if key1_bytes and key2_bytes:
+                self.is_int = False
+            elif key1_int and key2_int:
+                self.is_int = True
+
+        assert self.is_int is not None, "is_int can't be None here"
+
+        self.key1 = int(key1) if is_int and key1 else key1
+        self.key2 = int(key2) if is_int and key2 else key2
+
+    def __str__(self):
+        return "Key(key1=%r, key2=%r)" % (self.key1, self.key2)
+
+    def __repr__(self):
+        return str(self)
+
+    def __eq__(self, other):
+        return self.key1 == other.key1 and self.key2 == other.key2
+
+    def to_int(self):
+        if self.is_int:
+            raise ValueError("Key is already in int mode")
+
+        key1 = ord(self.key1)
+        key2 = ord(self.key2) if self.key2 else self.key2
+        return type(self)(key1=key1, key2=key2, is_int=True)
+
+    def to_char(self):
+        if not self.is_int:
+            raise ValueError("Key is already in char mode")
+
+        key1 = chr(self.key1).encode("utf-8")
+        key2 = chr(self.key2).encode("utf-8") if self.key2 else self.key2
+        return type(self)(key1=key1, key2=key2, is_int=False)
 
 
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
+class getch(metaclass=MetaGetch):
+    key1: Union[bytes, int]
+    key2: Union[bytes, int, None]
 
-    def __call__(self):
-        import msvcrt
+    def _getch(self, to_int=False, *args, **kwargs):
+        result = getch._Getch()()
 
-        return msvcrt.getch()
+        if result == b"\x00":
+            key = Key(result, getch._Getch()())
+        else:
+            key = Key(result)
 
+        if to_int:
+            key = key.to_int()
 
-getch = _Getch()
+        return key
+
+    def to_int(self):
+        """Only for intellisense."""
+
+    class _Getch:
+        """Gets a single character from standard input.  Does not echo to the
+    screen."""
+
+        def __init__(self):
+            try:
+                self.impl = self._GetchWindows()
+            except ImportError:
+                self.impl = self._GetchUnix()
+
+        def __call__(self):
+            return self.impl()
+
+        class _GetchUnix:
+            def __init__(self):
+                import tty, sys
+
+            def __call__(self):
+                import sys, tty, termios
+
+                fd = sys.stdin.fileno()
+                old_settings = termios.tcgetattr(fd)
+                try:
+                    tty.setraw(sys.stdin.fileno())
+                    ch = sys.stdin.read(1)
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                return ch
+
+        class _GetchWindows:
+            def __init__(self):
+                import msvcrt
+
+            def __call__(self):
+                import msvcrt
+
+                return msvcrt.getch()
 
 
 def secure_filename(filename, spaces=False):

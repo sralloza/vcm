@@ -208,7 +208,7 @@ class Worker(Thread):
                 )
                 self.queue.task_done()
             else:
-                raise ValueError("Unkown object in queue: %r" % self.current_object)
+                raise ValueError("Unknown object in queue: %r" % self.current_object)
 
             logger.info("%d unfinished tasks", self.queue.unfinished_tasks)
             self.current_object = None
@@ -231,7 +231,7 @@ class Killer(Worker):
         Printer.print("Killer ready")
         while True:
             try:
-                char = getch()
+                char = getch().key1
                 real = char.decode().lower()
             except UnicodeError:
                 continue
