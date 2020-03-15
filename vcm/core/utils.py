@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import sys
-import time
+from time import time
 from logging.handlers import RotatingFileHandler
 from threading import current_thread
 from traceback import format_exc
@@ -135,9 +135,10 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 
 
 @decorator
-def timing(func, name=None, level=logging.INFO, *args, **kwargs):
+def timing(func, name=None, level=None, *args, **kwargs):
     name = name or func.__name__
-    t0 = time.time()
+    level = level or logging.INFO
+    t0 = time()
     raise_exc = False
     exception = None
 
@@ -146,8 +147,11 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     except SystemExit as exc:
         raise_exc = True
         exception = exc
+    except Exception as exc:
+        raise_exc = True
+        exception = exc
 
-    delta_t = time.time() - t0
+    delta_t = time() - t0
     logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
 
     if raise_exc:

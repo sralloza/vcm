@@ -1,3 +1,4 @@
+import logging
 import os
 from unittest import mock
 
@@ -16,6 +17,7 @@ from vcm.core.utils import (
     secure_filename,
     setup_vcm,
     str2bool,
+    timing,
 )
 
 
@@ -127,6 +129,61 @@ class TestExceptionExit:
             exception_exit(Dummy)
 
 
+class TestTiming:
+    @pytest.fixture
+    def mocks(self):
+        time_m = mock.patch("vcm.core.utils.time").start()
+        sts_m = mock.patch("vcm.core.utils.seconds_to_str").start()
+
+        yield time_m, sts_m
+
+        mock.patch.stopall()
+
+    @pytest.mark.parametrize("name", ["hello", None])
+    @pytest.mark.parametrize("level", [10, 20, 30, 40, 50, None])
+    def test_ok(self, mocks, caplog, name, level):
+        @timing(name=name, level=level)
+        def custom_function():
+            pass
+
+        time_m, sts_m = mocks
+        time_m.side_effect = [0, 30]
+        sts_m.return_value = "30 seconds"
+
+        logging.getLogger("vcm.core.utils").setLevel(10)
+        caplog.at_level(10, logger="vcm.core.utils")
+        custom_function()
+
+        log_name = name or "custom_function"
+        log_level = level or 20
+        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+
+        assert caplog.record_tuples == [("vcm.core.utils", log_level, log_str)]
+
+    @pytest.mark.parametrize("exception", [ValueError, SystemExit, TypeError])
+    @pytest.mark.parametrize("name", ["hello", None])
+    @pytest.mark.parametrize("level", [10, 20, 30, 40, 50, None])
+    def test_exception(self, mocks, caplog, name, level, exception):
+        @timing(name=name, level=level)
+        def custom_function():
+            raise exception
+
+        time_m, sts_m = mocks
+        time_m.side_effect = [0, 30]
+        sts_m.return_value = "30 seconds"
+
+        logging.getLogger("vcm.core.utils").setLevel(10)
+        caplog.at_level(10, logger="vcm.core.utils")
+        with pytest.raises(exception):
+            custom_function()
+
+        log_name = name or "custom_function"
+        log_level = level or 20
+        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+
+        assert caplog.record_tuples == [("vcm.core.utils", log_level, log_str)]
+
+
 class TestStrToBool:
     test_data = [
         (True, True),
@@ -215,10 +272,9 @@ class TestConfigureLogging:
     @pytest.mark.parametrize("do_roll", [True, False])
     def test_testing_true(self, mocks, do_roll):
         os.environ["TESTING"] = "True"
-        gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
+        _, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
         lpe_m.return_value = do_roll
 
-        fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
         configure_logging()
 
         rfh_m.assert_not_called()
