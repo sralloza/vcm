@@ -6,6 +6,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import current_thread
 from traceback import format_exc
+from typing import Union
 
 import psutil
 from colorama import Fore
@@ -95,6 +96,9 @@ class Key:
 
 
 class getch(metaclass=MetaGetch):
+    key1: Union[bytes, int]
+    key2: Union[bytes, int, None]
+
     def _getch(self, to_int=False, *args, **kwargs):
         result = getch._Getch()()
 
