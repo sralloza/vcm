@@ -13,6 +13,10 @@ from .settings import GeneralSettings
 from .utils import MetaSingleton
 
 logger = logging.getLogger(__name__)
+USER_AGENT = (
+    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+)
 
 
 class Connection(metaclass=MetaSingleton):
@@ -146,12 +150,7 @@ class Downloader(requests.Session, metaclass=MetaSingleton):
             self.logger.setLevel(logging.CRITICAL)
 
         super().__init__()
-        self.headers.update(
-            {
-                "User-Agent": "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
-            }
-        )
+        self.headers.update({"User-Agent": USER_AGENT})
 
     def get(self, url, **kwargs):
         self.logger.debug("GET %r", url)
