@@ -191,20 +191,29 @@ class TestPatterns:
 class TestExceptionExit:
 
     exceptions = (
-        (ValueError, "Invalid path"),
-        (TypeError, ("Invalid type", "Expected int")),
-        (ImportError, "Module not found: math"),
+        (ValueError, "Invalid path", True),
+        (TypeError, ("Invalid type", "Expected int"), True),
+        (ImportError, "Module not found: math", True),
+        (SystemExit, "exit program", False),
     )
 
     @pytest.mark.parametrize("red", [True, False])
     @pytest.mark.parametrize("to_stderr", [True, False])
-    @pytest.mark.parametrize("exception, args", exceptions)
-    def test_ok(self, exception, args, to_stderr, red, capsys):
+    @pytest.mark.parametrize("exception, args, should_exit", exceptions)
+    def test_ok(self, exception, args, should_exit, to_stderr, red, capsys):
         if not isinstance(args, str):
             message = ", ".join(args)
         else:
             message = args
             args = (args,)
+
+        if not should_exit:
+            exception_exit(exception(*args), to_stderr=to_stderr, red=red)
+
+            captured = capsys.readouterr()
+            assert captured.err == ""
+            assert captured.out == ""
+            return
 
         with pytest.raises(SystemExit):
             exception_exit(exception(*args), to_stderr=to_stderr, red=red)

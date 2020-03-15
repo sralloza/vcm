@@ -192,11 +192,14 @@ def exception_exit(exception, to_stderr=False, red=True):
     raise_exception = False
 
     try:
-        if not issubclass(exception, Exception):
+        if not issubclass(exception, BaseException):
             raise_exception = True
     except TypeError:
-        if not isinstance(exception, Exception):
+        if not isinstance(exception, BaseException):
             raise_exception = True
+
+    if isinstance(exception, SystemExit):
+        return
 
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
@@ -220,9 +223,7 @@ def exception_exit(exception, to_stderr=False, red=True):
 def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except SystemExit as exc:
-        return exception_exit(exc, to_stderr=to_stderr, red=red)
-    except Exception as exc:
+    except BaseException as exc:
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 
 
