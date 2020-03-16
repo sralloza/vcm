@@ -1,9 +1,35 @@
+import pytest
+
+
+@pytest.mark.xfail
 def test_exclude_subjects_ids_setter():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_section_indexing_setter():
     assert 0, "Not implemented"
+
+
+@pytest.mark.xfail
+class TestCheckers:
+    def test_logging(self):
+        assert 0, "Not implemented"
+
+    def test_bool(self):
+        assert 0, "Not implemented"
+
+    def test_int(self):
+        assert 0, "Not implemented"
+
+    def test_str(self):
+        assert 0, "Not implemented"
+
+    def test_list(self):
+        assert 0, "Not implemented"
+
+    def test_float(self):
+        assert 0, "Not implemented"
 
 
 def test_defaults():
@@ -15,19 +41,21 @@ def test_defaults():
             assert not callable(value2)
 
 
-def test_types():
-    from vcm.core._settings import types
+def test_checkers():
+    from vcm.core._settings import checkers
 
-    for value in types.values():
+    for value in checkers.values():
         assert isinstance(value, dict)
         for value2 in value.values():
             assert callable(value2)
 
 
+@pytest.mark.xfail
 def test_constructors():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_setters():
     assert 0, "Not implemented"
 

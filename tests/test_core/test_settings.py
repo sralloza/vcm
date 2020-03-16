@@ -1,3 +1,7 @@
+from pathlib import Path
+
+import pytest
+
 from vcm.core.settings import (
     _CoreSettings,
     _DownloadSettings,
@@ -6,36 +10,49 @@ from vcm.core.settings import (
 )
 
 
+@pytest.mark.xfail
 def test_extend_settings_class_name():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_save_settings():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_settings_to_string():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_section_index():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_un_section_index():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_exclude():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_include():
     assert 0, "Not implemented"
 
 
 def test_hidden_core_settings():
-    assert 0, "Not implemented"
+    cs = _CoreSettings()
+
+    assert hasattr(cs, "settings_path")
+    assert hasattr(cs, "credentials_path")
+
+    assert isinstance(cs.settings_path, Path)
+    assert isinstance(cs.credentials_path, Path)
 
 
 def test_core_settings():
@@ -44,14 +61,17 @@ def test_core_settings():
     assert isinstance(CoreSettings, _CoreSettings)
 
 
+@pytest.mark.xfail
 def test_create_default():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 def test_meta_settings():
     assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 class TestBaseSettings:
     def test_new(self):
         assert 0, "Not implemented"
@@ -68,10 +88,14 @@ class TestBaseSettings:
     def test_set_item(self):
         assert 0, "Not implemented"
 
+    def test_check_value_type(self, key, value):
+        assert 0, "Not implemented"
+
     def test_parse_key(self):
         assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 class TestHiddenGeneralSettings:
     def test_root_folder(self):
         assert 0, "Not implemented"
@@ -106,6 +130,7 @@ class TestHiddenGeneralSettings:
         assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 class TestHiddenDownloadSettings:
     def test_forum_subfolders(self):
         assert 0, "Not implemented"
@@ -120,6 +145,7 @@ class TestHiddenDownloadSettings:
         assert 0, "Not implemented"
 
 
+@pytest.mark.xfail
 class TestHiddenNotifySettings:
     def test_use_base64_icons(self):
         assert 0, "Not implemented"

@@ -69,15 +69,19 @@ class TestConnection:
         connection.delete("url")
         delete_m.assert_called_once_with("url")
 
+    @pytest.mark.xfail
     def test_logout(self):
         assert 0, "Not implemented"
 
+    @pytest.mark.xfail
     def test_login(self):
         assert 0, "Not implemented"
 
+    @pytest.mark.xfail
     def test_hidden_login(self):
         assert 0, "Not implemented"
 
+    @pytest.mark.xfail
     def test_find_sesskey_and_user_url(self):
         assert 0, "Not implemented"
 
