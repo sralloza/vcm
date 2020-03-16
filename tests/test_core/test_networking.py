@@ -3,9 +3,10 @@ from collections import Counter
 from unittest import mock
 
 import pytest
+from bs4 import BeautifulSoup
 from requests import exceptions as req_exc
 
-from vcm.core.exceptions import DownloaderError
+from vcm.core.exceptions import DownloaderError, LoginError, LogoutError
 from vcm.core.networking import USER_AGENT, Connection, Downloader
 from vcm.core.utils import MetaSingleton
 
@@ -69,21 +70,243 @@ class TestConnection:
         connection.delete("url")
         delete_m.assert_called_once_with("url")
 
-    @pytest.mark.xfail
-    def test_logout(self):
-        assert 0, "Not implemented"
+    @mock.patch("vcm.core.networking.Connection.post")
+    @pytest.mark.parametrize("logout_success", [True, False])
+    def test_logout(self, post_m, logout_success, caplog):
+        caplog.set_level(10, logger="vcm.core.networking")
+        interface = mock.MagicMock()
+        if logout_success:
+            interface.text = (
+                '<div class="usermenu"><span class="login">'
+                'Usted no se ha identificado. (<a href="https://campusvirtual'
+                '.uva.es/login/index.php">Acceder</a>)</span></div>'
+            )
+        else:
+            interface.text = ""
+
+        post_m.return_value = interface
+
+        connection = Connection()
+        connection._sesskey = "<sesskey>"
+
+        if not logout_success:
+            with pytest.raises(LogoutError):
+                connection.logout()
+        else:
+            connection.logout()
+
+        post_m.assert_called_once()
+        assert ("vcm.core.networking", 10, "Logging out") in caplog.record_tuples
 
     @pytest.mark.xfail
-    def test_login(self):
-        assert 0, "Not implemented"
+    class TestLogin:
+        def test_ok(self):
+            assert 0, "Not implemented"
 
-    @pytest.mark.xfail
-    def test_hidden_login(self):
-        assert 0, "Not implemented"
+        def test_some_errors(self):
+            assert 0, "Not implemented"
 
-    @pytest.mark.xfail
+        def test_fatal_error(self):
+            assert 0, "Not implemented"
+
+    @mock.patch("vcm.core.networking.connection._downloader")
+    class TestHiddenLogin:
+        def test_maintenance(self, down_m, caplog):
+            text = "The site is undergoing maintenance and is currently not available"
+            interface = mock.MagicMock()
+            interface.text = text
+            interface.reason = text
+            interface.status_code = 503
+            down_m.get.return_value = interface
+
+            caplog.set_level(10, logger="vcm.core.networking")
+
+            connection = Connection()
+
+            with pytest.raises(SystemExit, match="-1"):
+                connection._login()
+
+            assert (
+                "vcm.core.networking",
+                50,
+                "Moodle under maintenance (503 - %s)" % text,
+            ) in caplog.record_tuples
+            down_m.get.assert_called_once()
+            down_m.post.assert_not_called()
+
+        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
+        def test_already_logged_in(self, fsauu_m, down_m, caplog):
+            text = (
+                '<div role="alert" data-aria-autofocus="true" id="modal-body" '
+                'class="box modal-body py-3" tabindex="0"><p>Usted ya está en el sist'
+                "ema como <surname> <second-surname>, <name>, es necesario cerrar la "
+                "sesión antes de acceder como un usuario diferente.</p></div>"
+            )
+            interface_valid = mock.MagicMock(text=text)
+            interface_invalid = mock.MagicMock(text="<invalid>")
+            down_m.get.side_effect = [interface_valid, interface_invalid]
+
+            caplog.set_level(10, logger="vcm.core.networking")
+
+            connection = Connection()
+            connection._login()
+
+            assert (
+                "vcm.core.networking",
+                20,
+                "User already logged in",
+            ) in caplog.record_tuples
+            down_m.get.assert_called()
+            assert down_m.get.call_count == 2
+            down_m.post.assert_not_called()
+
+            fsauu_m.assert_called_once()
+
+        @mock.patch("vcm.core.networking.Credentials")
+        def test_bad_response_login(self, creds_m, down_m, caplog):
+            creds_m.VirtualCampus.username = "<username>"
+            creds_m.VirtualCampus.password = "<password>"
+
+            down_m.get.return_value = mock.MagicMock(
+                text='<input type="hidden" name="logintoken" value="<login-token>">'
+            )
+            down_m.post.return_value = mock.MagicMock(ok=False, status_code=404)
+
+            caplog.set_level(10, "vcm.core.networking")
+
+            connection = Connection()
+            with pytest.raises(LoginError, match="Got response with HTTP code 404"):
+                connection._login()
+
+            assert (
+                "vcm.core.networking",
+                10,
+                "Login token: <login-token>",
+            ) in caplog.record_tuples
+            assert (
+                "vcm.core.networking",
+                20,
+                "Logging in with user '<username>'",
+            ) in caplog.record_tuples
+
+            down_m.post.assert_called_once_with(
+                "https://campusvirtual.uva.es/login/index.php",
+                {
+                    "anchor": "",
+                    "username": "<username>",
+                    "password": "<password>",
+                    "logintoken": "<login-token>",
+                },
+                None,
+            )
+
+        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
+        @mock.patch("vcm.core.networking.Credentials")
+        def test_bad_login(self, creds_m, fsauu_m, down_m, caplog):
+            creds_m.VirtualCampus.username = "<username>"
+            creds_m.VirtualCampus.password = "<password>"
+
+            down_m.get.return_value = mock.MagicMock(
+                text='<input type="hidden" name="logintoken" value="<login-token>">'
+            )
+            down_m.post.return_value = mock.MagicMock(ok=True, text="<incorrect-login>")
+
+            caplog.set_level(10, "vcm.core.networking")
+
+            connection = Connection()
+            with pytest.raises(LoginError):
+                connection._login()
+
+            assert (
+                "vcm.core.networking",
+                10,
+                "Login token: <login-token>",
+            ) in caplog.record_tuples
+            assert (
+                "vcm.core.networking",
+                20,
+                "Logging in with user '<username>'",
+            ) in caplog.record_tuples
+
+            down_m.post.assert_called_once_with(
+                "https://campusvirtual.uva.es/login/index.php",
+                {
+                    "anchor": "",
+                    "username": "<username>",
+                    "password": "<password>",
+                    "logintoken": "<login-token>",
+                },
+                None,
+            )
+
+            fsauu_m.assert_not_called()
+
+        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
+        @mock.patch("vcm.core.networking.Credentials")
+        def test_ok(self, creds_m, fsauu_m, down_m, caplog):
+            text = (
+                ' <div class="logininfo">Usted se ha identificado como '
+                '<a href="https://campusvirtual.uva.es/user/profile.php?id=<id'
+                '>" title="Ver perfil"><surname> <second-surname>, <name></a> '
+                '(<a href="https://campusvirtual.uva.es/login/logout.php?sessk'
+                'ey=0iujR0AiRK">Salir</a>)</div>'
+            )
+            creds_m.VirtualCampus.username = "<username>"
+            creds_m.VirtualCampus.password = "<password>"
+
+            down_m.get.return_value = mock.MagicMock(
+                text='<input type="hidden" name="logintoken" value="<login-token>">'
+            )
+            down_m.post.return_value = mock.MagicMock(ok=True, text=text)
+
+            caplog.set_level(10, "vcm.core.networking")
+
+            connection = Connection()
+            connection._login()
+
+            assert (
+                "vcm.core.networking",
+                10,
+                "Login token: <login-token>",
+            ) in caplog.record_tuples
+            assert (
+                "vcm.core.networking",
+                20,
+                "Logging in with user '<username>'",
+            ) in caplog.record_tuples
+
+            down_m.post.assert_called_once_with(
+                "https://campusvirtual.uva.es/login/index.php",
+                {
+                    "anchor": "",
+                    "username": "<username>",
+                    "password": "<password>",
+                    "logintoken": "<login-token>",
+                },
+                None,
+            )
+
+            fsauu_m.assert_called_once()
+
     def test_find_sesskey_and_user_url(self):
-        assert 0, "Not implemented"
+        text = (
+            '<input type="hidden" name="sesskey" value="<sesskey>">'
+            '<a href="https://campusvirtual.uva.es/user/profile.php?id=<id>"'
+            ' class="dropdown-item menu-action" role="menuitem" data-title="'
+            'profile,moodle" aria-labelledby="actionmenuaction-2"><i class="'
+            'icon fa fa-user fa-fw" aria-hidden="true"></i><span class="men'
+            'u-action-text" id="actionmenuaction-2">Perfil</span></a>'
+        )
+
+        soup = BeautifulSoup(text, "html.parser")
+        connection = Connection()
+        connection.find_sesskey_and_user_url(soup)
+
+        assert connection.sesskey == "<sesskey>"
+        assert (
+            connection.user_url == "https://campusvirtual.uva.es/user/profile.php?"
+            "id=<id>&showallcourses=1"
+        )
 
 
 REQUESTS_EXCEPTIONS = (
