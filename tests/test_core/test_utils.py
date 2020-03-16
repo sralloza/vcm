@@ -25,14 +25,6 @@ from vcm.core.utils import (
     timing,
 )
 
-try:
-    import pyautogui
-
-    pyautogui_imported = True
-except KeyError:
-    pyautogui = None
-    pyautogui_imported = False
-
 
 class TestKey:
     def test_attributes(self):
@@ -96,44 +88,6 @@ class TestKey:
         assert Key(1, 1).to_char() == Key(b"\x01", b"\x01")
         assert Key(49, 49).to_char() == Key(b"\x31", b"\x31")
         assert Key(49, 49).to_char() == Key(b"1", b"1")
-
-
-@pytest.mark.skipif(pyautogui_imported is False, reason="pyautogui can't be imported")
-class TestGetch:
-    def press_key(self, key):
-        def _press_key():
-            sleep(0.1)
-            pyautogui.press(key)
-
-        t = Thread(target=_press_key)
-        t.start()
-        return t
-
-    def test_simple_key(self):
-        t = self.press_key("n")
-        assert getch() == Key(b"n")
-        t.join()
-
-        t = self.press_key("n")
-        assert getch(to_int=True) == Key(110)
-        t.join()
-
-        t = self.press_key("N")
-        assert getch() == Key(b"N")
-        t.join()
-
-        t = self.press_key("N")
-        assert getch(to_int=True) == Key(78)
-        t.join()
-
-    def test_weird_keys(self):
-        t = self.press_key("f2")
-        assert getch() == Key(b"\x00", b"<")
-        t.join()
-
-        t = self.press_key("f2")
-        assert getch(to_int=True) == Key(0, 60)
-        t.join()
 
 
 class TestSecureFilename:
