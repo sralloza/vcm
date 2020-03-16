@@ -11,10 +11,10 @@ from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from vcm.core.modules import Modules
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 
+from .modules import Modules
 from .time_operations import seconds_to_str
 from .utils import Printer, getch
 

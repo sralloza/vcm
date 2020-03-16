@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 from colorama import Fore
 from colorama import init as init_colorama
 
-from vcm.core._threading import start_workers
 from vcm.core.exceptions import LoginError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
@@ -81,6 +80,7 @@ def download(nthreads=20, no_killer=False, status_server=True, discover_only=Fal
         nthreads (int): number of threads to start.
         no_killer (bool): desactivate Killer thread.
     """
+    from vcm.core._threading import start_workers
 
     Modules.set_current(Modules.download)
     init_colorama()

@@ -12,13 +12,12 @@ import waitress
 from vcm.downloader.link import BaseLink
 from vcm.downloader.subject import Subject
 
-from ._threading import Killer, ThreadStates, Worker, state_to_color
 from .time_operations import seconds_to_str
 
 logger = getLogger(__name__)
 
 
-def runserver(queue: Queue, threadlist: List[Worker]):
+def runserver(queue: Queue, threadlist):
     t0 = time()
     logger.info("STARTED STATUS SERVER")
 
