@@ -39,7 +39,7 @@ class TestSubject:
         assert 0, "Not implemented"
 
 
-class Section:
+class TestSection:
     @pytest.mark.xfail
     def test_init(self):
         assert 0, "Not implemented"

@@ -3,7 +3,7 @@ from threading import Lock
 
 import pytest
 
-from vcm.core.results import Counters
+from vcm.core.results import Counters, Results
 
 
 class TestCounters:
@@ -23,14 +23,15 @@ class TestCounters:
         assert 0, "Not implemented"
 
 
-class Results:
+class TestResults:
     def test_attributes(self):
         assert hasattr(Results, "print_lock")
         assert hasattr(Results, "file_lock")
         assert hasattr(Results, "result_path")
 
-        assert isinstance(Results.print_lock, Lock)
-        assert isinstance(Results.file_lock, Lock)
+        lock_type = type(Lock())
+        assert isinstance(Results.print_lock, lock_type)
+        assert isinstance(Results.file_lock, lock_type)
         assert isinstance(Results.result_path, Path)
 
     @pytest.mark.xfail

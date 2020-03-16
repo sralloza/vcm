@@ -88,7 +88,7 @@ class TestBaseSettings:
     def test_set_item(self):
         assert 0, "Not implemented"
 
-    def test_check_value_type(self, key, value):
+    def test_check_value_type(self):
         assert 0, "Not implemented"
 
     def test_parse_key(self):

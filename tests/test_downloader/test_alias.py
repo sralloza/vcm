@@ -2,7 +2,7 @@ import pytest
 
 
 @pytest.mark.xfail
-def calculate_hash():
+def test_calculate_hash():
     assert 0, "Not implemented"
 
 
@@ -12,11 +12,11 @@ class TestEvents:
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def acquire(self):
+    def test_acquire(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def release(self):
+    def test_release(self):
         assert 0, "Not implemented"
 
 
@@ -26,7 +26,7 @@ class TestAliasEntry:
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def to_json(self):
+    def test_to_json(self):
         assert 0, "Not implemented"
 
 
@@ -40,29 +40,29 @@ class TestAlias:
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def load(self):
+    def test_load(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def destroy(self):
+    def test_destroy(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def save(self):
+    def test_save(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def _increment(self):
+    def test__increment(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def _create_name(self):
+    def test__create_name(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def id_to_alias(self):
+    def test_id_to_alias(self):
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def alias_to_id(self):
+    def test_alias_to_id(self):
         assert 0, "Not implemented"
