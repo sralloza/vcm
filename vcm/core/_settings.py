@@ -69,6 +69,20 @@ class Checkers:
         return isinstance(item, float)
 
 
+class Setters:
+    @staticmethod
+    def int(item, force=False):
+        return int(item)
+
+    @staticmethod
+    def list(item, force=False):
+        return list(item)
+
+    @staticmethod
+    def str(item, force=False):
+        return str(item)
+
+
 defaults = {
     "general": {
         "root-folder": "insert-root-folder",
@@ -124,11 +138,11 @@ constructors = {
 # Transforms str → TOML
 setters = {
     "general": {
-        "root-folder": str,
-        "logging-level": str,
-        "timeout": int,
-        "retries": int,
-        "max-logs": int,
+        "root-folder": Setters.str,
+        "logging-level": Setters.str,
+        "timeout": Setters.int,
+        "retries": Setters.int,
+        "max-logs": Setters.int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
@@ -136,5 +150,5 @@ setters = {
         "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
-    "notify": {"use-base64-icons": str2bool, "email": str},
+    "notify": {"use-base64-icons": str2bool, "email": Setters.str},
 }

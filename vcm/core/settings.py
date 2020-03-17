@@ -190,7 +190,7 @@ class BaseSettings(dict, metaclass=MetaSettings):
         # self.check_value_type(key, value)
         try:
             # FIXME: figure out what did force do
-            value = self.setters[key](value) #, force=force)
+            value = self.setters[key](value, force=force)
         except Exception as exc:
             if "'force'" not in exc.args[0]:
                 checker = self.checkers_dict[key]

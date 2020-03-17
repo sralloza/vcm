@@ -32,6 +32,20 @@ class TestCheckers:
         assert 0, "Not implemented"
 
 
+class TestSetters:
+    @pytest.mark.xfail
+    def test_int(self):
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_list(self):
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_str(self):
+        assert 0, "Not implemented"
+
+
 def test_defaults():
     from vcm.core._settings import defaults
 
