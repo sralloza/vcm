@@ -18,6 +18,7 @@ logger = getLogger(__name__)
 
 
 def runserver(queue: Queue, threadlist):
+
     t0 = time()
     logger.info("STARTED STATUS SERVER")
 
@@ -119,6 +120,8 @@ def runserver(queue: Queue, threadlist):
 
 
 def get_thread_state_info():
+    from ._threading import Killer, ThreadStates, Worker, state_to_color
+
     def helper():
         return 0
 
