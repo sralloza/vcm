@@ -159,11 +159,23 @@ class TestForumDiscussion:
         assert 0, "Not implemented"
 
 
+class TestChat:
+    @pytest.mark.xfail
+    def test_download(self):
+        assert 0, "Not implemented"
+
+
 class TestDelivery:
     @pytest.mark.xfail
     def test_attributes(self):
         assert 0, "Not implemented"
 
+    @pytest.mark.xfail
+    def test_download(self):
+        assert 0, "Not implemented"
+
+
+class TestKalvidres:
     @pytest.mark.xfail
     def test_download(self):
         assert 0, "Not implemented"

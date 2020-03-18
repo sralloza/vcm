@@ -4,7 +4,6 @@ from queue import Queue
 from threading import Thread
 from threading import enumerate as enumerate_threads
 from time import time
-from typing import List
 
 import flask
 import waitress
