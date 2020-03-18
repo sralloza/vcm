@@ -310,7 +310,7 @@ class Resource(BaseLink):
 
     def download(self):
         """Downloads the resource."""
-        self.logger.debug("Downloading resource %s", self.name)
+        self.logger.debug("Downloading resource %r", self.name)
 
         url = self.redirect_url or self.url
         if not self.ensure_origin(url):
@@ -520,7 +520,7 @@ class Folder(BaseLink):
 
     def download(self):
         """Downloads the folder."""
-        self.logger.debug("Downloading folder %s", self.name)
+        self.logger.debug("Downloading folder %r", self.name)
         self.make_request()
         self.save_response_content()
 
@@ -537,7 +537,7 @@ class BaseForum(BaseLink):
 
 class ForumList(BaseForum):
     def download(self):
-        self.logger.debug("Downloading forum list %s", self.name)
+        self.logger.debug("Downloading forum list %r", self.name)
         self.make_request()
         self.process_request_bs4()
 
@@ -565,7 +565,7 @@ class ForumDiscussion(BaseForum):
     # NOTIFY = True
 
     def download(self):
-        self.logger.debug("Downloading forum discussion %s", self.name)
+        self.logger.debug("Downloading forum discussion %r", self.name)
         self.make_request()
         self.process_request_bs4()
 
@@ -625,7 +625,7 @@ class Delivery(BaseLink):
 
     def download(self):
         """Downloads the resources found in the delivery."""
-        self.logger.debug("Downloading delivery %s", self.name)
+        self.logger.debug("Downloading delivery %r", self.name)
         self.make_request()
         self.process_request_bs4()
 
@@ -674,3 +674,17 @@ class Delivery(BaseLink):
 
         for link in links:
             self.subject.add_link(link)
+
+
+class Kalvidres(BaseLink):
+    """Representation of a kalvidres link.
+
+    A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D-
+    """
+
+    NOTIFY = True
+
+    def download(self):
+        """Downloads the resources found in the kalvidres."""
+        self.logger.debug("Downloading kalvidres %r", self.name)
+        self.logger.info("Unable to find any resources in kalvidres due to design")
