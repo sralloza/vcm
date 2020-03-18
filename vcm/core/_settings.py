@@ -34,6 +34,9 @@ def section_indexing_setter(*args, **kwargs):
 class Checkers:
     @staticmethod
     def logging(item):
+        if isinstance(item, str):
+            item = item.upper()
+
         return item in (
             "NOTSET",
             "DEBUG",
@@ -54,6 +57,8 @@ class Checkers:
 
     @staticmethod
     def int(item):
+        if isinstance(item, bool):
+            return False
         return isinstance(item, int)
 
     @staticmethod

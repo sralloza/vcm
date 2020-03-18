@@ -1,6 +1,10 @@
 import pytest
 
-from vcm.core._settings import exclude_subjects_ids_setter, section_indexing_setter
+from vcm.core._settings import (
+    exclude_subjects_ids_setter,
+    section_indexing_setter,
+    Checkers,
+)
 from vcm.core.exceptions import SettingsError
 
 
@@ -68,17 +72,13 @@ class TestSectionIndexingSetter:
 
     def test_force_error_1(self):
         settings = ["id-1", "id-2", "id-3"]
-        err_expected = (
-            r"Element 0 \('id-1'\) of section-indexing must be int, not str"
-        )
+        err_expected = r"Element 0 \('id-1'\) of section-indexing must be int, not str"
         with pytest.raises(TypeError, match=err_expected):
             section_indexing_setter(settings, force=True)
 
     def test_force_error_2(self):
         settings = [654, 64598, 31298, 12384, 312984, "id-1"]
-        err_expected = (
-            r"Element 5 \('id-1'\) of section-indexing must be int, not str"
-        )
+        err_expected = r"Element 5 \('id-1'\) of section-indexing must be int, not str"
         with pytest.raises(TypeError, match=err_expected):
             section_indexing_setter(settings, force=True)
 
@@ -94,25 +94,98 @@ class TestSectionIndexingSetter:
         section_indexing_setter(settings, None, bool, type, force=True, nasa=self)
 
 
-@pytest.mark.xfail
+class TestTypes:
+    class Log(type):
+        pass
+
+    class GoodLog(Log):
+        pass
+
+    class BadLog(Log):
+        pass
+
+    class Bool(type):
+        pass
+
+
 class TestCheckers:
-    def test_logging(self):
-        assert 0, "Not implemented"
+    checkers_test_data = [
+        ("debug", TestTypes.GoodLog),
+        ("DEBUG", TestTypes.GoodLog),
+        (10, TestTypes.GoodLog),
+        (-5, TestTypes.BadLog),
+        (5.26, TestTypes.BadLog),
+        ("string", str),
+        (list(), list),
+        (set(), set),
+        (dict(), dict),
+        (tuple(), tuple),
+        (456, int),
+        (1 + 2j, complex),
+        (True, TestTypes.Bool),
+        (None, type(None)),
+        (0.256, float),
+    ]
 
-    def test_bool(self):
-        assert 0, "Not implemented"
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_logging(self, data, data_type):
+        result = Checkers.logging(data)
 
-    def test_int(self):
-        assert 0, "Not implemented"
+        if issubclass(data_type, TestTypes.GoodLog):
+            assert result is True
+        else:
+            assert result is False
 
-    def test_str(self):
-        assert 0, "Not implemented"
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_bool(self, data, data_type):
+        result = Checkers.bool(data)
 
-    def test_list(self):
-        assert 0, "Not implemented"
+        if issubclass(data_type, TestTypes.Bool):
+            assert result is True
+        else:
+            assert result is False
 
-    def test_float(self):
-        assert 0, "Not implemented"
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_int(self, data, data_type):
+        result = Checkers.int(data)
+
+        if issubclass(data_type, int):
+            assert result is True
+        else:
+            if issubclass(data_type, TestTypes.Log):
+                return
+            assert result is False
+
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_str(self, data, data_type):
+        result = Checkers.str(data)
+
+        if issubclass(data_type, str):
+            assert result is True
+        else:
+            if issubclass(data_type, TestTypes.Log):
+                return
+            assert result is False
+
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_list(self, data, data_type):
+        result = Checkers.list(data)
+
+        if issubclass(data_type, list):
+            assert result is True
+        else:
+            assert result is False
+
+    @pytest.mark.parametrize("data, data_type", checkers_test_data)
+    def test_float(self, data, data_type):
+        result = Checkers.float(data)
+
+        if issubclass(data_type, float):
+            assert result is True
+        else:
+            if issubclass(data_type, TestTypes.Log):
+                return
+            assert result is False
 
 
 class TestSetters:
