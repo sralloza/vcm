@@ -21,11 +21,11 @@ def exclude_subjects_ids_setter(*args, **kwargs):
 def section_indexing_setter(*args, **kwargs):
     if kwargs.pop("force", False):
         exclude_list = args[0]
-        for element in exclude_list:
+        for index, element in enumerate(exclude_list):
             if not isinstance(element, int):
                 raise TypeError(
-                    "%r element of section-indexing must be int, not %s"
-                    % (element, type(element).__name__)
+                    "Element %d (%r) of section-indexing must be int, not %s"
+                    % (index, element, type(element).__name__)
                 )
         return exclude_list
     raise SettingsError("download.section-indexing can't be set using the CLI")

@@ -1,6 +1,6 @@
 import pytest
 
-from vcm.core._settings import exclude_subjects_ids_setter
+from vcm.core._settings import exclude_subjects_ids_setter, section_indexing_setter
 from vcm.core.exceptions import SettingsError
 
 
@@ -48,9 +48,50 @@ class TestExcludeSubjectIdsSetter:
         exclude_subjects_ids_setter(settings, 456, 2.135, force=True, nasa=-9)
         exclude_subjects_ids_setter(settings, None, bool, type, force=True, nasa=self)
 
-@pytest.mark.xfail
-def test_section_indexing_setter():
-    assert 0, "Not implemented"
+
+class TestSectionIndexingSetter:
+    @classmethod
+    def setup_class(cls):
+        cls.default_error_message = (
+            "download.section-indexing can't be set using the CLI"
+        )
+
+    def test_force_ok(self):
+        settings = [6518, 215, 23165, 2165, 12356]
+        result = section_indexing_setter(settings, force=True)
+        assert result == settings
+
+    def test_force_false(self):
+        settings = [12, 2323]
+        with pytest.raises(SettingsError, match=self.default_error_message):
+            section_indexing_setter(settings, force=False)
+
+    def test_force_error_1(self):
+        settings = ["id-1", "id-2", "id-3"]
+        err_expected = (
+            r"Element 0 \('id-1'\) of section-indexing must be int, not str"
+        )
+        with pytest.raises(TypeError, match=err_expected):
+            section_indexing_setter(settings, force=True)
+
+    def test_force_error_2(self):
+        settings = [654, 64598, 31298, 12384, 312984, "id-1"]
+        err_expected = (
+            r"Element 5 \('id-1'\) of section-indexing must be int, not str"
+        )
+        with pytest.raises(TypeError, match=err_expected):
+            section_indexing_setter(settings, force=True)
+
+    def test_no_force(self):
+        settings = [245254, 5245]
+        with pytest.raises(SettingsError, match=self.default_error_message):
+            section_indexing_setter(settings)
+
+    def test_weird_args(self):
+        settings = []
+        section_indexing_setter(settings, "fed", 1 + 2j, force=True, hi="there")
+        section_indexing_setter(settings, 456, 2.135, force=True, nasa=-9)
+        section_indexing_setter(settings, None, bool, type, force=True, nasa=self)
 
 
 @pytest.mark.xfail
