@@ -206,9 +206,7 @@ class BaseLink(_Notify):
 
         self.filepath = Path(
             Alias.id_to_alias(
-                sha1(self.url.encode()).hexdigest(),
-                temp_filepath.as_posix(),
-                folder_id,
+                sha1(self.url.encode()).hexdigest(), temp_filepath.as_posix(), folder_id
             )
         )
 
@@ -333,7 +331,10 @@ class Resource(BaseLink):
             self.set_resource_type("word")
             return self.save_response_content()
 
-        if "officedocument.spreadsheetml.sheet" in self.content_type or "excel" in self.content_type:
+        if (
+            "officedocument.spreadsheetml.sheet" in self.content_type
+            or "excel" in self.content_type
+        ):
             self.set_resource_type("excel")
             return self.save_response_content()
 
@@ -618,6 +619,17 @@ class ForumDiscussion(BaseForum):
                 self.subject.add_link(resource)
 
 
+class Chat(BaseLink):
+    """Representation of a chat link."""
+
+    NOTIFY = True
+
+    def download(self):
+        """Downloads the resources found in the chat."""
+        self.logger.debug("Downloading chat %r", self.name)
+        self.logger.info("Chat links doesn't have any resources.")
+
+
 class Delivery(BaseLink):
     """Representation of a delivery link."""
 
@@ -679,7 +691,7 @@ class Delivery(BaseLink):
 class Kalvidres(BaseLink):
     """Representation of a kalvidres link.
 
-    A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D-
+    A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D.
     """
 
     NOTIFY = True
