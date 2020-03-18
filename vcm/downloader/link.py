@@ -622,8 +622,6 @@ class ForumDiscussion(BaseForum):
 class Chat(BaseLink):
     """Representation of a chat link."""
 
-    NOTIFY = True
-
     def download(self):
         """Downloads the resources found in the chat."""
         self.logger.debug("Downloading chat %r", self.name)
