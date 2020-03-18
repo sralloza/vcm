@@ -1,9 +1,10 @@
 import pytest
 
 from vcm.core._settings import (
+    Checkers,
+    Setters,
     exclude_subjects_ids_setter,
     section_indexing_setter,
-    Checkers,
 )
 from vcm.core.exceptions import SettingsError
 
@@ -189,17 +190,29 @@ class TestCheckers:
 
 
 class TestSetters:
-    @pytest.mark.xfail
-    def test_int(self):
-        assert 0, "Not implemented"
+    def test_int_no_args(self):
+        result = Setters.int("2")
+        assert result == 2
 
-    @pytest.mark.xfail
-    def test_list(self):
-        assert 0, "Not implemented"
+    def test_int_force(self):
+        result = Setters.int("2", force=True)
+        assert result == 2
 
-    @pytest.mark.xfail
-    def test_str(self):
-        assert 0, "Not implemented"
+    def test_list_no_args(self):
+        result = Setters.list([])
+        assert result == []
+
+    def test_list_force(self):
+        result = Setters.list([], force=True)
+        assert result == []
+
+    def test_str_no_args(self):
+        result = Setters.str("2")
+        assert result == "2"
+
+    def test_str_force(self):
+        result = Setters.str("2", force=True)
+        assert result == "2"
 
 
 def test_defaults():
@@ -220,14 +233,16 @@ def test_checkers():
             assert callable(value2)
 
 
-@pytest.mark.xfail
 def test_constructors():
-    assert 0, "Not implemented"
+    from vcm.core._settings import constructors
+
+    assert isinstance(constructors, dict)
 
 
-@pytest.mark.xfail
 def test_setters():
-    assert 0, "Not implemented"
+    from vcm.core._settings import setters
+
+    assert isinstance(setters, dict)
 
 
 class TestSettingsDictKeys:
