@@ -36,7 +36,7 @@ base64path = Path(__file__).parent / "base64.json"
 with base64path.open() as f:
     data = json.load(f)
 
-IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
+IMAGE_DATA = {icon_type: data.get(icon_type.name) for icon_type in IconType}
 del data
 
 URLS = {
