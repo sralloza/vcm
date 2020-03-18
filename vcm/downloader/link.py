@@ -674,3 +674,17 @@ class Delivery(BaseLink):
 
         for link in links:
             self.subject.add_link(link)
+
+
+class Kalvidres(BaseLink):
+    """Representation of a kalvidres link.
+
+    A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D-
+    """
+
+    NOTIFY = True
+
+    def download(self):
+        """Downloads the resources found in the kalvidres."""
+        self.logger.debug("Downloading kalvidres %s", self.name)
+        self.logger.info("Unable to find any resources in kalvidres due to design")
