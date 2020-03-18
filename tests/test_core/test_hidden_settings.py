@@ -1,9 +1,40 @@
 import pytest
 
+from vcm.core._settings import exclude_subjects_ids_setter
+from vcm.core.exceptions import SettingsError
 
-@pytest.mark.xfail
-def test_exclude_subjects_ids_setter():
-    assert 0, "Not implemented"
+
+class TestExcludeSubjectIdsSetter:
+    def test_force_ok(self):
+        settings = [6518, 215, 23165, 2165, 12356]
+        result = exclude_subjects_ids_setter(settings, force=True)
+        assert result == settings
+
+    def test_force_false(self):
+        settings = [12, 2323]
+        with pytest.raises(SettingsError, match="general.exclude-subjects-ids"):
+            exclude_subjects_ids_setter(settings, force=False)
+
+    def test_force_error_1(self):
+        settings = ["id-1", "id-2", "id-3"]
+        err_expected = (
+            r"Element 0 \('id-1'\) of exclude-subjects-ids must be int, not str"
+        )
+        with pytest.raises(TypeError, match=err_expected):
+            exclude_subjects_ids_setter(settings, force=True)
+
+    def test_force_error_2(self):
+        settings = [654, 64598, 31298, 12384, 312984, "id-1"]
+        err_expected = (
+            r"Element 5 \('id-1'\) of exclude-subjects-ids must be int, not str"
+        )
+        with pytest.raises(TypeError, match=err_expected):
+            exclude_subjects_ids_setter(settings, force=True)
+
+    def test_no_force(self):
+        settings = [245254, 5245]
+        with pytest.raises(SettingsError, match="general.exclude-subjects-ids"):
+            exclude_subjects_ids_setter(settings)
 
 
 @pytest.mark.xfail
