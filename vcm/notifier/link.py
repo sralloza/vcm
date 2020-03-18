@@ -11,12 +11,14 @@ inline_style = "border: none; outline: none; background: none; cursor: pointer; 
 class IconType(Enum):
     assign = auto()
     avi = auto()
+    chat = auto()
     choice = auto()
     excel = auto()
     feedback = auto()
     folder = auto()
     forum = auto()
     jpeg = auto()
+    kalvidres = auto()
     mpeg = auto()
     page = auto()
     pdf = auto()
@@ -35,18 +37,20 @@ base64path = Path(__file__).parent / "base64.json"
 with base64path.open() as f:
     data = json.load(f)
 
-IMAGE_DATA = {icon_type: data[icon_type.name] for icon_type in IconType}
+IMAGE_DATA = {icon_type: data.get(icon_type.name) for icon_type in IconType}
 del data
 
 URLS = {
     IconType.assign: "https://campusvirtual.uva.es/theme/image.php/uva2017/assign/1577957563/icon",
     IconType.avi: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/avi-24",
+    IconType.chat: "https://campusvirtual.uva.es/theme/image.php/uva2017/chat/1577957563/icon",
     IconType.choice: "https://campusvirtual.uva.es/theme/image.php/uva2017/choice/1566299165/icon",
     IconType.excel: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/spreadsheet-24",
     IconType.feedback: "https://campusvirtual.uva.es/theme/image.php/uva2017/feedback/1566299165/icon",
     IconType.folder: "https://campusvirtual.uva.es/theme/image.php/uva2017/folder/1577957563/icon",
     IconType.forum: "https://campusvirtual.uva.es/theme/image.php/uva2017/forum/1577957563/icon",
     IconType.jpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/jpeg-24",
+    IconType.kalvidres: "https://campusvirtual.uva.es/theme/image.php/uva2017/kalvidres/1577957563/icon",
     IconType.mpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/mpeg-24",
     IconType.page: "https://campusvirtual.uva.es/theme/image.php/uva2017/page/1577957563/icon",
     IconType.pdf: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/pdf-24",
@@ -126,6 +130,8 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.zip
         elif "/forum" in self.icon_url:
             self._icon_type = IconType.forum
+        elif "/chat" in self.icon_url:
+            self._icon_type = IconType.chat
         elif "/page" in self.icon_url:
             self._icon_type = IconType.page
         elif "/url" in self.icon_url:
@@ -142,7 +148,8 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.folder
         elif "/workshop" in self.icon_url:
             self._icon_type = IconType.workshop
-
+        elif "/kalvidres" in self.icon_url:
+            self._icon_type = IconType.kalvidres
         elif "/f/unknown" in self.icon_url:
             self._icon_type = IconType.unknown
         elif "/f/document" in self.icon_url:
