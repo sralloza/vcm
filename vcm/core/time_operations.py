@@ -131,7 +131,7 @@ def split_seconds(total_seconds, days=False, integer=None):
     seconds = round(seconds, 2)
 
     if integer is True:
-        seconds = int(seconds)
+        seconds = round(seconds, 0)
     elif integer is None:
         if seconds == int(seconds):
             seconds = int(seconds)

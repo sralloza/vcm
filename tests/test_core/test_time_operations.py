@@ -2,10 +2,7 @@ from unittest import mock
 
 import pytest
 
-from tests.test_core.time_operations_test_data import (
-    SECONDS_TO_STR_TEST_DATA,
-    SPLIT_SECONDS_TEST_DATA,
-)
+from tests.test_core.tim_oper_integration_test_data import SECONDS_TO_STR_TEST_DATA
 from vcm.core.exceptions import InvalidLanguageError
 from vcm.core.time_operations import (
     ALPHABET,
@@ -14,6 +11,7 @@ from vcm.core.time_operations import (
     gen_part,
     join_parts,
     seconds_to_str,
+    split_seconds,
 )
 
 
@@ -153,7 +151,7 @@ class TestJoinParts:
         ("1, 2, 3 y 4", list("1234")),
         ("1 y 2", ["1", None, None, "2"]),
         (None, [None] * 9),
-        (None, [])
+        (None, []),
     ]
 
     @pytest.mark.parametrize("output, parts", test_data)
@@ -162,10 +160,57 @@ class TestJoinParts:
         assert result == output
 
 
-@pytest.mark.xfail
 class TestSplitSeconds:
-    def test_split_seconds(self):
-        assert 0, "Not implemented"
+    test_normal_data = [
+        (0, (0, 0, 0)),
+        (1, (0, 0, 1)),
+        (2, (0, 0, 2)),
+        (31, (0, 0, 31)),
+        (60, (0, 1, 0)),
+        (61, (0, 1, 1)),
+        (62, (0, 1, 2)),
+        (129, (0, 2, 9)),
+        (4321, (1, 12, 1)),
+        (654321, (181, 45, 21)),
+    ]
+
+    @pytest.mark.parametrize("seconds, output", test_normal_data)
+    def test_normal_int_no_days(self, seconds, output):
+        result = split_seconds(seconds)
+        assert result == output
+
+    test_normal_data_days = [
+        (65, (0, 0, 1, 5)),
+        (129, (0, 0, 2, 9)),
+        (4321, (0, 12, 1)),
+        (86400, (1, 0, 0, 0)),
+        (654321, (7, 13, 45, 21)),
+    ]
+
+    @pytest.mark.parametrize("seconds, output", test_normal_data)
+    def test_normal_int_with_days(self, seconds, output):
+        result = split_seconds(seconds)
+        assert result == output
+
+    test_integer_argument_data = [
+        (13.54, None, (0, 0, 13.54)),
+        (13.54, False, (0, 0, 13.54)),
+        (13.54, True, (0, 0, 14)),
+        (13.33, None, (0, 0, 13.33)),
+        (13.33, False, (0, 0, 13.33)),
+        (13.33, True, (0, 0, 13)),
+        (0.33, None, (0, 0, 0.33)),
+        (0.33, False, (0, 0, 0.33)),
+        (0.33, True, (0, 0, 0)),
+        (0.0, None, (0, 0, 0.0)),
+        (0.0, False, (0, 0, 0)),  # This is the special behavior of integer=False
+        (0.0, True, (0, 0, 0)),
+    ]
+
+    @pytest.mark.parametrize("seconds, integer, output", test_integer_argument_data)
+    def test_integer_argument(self, seconds, integer, output):
+        result = split_seconds(seconds, integer=integer)
+        assert result == output
 
 
 class TestSecondsToStringIntegration:

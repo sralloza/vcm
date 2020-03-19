@@ -190,5 +190,3 @@ SECONDS_TO_STR_TEST_DATA = {
         (True, "en"): "0s",
     },
 }
-
-SPLIT_SECONDS_TEST_DATA = {}
