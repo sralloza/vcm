@@ -179,13 +179,23 @@ class Patterns:
 
 
 def exception_exit(exception, to_stderr=False, red=True):
-    """Exists the progam showing an exception.
+    """Catches any exception and prints the traceback.
+
+    Notes:
+        If the exception is an instance of SystemExit, the function will
+        just return None.
 
     Args:
-        exception: Exception to show. Must hinherit `Exception`
+        exception (BaseException): exception catched.
+        to_stderr (bool, optional): If true, the traceback will be printed
+            in sys.stderr, otherwise it will be printed in sys.stdout.
+            Defaults to False.
+        red (bool, optional): If true, the traceback will be printed in red.
+            Defaults to True.
 
     Raises:
-        TypeError: if exception is not a subclass of Exception.
+        TypeError: If `exception` is not a subclass nor a instance of
+            BaseException.
 
     """
 
@@ -221,9 +231,23 @@ def exception_exit(exception, to_stderr=False, red=True):
 
 @decorator
 def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
+    """Catches any exception and prints the traceback. Designed to work
+    as a decorator.
+
+    Notes:
+        It doens't catch SystemExit exceptions.
+
+    Args:
+        func (function): function to control.
+        to_stderr (bool, optional): If true, the traceback will be printed
+            in sys.stderr, otherwise it will be printed in sys.stdout.
+            Defaults to False.
+        red (bool, optional): If true, the traceback will be printed in red.
+            Defaults to True.
+    """
     try:
         return func(*args, **kwargs)
-    except BaseException as exc:
+    except Exception as exc:
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 
 

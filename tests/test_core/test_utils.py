@@ -223,13 +223,19 @@ class TestSafeExit:
     @mock.patch("vcm.core.utils.exception_exit")
     def test_safe_exit(self, ee_m, red, to_stderr, exception):
         exc = exception()
+        is_system_exit = isinstance(exc, SystemExit)
 
         @safe_exit(to_stderr=to_stderr, red=red)
         def custom_function():
             raise exc
 
-        custom_function()
-        ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
+        if is_system_exit:
+            with pytest.raises(SystemExit):
+                custom_function()
+        else:
+            custom_function()
+
+            ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
 
 
 class TestTiming:
