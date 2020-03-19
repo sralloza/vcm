@@ -26,6 +26,12 @@ class TestCommand:
         assert isinstance(Command.settings.value, int)
         assert isinstance(Command.discover.value, int)
 
+    def to_str(self):
+        assert Command.notify.to_str() == Command.notify.name
+        assert Command.download.to_str() == Command.download.name
+        assert Command.settings.to_str() == Command.settings.name
+        assert Command.discover.to_str() == Command.discover.name
+
 
 class TestParseArgs:
     @pytest.mark.parametrize("return_parser", [True, False])

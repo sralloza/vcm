@@ -30,6 +30,9 @@ class Command(Enum):
     settings = 3
     discover = 4
 
+    def to_str(self):
+        return self.name
+
 
 def parse_args(args=None, return_parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
