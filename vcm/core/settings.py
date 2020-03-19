@@ -1,4 +1,5 @@
 import os
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import List
@@ -135,11 +136,13 @@ class MetaSettings(type):
             real_dict = toml.load(file_handler)
     except FileNotFoundError:
         create_default()
-        exit(
+        print(
             Fore.RED
             + "Missing settings file, created sample (%s)" % CoreSettings.settings_path
-            + Fore.RESET
+            + Fore.RESET,
+            file=sys.stderr,
         )
+        sys.exit()
 
     def __new__(mcs, name, bases, attrs, **kwargs):
         lookup_name = name.lower().replace("_", "").replace("settings", "")

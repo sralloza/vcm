@@ -223,10 +223,10 @@ def exception_exit(exception, to_stderr=False, red=True):
 
     if to_stderr:
         print(message, file=sys.stderr)
-        return sys.exit(-1)
+        sys.exit(-1)
 
     print(message)
-    return sys.exit(-1)
+    sys.exit(-1)
 
 
 @decorator

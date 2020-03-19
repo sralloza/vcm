@@ -1,5 +1,6 @@
 """Multithreading workers for the VCM."""
 
+import sys
 from enum import Enum, auto
 from logging import getLogger
 from queue import Empty as EmptyQueue
@@ -246,7 +247,7 @@ class Killer(Worker):
 
                 logger.info("Killer thread ended his massacre")
                 self.kill()
-                exit(1)
+                sys.exit(1)
 
             if real in ("w", "o"):
                 Printer.print("Opening state server")

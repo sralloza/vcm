@@ -2,6 +2,7 @@
 
 """Custom downloader with retries control."""
 import logging
+import sys
 from datetime import datetime
 
 import requests
@@ -89,7 +90,7 @@ class Connection(metaclass=MetaSingleton):
                 response.status_code,
                 response.reason,
             )
-            exit(-1)
+            sys.exit(-1)
 
         soup = BeautifulSoup(response.text, "html.parser")
 

@@ -1,4 +1,6 @@
 """Credentials manager for the web page of the University of Valladolid."""
+import sys
+
 import toml
 from colorama import Fore
 
@@ -58,7 +60,8 @@ class _Credentials:
     @classmethod
     def make_default(cls, reason):
         cls.make_example()
-        exit(Fore.RED + reason + Fore.RESET)
+        print(Fore.RED + reason + Fore.RESET, file=sys.stderr)
+        sys.exit(-1)
 
     @classmethod
     def read_credentials(cls):
@@ -69,7 +72,11 @@ class _Credentials:
             try:
                 return toml.load(pointer)
             except toml.TomlDecodeError:
-                exit(Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET)
+                print(
+                    Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET,
+                    file=sys.stderr,
+                )
+                sys.exit(-1)
 
     def load(self):
         """Loads the credentials settings."""
@@ -77,11 +84,13 @@ class _Credentials:
 
             self.make_example()
             self.save()
-            return exit(
+            print(
                 Fore.RED
                 + f"Credentials file not found, created sample ({self._path})"
-                + Fore.RESET
+                + Fore.RESET,
+                file=sys.stderr,
             )
+            sys.exit(-1)
 
         yaml_data = self.read_credentials()
 
