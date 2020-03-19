@@ -60,32 +60,32 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
 
     day, hour, minute, second = _split_seconds(seconds, integer=integer, days=True)
 
-    day_part = gen_part(day, language.day, language.s, not abbreviated)
-    hour_part = gen_part(hour, language.hour, language.s, not abbreviated)
-    minute_part = gen_part(minute, language.minute, language.s, not abbreviated)
-    second_part = gen_part(second, language.second, language.s, not abbreviated)
+    day_part = gen_part(day, language.day, language.s, abbreviated)
+    hour_part = gen_part(hour, language.hour, language.s, abbreviated)
+    minute_part = gen_part(minute, language.minute, language.s, abbreviated)
+    second_part = gen_part(second, language.second, language.s, abbreviated)
 
     # breakpoint()
     output = join_parts(language.join, day_part, hour_part, minute_part, second_part)
 
     if not output:
         return gen_part(
-            0, language.second, language.s, not abbreviated, force_output=True
+            0, language.second, language.s, abbreviated, force_output=True
         )
     return output
 
 
-def gen_part(int_part, str_part, possible_s, include_space, force_output=False):
+def gen_part(int_part, str_part, possible_s, is_abbr, force_output=False):
     if not int_part and not force_output:
         return None
 
     output = str(int_part)
-    if include_space:
+    if not is_abbr:
         output += " "
 
     output += str_part
 
-    if int_part - 1:
+    if int_part - 1 and not is_abbr:
         output += possible_s
     return output
 

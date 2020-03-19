@@ -1,4 +1,3 @@
-from symbol import test_nocond
 from unittest import mock
 
 import pytest
@@ -77,14 +76,14 @@ class TestSecondsToStr:
         langs_m.__getitem__.return_value.__getitem__.assert_called_once()
 
         ss_m.assert_called_once()
-        gp_m.assert_any_call(10, lang.day, lang.s, True)
-        gp_m.assert_any_call(20, lang.hour, lang.s, True)
-        gp_m.assert_any_call(30, lang.minute, lang.s, True)
-        gp_m.assert_any_call(40, lang.second, lang.s, True)
+        gp_m.assert_any_call(10, lang.day, lang.s, False)
+        gp_m.assert_any_call(20, lang.hour, lang.s, False)
+        gp_m.assert_any_call(30, lang.minute, lang.s, False)
+        gp_m.assert_any_call(40, lang.second, lang.s, False)
         jp_m.assert_called_once_with(lang.join, *parts[:-1])
 
         if is_empty:
-            gp_m.assert_any_call(0, lang.second, lang.s, True, force_output=True)
+            gp_m.assert_any_call(0, lang.second, lang.s, False, force_output=True)
             assert gp_m.call_count == 5
         else:
             assert gp_m.call_count == 4
