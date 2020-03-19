@@ -58,7 +58,7 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
     except OverflowError:
         return "infinite %s%s" % (language.day, language.s)
 
-    day, hour, minute, second = _split_seconds(seconds, integer=integer, days=True)
+    day, hour, minute, second = split_seconds(seconds, integer=integer, days=True)
 
     day_part = gen_part(day, language.day, language.s, abbreviated)
     hour_part = gen_part(hour, language.hour, language.s, abbreviated)
@@ -103,7 +103,7 @@ def join_parts(join_str, *string_parts):
     return output + " " + join_str + " " + string_parts[-1]
 
 
-def _split_seconds(total_seconds, days=False, integer=None):
+def split_seconds(total_seconds, days=False, integer=None):
     """[summary]
 
     Args:

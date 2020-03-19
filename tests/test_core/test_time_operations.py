@@ -50,7 +50,7 @@ def test_languages():
             assert isinstance(value[lang_key], Language)
 
 
-@mock.patch("vcm.core.time_operations._split_seconds")
+@mock.patch("vcm.core.time_operations.split_seconds")
 @mock.patch("vcm.core.time_operations.gen_part")
 @mock.patch("vcm.core.time_operations.join_parts")
 class TestSecondsToStr:
@@ -187,7 +187,7 @@ class TestSecondsToStringIntegration:
             with pytest.raises(InvalidLanguageError, match=r"'\w+' is not a valid"):
                 seconds_to_str(0, language=lang)
 
-    @mock.patch("vcm.core.time_operations._split_seconds")
+    @mock.patch("vcm.core.time_operations.split_seconds")
     @pytest.mark.parametrize("time_tuple", SECONDS_TO_STR_TEST_DATA.keys())
     def test_integration(self, ss_m, use_abbr, language, time_tuple):
         ss_m.return_value = time_tuple
