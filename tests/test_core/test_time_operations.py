@@ -29,6 +29,27 @@ def test_alphabet():
     assert "default" in ALPHABET
 
 
+def test_language_interface():
+    lang = Language(*list("abcdef"))
+    assert hasattr(lang, "day")
+    assert hasattr(lang, "hour")
+    assert hasattr(lang, "minute")
+    assert hasattr(lang, "second")
+    assert hasattr(lang, "s")
+    assert hasattr(lang, "join")
+
+
+def test_languages():
+    langs_keys = list(ALPHABET[list(ALPHABET.keys())[0]].keys())
+    assert isinstance(LANGUAGES, dict)
+
+    for value in LANGUAGES.values():
+        assert isinstance(value, dict)
+        for lang_key in langs_keys:
+            assert lang_key in value
+            assert isinstance(value[lang_key], Language)
+
+
 @mock.patch("vcm.core.time_operations._split_seconds")
 @mock.patch("vcm.core.time_operations.gen_part")
 @mock.patch("vcm.core.time_operations.join_parts")
@@ -124,7 +145,6 @@ class TestGenPart:
         assert result == expected
 
 
-@pytest.mark.dev
 class TestJoinParts:
     test_data = [
         ("1", list("1")),
