@@ -7,7 +7,14 @@ from tests.test_core.time_operations_test_data import (
     SPLIT_SECONDS_TEST_DATA,
 )
 from vcm.core.exceptions import InvalidLanguageError
-from vcm.core.time_operations import ALPHABET, seconds_to_str
+from vcm.core.time_operations import (
+    ALPHABET,
+    LANGUAGES,
+    Language,
+    gen_part,
+    join_parts,
+    seconds_to_str,
+)
 
 
 def test_alphabet():
@@ -89,16 +96,50 @@ class TestSecondsToStr:
             assert gp_m.call_count == 4
 
 
-@pytest.mark.xfail
-def test_gen_part():
-    # def gen_part(int_part, str_part, possible_s, include_space, force_output=False):
-    assert 0, "Not implemented"
+class TestGenPart:
+    test_data_force = (
+        (4, "second", False, "4 seconds"),
+        (5, "s", True, "5s"),
+        (0, "second", False, "0 seconds"),
+        (0, "s", True, "0s"),
+        (1, "second", False, "1 second"),
+        (1, "s", True, "1s"),
+        (2, "second", False, "2 seconds"),
+        (2, "s", True, "2s"),
+        (0, "s", True, "0s"),
+    )
+
+    test_data_no_force = [
+        x if x[0] != 0 else (0, x[1], x[2], None) for x in test_data_force
+    ]
+
+    @pytest.mark.parametrize("int_part, str_part, space, expected", test_data_no_force)
+    def test_not_force_output(self, int_part, str_part, space, expected):
+        result = gen_part(int_part, str_part, "s", space, force_output=False)
+        assert result == expected
+
+    @pytest.mark.parametrize("int_part, str_part, space, expected", test_data_force)
+    def test_force_output(self, int_part, str_part, space, expected):
+        result = gen_part(int_part, str_part, "s", space, force_output=True)
+        assert result == expected
 
 
-@pytest.mark.xfail
-def test_join_parts():
-    # def join_parts(join_str, *string_parts):
-    assert 0, "Not implemented"
+@pytest.mark.dev
+class TestJoinParts:
+    test_data = [
+        ("1", list("1")),
+        ("1 y 2", list("12")),
+        ("1, 2 y 3", list("123")),
+        ("1, 2, 3 y 4", list("1234")),
+        ("1 y 2", ["1", None, None, "2"]),
+        (None, [None] * 9),
+        (None, [])
+    ]
+
+    @pytest.mark.parametrize("output, parts", test_data)
+    def test_join_parts(self, output, parts):
+        result = join_parts("y", *parts)
+        assert result == output
 
 
 @pytest.mark.xfail
