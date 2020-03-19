@@ -31,7 +31,7 @@ def test_section_index():
 
 
 @pytest.mark.xfail
-def test_un_section_index():
+def test_section_unindex():
     assert 0, "Not implemented"
 
 

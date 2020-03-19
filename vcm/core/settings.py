@@ -73,7 +73,7 @@ def section_index(subject_id: int):
     DownloadSettings.__setitem__("section-indexing", index, force=True)
 
 
-def un_section_index(subject_id: int):
+def section_unindex(subject_id: int):
     if subject_id not in DownloadSettings.section_indexing_ids:
         raise NotIndexedError("Subject ID '%d' is not section-indexed" % subject_id)
 

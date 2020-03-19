@@ -7,9 +7,9 @@ from vcm.core.settings import (
     exclude,
     include,
     section_index,
+    section_unindex,
     settings_name_to_class,
     settings_to_string,
-    un_section_index,
 )
 from vcm.core.utils import (
     Printer,
@@ -145,7 +145,7 @@ def main(args=None):
             exit()
 
         if opt.settings_subcommand == "unindex":
-            un_section_index(opt.subject_id)
+            section_unindex(opt.subject_id)
             Printer.print(
                 "Done. Remember removing alias entries for subject with id=%d."
                 % opt.subject_id
