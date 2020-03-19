@@ -29,7 +29,7 @@ class Command(Enum):
     discover = 4
 
 
-def parse_args(args=None, parser=False):
+def parse_args(args=None, return_parser=False):
     parser = argparse.ArgumentParser(prog="vcm")
     parser.add_argument(
         "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
@@ -89,7 +89,7 @@ def parse_args(args=None, parser=False):
 
     subparsers.add_parser("discover")
 
-    if parser:
+    if return_parser:
         return parser.parse_args(args), parser
 
     return parser.parse_args(args)
@@ -97,7 +97,7 @@ def parse_args(args=None, parser=False):
 
 @safe_exit
 def main(args=None):
-    opt, parser = parse_args(args, parser=True)
+    opt, parser = parse_args(args, return_parser=True)
 
     if opt.version:
         from vcm import version
@@ -114,7 +114,7 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            return parser.error("Invalid use: use download or notify")
+            return parser.error("Invalid command")
 
     if opt.command == Command.download and opt.quiet:
         Printer.silence()
