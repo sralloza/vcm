@@ -120,10 +120,10 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            return parser.error("Invalid command")
-
-    if opt.command == Command.download and opt.quiet:
-        Printer.silence()
+            return parser.error(
+                "Invalid command: %r {%s}"
+                % (opt.command, ", ".join([x.to_str() for x in Command]))
+            )
 
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
@@ -201,29 +201,30 @@ def main(args=None):
 
     if opt.command == Command.discover:
         Printer.silence()
-        return download(
-            nthreads=1, no_killer=True, status_server=False, discover_only=True
-        )
-    elif opt.command == Command.download:
+        download(nthreads=1, no_killer=True, status_server=False, discover_only=True)
+        sys.exit()
+    if opt.command == Command.download:
+        if opt.quiet:
+            Printer.silence()
         if opt.debug:
-
             chrome_path = (
                 "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
             )
             webbrowser.get(chrome_path).open_new("localhost")
 
-        return download(
+        download(
             nthreads=opt.nthreads,
             no_killer=opt.no_killer,
             status_server=not opt.no_status_server,
         )
 
-    elif opt.command == Command.notify:
-        return notify(
+        sys.exit(0)
+
+    if opt.command == Command.notify:
+        notify(
             send_to=NotifySettings.email,
             use_icons=not opt.no_icons,
             nthreads=opt.nthreads,
             status_server=not opt.no_status_server,
         )
-    else:
-        return parser.error("Invalid command: %r" % opt.command)
+        sys.exit(0)
