@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from .exceptions import InvalidLanguageError
 
 ALPHABET = {
@@ -9,6 +11,22 @@ ALPHABET = {
         "es": ["día", "hora", "minuto", "segundo", "s", "y"],
         "en": ["day", "hour", "minute", "second", "s", "and"],
     },
+}
+
+
+@dataclass
+class Language:
+    day: str
+    hour: str
+    minute: str
+    second: str
+    s: str
+    join: str
+
+
+LANGUAGES = {
+    "abbr": {k: Language(*v) for k, v in ALPHABET["abbr"].items()},
+    "default": {k: Language(*v) for k, v in ALPHABET["default"].items()},
 }
 
 
