@@ -7,6 +7,16 @@ from vcm.core.results import Counters, Results
 
 
 class TestCounters:
+    @pytest.fixture(autouse=True)
+    def reset(self):
+        Counters.updated = 0
+        Counters.new = 0
+
+        yield
+
+        Counters.updated = 0
+        Counters.new = 0
+
     def test_attributes(self):
         assert hasattr(Counters, "updated")
         assert hasattr(Counters, "new")
@@ -14,13 +24,21 @@ class TestCounters:
         assert isinstance(Counters.updated, int)
         assert isinstance(Counters.new, int)
 
-    @pytest.mark.xfail
     def test_count_updated(self):
-        assert 0, "Not implemented"
+        Counters.updated = 0
+        internal_counter = 0
+        for i in range(20):
+            Counters.count_updated()
+            internal_counter += 1
+            assert Counters.updated == internal_counter
 
-    @pytest.mark.xfail
     def test_count_new(self):
-        assert 0, "Not implemented"
+        Counters.new = 0
+        internal_counter = 0
+        for i in range(20):
+            Counters.count_new()
+            internal_counter += 1
+            assert Counters.new == internal_counter
 
 
 class TestResults:
