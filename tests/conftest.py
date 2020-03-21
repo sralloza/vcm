@@ -40,20 +40,22 @@ CREDENTIALS_DEFAULT = {
 }
 
 
+test_settings_path: Path = Path.home() / "test-vcm-settings.toml"
+test_credentials_path: Path = Path.home() / "test-vcm-credentials.toml"
+test_root_folder = Path.home() / "vcm-test-data"
+
+
 def pytest_configure():
-    settings_path: Path = Path.home() / "vcm-settings.toml"
-    credentials_path: Path = Path.home() / "vcm-credentials.toml"
-    root_folder = Path.home() / "vcm-test-data"
+    SETTINGS_DEFAULTS["general"]["root-folder"] = test_root_folder.as_posix()
+    SETTINGS_DEFAULTS["notify"]["email"] = "testing@example.com"
 
-    SETTINGS_DEFAULTS["general"]["root-folder"] = root_folder.as_posix()
+    # if not test_settings_path.exists():
+    with test_settings_path.open("wt") as file_handler:
+        toml.dump(SETTINGS_DEFAULTS, file_handler)
 
-    if not settings_path.exists():
-        with settings_path.open("wt") as file_handler:
-            toml.dump(SETTINGS_DEFAULTS, file_handler)
-
-    if not credentials_path.exists():
-        with credentials_path.open("wt") as file_handler:
-            toml.dump(CREDENTIALS_DEFAULT, file_handler)
+    # if not test_credentials_path.exists():
+    with test_credentials_path.open("wt") as file_handler:
+        toml.dump(CREDENTIALS_DEFAULT, file_handler)
 
     os.environ["TESTING"] = "True"
 
@@ -63,4 +65,8 @@ def check_settings():
     from vcm.core._settings import defaults
 
     yield
-    assert defaults == SETTINGS_DEFAULTS
+    import shutil
+
+    test_settings_path.unlink()
+    test_credentials_path.unlink()
+    shutil.rmtree(test_root_folder)
