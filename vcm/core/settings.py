@@ -108,8 +108,12 @@ def include(subject_id: int):
 
 
 class _CoreSettings(dict):
-    settings_path: Path = Path.home() / "vcm-settings.toml"
-    credentials_path: Path = Path.home() / "vcm-credentials.toml"
+    if os.environ.get("TESTING", False):
+        settings_path: Path = Path.home() / "test-vcm-settings.toml"
+        credentials_path: Path = Path.home() / "test-vcm-credentials.toml"
+    else:
+        settings_path: Path = Path.home() / "vcm-settings.toml"
+        credentials_path: Path = Path.home() / "vcm-credentials.toml"
 
     def __init__(self):
         super().__init__(
