@@ -12,6 +12,11 @@ from vcm.core.utils import MetaSingleton
 
 
 class TestConnection:
+    @pytest.fixture(scope="function", autouse=True)
+    def reset_connection(self):
+        Connection._instance = None
+        yield
+
     def test_use_singleton(self):
         assert type(Connection) == MetaSingleton
 
@@ -98,26 +103,114 @@ class TestConnection:
         post_m.assert_called_once()
         assert ("vcm.core.networking", 10, "Logging out") in caplog.record_tuples
 
-    @pytest.mark.xfail
     class TestLogin:
-        def test_ok(self):
-            assert 0, "Not implemented"
+        @pytest.fixture(params=[KeyError, TypeError, LoginError])
+        def exception(self, request):
+            return request.param
 
-        def test_some_errors(self):
-            assert 0, "Not implemented"
+        @pytest.fixture(scope="function", autouse=True)
+        def mocks(self):
+            self.log_in_m = mock.patch("vcm.core.networking.Connection._login").start()
+            self.gs_m = mock.patch("vcm.core.networking.GeneralSettings").start()
+            self.dt_m = mock.patch("vcm.core.networking.datetime").start()
 
-        def test_fatal_error(self):
-            assert 0, "Not implemented"
+            self.now_m = mock.MagicMock()
+            self.now_m.strftime.return_value = "<now>"
+            self.dt_m.now.return_value = self.now_m
 
-    @mock.patch("vcm.core.networking.connection._downloader")
+            yield
+
+            mock.patch.stopall()
+
+        def test_ok(self, caplog):
+            caplog.set_level(10, "vcm.core.networking")
+
+            connection = Connection()
+            connection.login()
+
+            assert connection._login_attempts == 0
+            self.log_in_m.assert_called_once()
+
+            assert caplog.records[0].message == "Logging in"
+            assert caplog.records[-1].message == "Logged in"
+
+            log_calls = Counter([x.levelname for x in caplog.records])
+
+            assert log_calls["DEBUG"] == 1
+            assert log_calls["INFO"] == 1
+            assert log_calls["WARNING"] == 0
+            assert log_calls["CRITICAL"] == 0
+
+        @pytest.mark.parametrize("nerrors", range(1, 10))
+        def test_some_errors(self, caplog, nerrors, exception):
+            caplog.set_level(10, "vcm.core.networking")
+
+            self.log_in_m.side_effect = [exception] * nerrors + [None]
+
+            connection = Connection()
+            connection.login()
+
+            assert caplog.records[0].message == "Logging in"
+            assert caplog.records[-1].message == "Logged in"
+            assert "Needed to call again Connection.login" in caplog.records[-3].message
+
+            log_calls = Counter([x.levelname for x in caplog.records])
+
+            assert log_calls["DEBUG"] == nerrors + 1
+            assert log_calls["INFO"] == 1
+            assert log_calls["WARNING"] == nerrors
+            assert log_calls["CRITICAL"] == 0
+
+        @pytest.mark.parametrize("nerrors", range(10, 16))
+        def test_fatal_error(self, caplog, nerrors, exception):
+            caplog.set_level(10, "vcm.core.networking")
+
+            self.log_in_m.side_effect = [exception] * nerrors + [None]
+
+            connection = Connection()
+            connection._login_response = mock.MagicMock(text="")
+
+            with pytest.raises(LoginError):
+                connection.login()
+
+            assert caplog.records[0].message == "Logging in"
+            assert caplog.records[-1].message != "Logged in"
+            log_id = "login.error.<now>.html"
+            critical = "Unkown error. saved with id='%s'" % log_id
+            assert caplog.records[-1].message == critical
+            assert caplog.records[-1].levelname == "CRITICAL"
+            assert "Needed to call again Connection.login" in caplog.records[-2].message
+
+            log_calls = Counter([x.levelname for x in caplog.records])
+
+            assert log_calls["DEBUG"] == 10
+            assert log_calls["INFO"] == 0
+            assert log_calls["WARNING"] == 10
+            assert log_calls["CRITICAL"] == 1
+
+            jp_m = self.gs_m.root_folder.joinpath
+            jp_m.assert_called_once_with(log_id)
+            jp_m.return_value.write_text.assert_called_once_with("", encoding="utf-8")
+
     class TestHiddenLogin:
-        def test_maintenance(self, down_m, caplog):
+        @pytest.fixture(scope="function", autouse=True)
+        def mocks(self):
+            self.get_m = mock.patch("vcm.core.networking.Connection.get").start()
+            self.post_m = mock.patch("vcm.core.networking.Connection.post").start()
+            self.creds_m = mock.patch("vcm.core.networking.Credentials").start()
+            self.fsauu_m = mock.patch(
+                "vcm.core.networking.Connection.find_sesskey_and_user_url"
+            ).start()
+            yield
+            mock.patch.stopall()
+
+        def test_maintenance(self, caplog):
             text = "The site is undergoing maintenance and is currently not available"
             interface = mock.MagicMock()
             interface.text = text
             interface.reason = text
             interface.status_code = 503
-            down_m.get.return_value = interface
+            self.get_m.return_value = interface
 
             caplog.set_level(10, logger="vcm.core.networking")
 
@@ -131,11 +224,10 @@ class TestConnection:
                 50,
                 "Moodle under maintenance (503 - %s)" % text,
             ) in caplog.record_tuples
-            down_m.get.assert_called_once()
-            down_m.post.assert_not_called()
+            self.get_m.assert_called_once()
+            self.post_m.assert_not_called()
 
-        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
-        def test_already_logged_in(self, fsauu_m, down_m, caplog):
+        def test_already_logged_in(self, caplog):
             text = (
                 '<div role="alert" data-aria-autofocus="true" id="modal-body" '
                 'class="box modal-body py-3" tabindex="0"><p>Usted ya está en el sist'
@@ -144,7 +236,7 @@ class TestConnection:
             )
             interface_valid = mock.MagicMock(text=text)
             interface_invalid = mock.MagicMock(text="<invalid>")
-            down_m.get.side_effect = [interface_valid, interface_invalid]
+            self.get_m.side_effect = [interface_valid, interface_invalid]
 
             caplog.set_level(10, logger="vcm.core.networking")
 
@@ -156,21 +248,20 @@ class TestConnection:
                 20,
                 "User already logged in",
             ) in caplog.record_tuples
-            down_m.get.assert_called()
-            assert down_m.get.call_count == 2
-            down_m.post.assert_not_called()
+            self.get_m.assert_called()
+            assert self.get_m.call_count == 2
+            self.post_m.assert_not_called()
 
-            fsauu_m.assert_called_once()
+            self.fsauu_m.assert_called_once()
 
-        @mock.patch("vcm.core.networking.Credentials")
-        def test_bad_response_login(self, creds_m, down_m, caplog):
-            creds_m.VirtualCampus.username = "<username>"
-            creds_m.VirtualCampus.password = "<password>"
+        def test_bad_response_login(self, caplog):
+            self.creds_m.VirtualCampus.username = "<username>"
+            self.creds_m.VirtualCampus.password = "<password>"
 
-            down_m.get.return_value = mock.MagicMock(
+            self.get_m.return_value = mock.MagicMock(
                 text='<input type="hidden" name="logintoken" value="<login-token>">'
             )
-            down_m.post.return_value = mock.MagicMock(ok=False, status_code=404)
+            self.post_m.return_value = mock.MagicMock(ok=False, status_code=404)
 
             caplog.set_level(10, "vcm.core.networking")
 
@@ -189,27 +280,24 @@ class TestConnection:
                 "Logging in with user '<username>'",
             ) in caplog.record_tuples
 
-            down_m.post.assert_called_once_with(
+            self.post_m.assert_called_once_with(
                 "https://campusvirtual.uva.es/login/index.php",
-                {
+                data={
                     "anchor": "",
                     "username": "<username>",
                     "password": "<password>",
                     "logintoken": "<login-token>",
                 },
-                None,
             )
 
-        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
-        @mock.patch("vcm.core.networking.Credentials")
-        def test_bad_login(self, creds_m, fsauu_m, down_m, caplog):
-            creds_m.VirtualCampus.username = "<username>"
-            creds_m.VirtualCampus.password = "<password>"
+        def test_bad_login(self, caplog):
+            self.creds_m.VirtualCampus.username = "<username>"
+            self.creds_m.VirtualCampus.password = "<password>"
 
-            down_m.get.return_value = mock.MagicMock(
+            self.get_m.return_value = mock.MagicMock(
                 text='<input type="hidden" name="logintoken" value="<login-token>">'
             )
-            down_m.post.return_value = mock.MagicMock(ok=True, text="<incorrect-login>")
+            self.post_m.return_value = mock.MagicMock(ok=True, text="<incorrect-login>")
 
             caplog.set_level(10, "vcm.core.networking")
 
@@ -228,22 +316,19 @@ class TestConnection:
                 "Logging in with user '<username>'",
             ) in caplog.record_tuples
 
-            down_m.post.assert_called_once_with(
+            self.post_m.assert_called_once_with(
                 "https://campusvirtual.uva.es/login/index.php",
-                {
+                data={
                     "anchor": "",
                     "username": "<username>",
                     "password": "<password>",
                     "logintoken": "<login-token>",
                 },
-                None,
             )
 
-            fsauu_m.assert_not_called()
+            self.fsauu_m.assert_not_called()
 
-        @mock.patch("vcm.core.networking.connection.find_sesskey_and_user_url")
-        @mock.patch("vcm.core.networking.Credentials")
-        def test_ok(self, creds_m, fsauu_m, down_m, caplog):
+        def test_ok(self, caplog):
             text = (
                 ' <div class="logininfo">Usted se ha identificado como '
                 '<a href="https://campusvirtual.uva.es/user/profile.php?id=<id'
@@ -251,13 +336,13 @@ class TestConnection:
                 '(<a href="https://campusvirtual.uva.es/login/logout.php?sessk'
                 'ey=0iujR0AiRK">Salir</a>)</div>'
             )
-            creds_m.VirtualCampus.username = "<username>"
-            creds_m.VirtualCampus.password = "<password>"
+            self.creds_m.VirtualCampus.username = "<username>"
+            self.creds_m.VirtualCampus.password = "<password>"
 
-            down_m.get.return_value = mock.MagicMock(
+            self.get_m.return_value = mock.MagicMock(
                 text='<input type="hidden" name="logintoken" value="<login-token>">'
             )
-            down_m.post.return_value = mock.MagicMock(ok=True, text=text)
+            self.post_m.return_value = mock.MagicMock(ok=True, text=text)
 
             caplog.set_level(10, "vcm.core.networking")
 
@@ -275,18 +360,17 @@ class TestConnection:
                 "Logging in with user '<username>'",
             ) in caplog.record_tuples
 
-            down_m.post.assert_called_once_with(
+            self.post_m.assert_called_once_with(
                 "https://campusvirtual.uva.es/login/index.php",
-                {
+                data={
                     "anchor": "",
                     "username": "<username>",
                     "password": "<password>",
                     "logintoken": "<login-token>",
                 },
-                None,
             )
 
-            fsauu_m.assert_called_once()
+            self.fsauu_m.assert_called_once()
 
     def test_find_sesskey_and_user_url(self):
         text = (

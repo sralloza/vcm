@@ -71,15 +71,22 @@ class Connection(metaclass=MetaSingleton):
             self._login()
             logger.info("Logged in")
         except (KeyError, TypeError, LoginError) as exc:
-            logger.warning("Needed to call again Connection.login() due to %r", exc)
             self._login_attempts += 1
+            logger.warning(
+                "Needed to call again Connection.login() due to %r (%d attempts)",
+                exc,
+                self._login_attempts,
+            )
 
             if self._login_attempts >= 10:
                 now = datetime.now()
-                GeneralSettings.root_folder.joinpath(
-                    "login.error.%s.html" % now.strftime("%Y.%m.%d-%H.%M.%S")
-                ).write_text(self._login_response.text, encoding="utf-8")
+                log_id = "login.error.%s.html" % now.strftime("%Y.%m.%d-%H.%M.%S")
+                GeneralSettings.root_folder.joinpath(log_id).write_text(
+                    self._login_response.text, encoding="utf-8"
+                )
+                logger.critical("Unkown error. saved with id=%r", log_id)
                 raise LoginError("10 login attempts, unkwown error. See logs.") from exc
+
             return self.login()
 
     def _login(self):
