@@ -65,7 +65,6 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
     minute_part = gen_part(minute, language.minute, language.s, abbreviated)
     second_part = gen_part(second, language.second, language.s, abbreviated)
 
-    # breakpoint()
     output = join_parts(language.join, day_part, hour_part, minute_part, second_part)
 
     if not output:
@@ -120,8 +119,6 @@ def split_seconds(total_seconds, days=False, integer=None):
         tuple: 3-length tuple: (hours, seconds, minutes). If days is True,
         it will be a 4-length tuple: (days, hours, seconds, minutes).
     """
-
-    # total_seconds = int(total_seconds)
 
     total_minutes = total_seconds // 60
     seconds = total_seconds % 60

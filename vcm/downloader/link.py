@@ -70,6 +70,7 @@ class BaseLink(_Notify):
         if self.response is None:
             raise RuntimeError("Response not made yet")
 
+        # unidecode.unidecode is used to remove accents.
         return unidecode.unidecode(self.response.headers["Content-Disposition"])
 
     def append_subfolder(self, dirname):
@@ -130,7 +131,6 @@ class BaseLink(_Notify):
             return self._filename_to_ext(self.response_name)
 
         try:
-            # unidecode.unidecode is used to remove accents.
             self.response_name = Patterns.FILENAME_PATTERN.search(
                 self.content_disposition
             ).group(1)
@@ -563,8 +563,6 @@ class ForumList(BaseForum):
 
 
 class ForumDiscussion(BaseForum):
-    # NOTIFY = True
-
     def download(self):
         self.logger.debug("Downloading forum discussion %r", self.name)
         self.make_request()

@@ -14,20 +14,6 @@ A = Union[List[str], str]
 S = List[Subject]
 
 
-# FORM_LIKE_A_STYLE = """<style>
-#     .btn-link {
-#     border: none;
-#     outline: none;
-#     background: none;
-#     cursor: pointer;
-#     color: #0000EE;
-#     padding: 0;
-#     text-decoration: underline;
-#     font-family: inherit;
-#     font-size: inherit;
-# }
-#     </style>"""
-
 
 def send_report(subjects: S, use_icons: bool, send_to: A):
     logger.info("Creating report")
@@ -49,7 +35,6 @@ def send_report(subjects: S, use_icons: bool, send_to: A):
     s = "s" if nlinks != 1 else ""
     info = f"enlace{s} nuevo{s}"
 
-    # message = f"<html><head>{FORM_LIKE_A_STYLE}</head><body>"
     message = '<!DOCTYPE html><html lang="es"><head><title>Virtual Campus Notifier</title></head><body>'
     message += (
         '<h2><span style="color: #339966; font-family: cambria; font-size: 35px;">'

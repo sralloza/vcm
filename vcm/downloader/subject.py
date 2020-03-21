@@ -47,7 +47,6 @@ class Subject:
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        # self.folder = GeneralSettings.root_folder / secure_filename(self.name)
         self.folder = GeneralSettings.root_folder / self.name
         self.logger = logging.getLogger(__name__)
 
