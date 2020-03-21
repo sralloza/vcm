@@ -69,4 +69,4 @@ def check_settings():
 
     test_settings_path.unlink()
     test_credentials_path.unlink()
-    shutil.rmtree(test_root_folder)
+    shutil.rmtree(test_root_folder, ignore_errors=True)
