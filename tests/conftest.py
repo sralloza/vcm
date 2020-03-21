@@ -43,6 +43,9 @@ CREDENTIALS_DEFAULT = {
 def pytest_configure():
     settings_path: Path = Path.home() / "vcm-settings.toml"
     credentials_path: Path = Path.home() / "vcm-credentials.toml"
+    root_folder = Path.home() / "vcm-test-data"
+
+    SETTINGS_DEFAULTS["general"]["root-folder"] = root_folder.as_posix()
 
     if not settings_path.exists():
         with settings_path.open("wt") as file_handler:
