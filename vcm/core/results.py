@@ -24,7 +24,6 @@ class Results:
     """Class to manage information."""
 
     print_lock = Lock()
-
     file_lock = Lock()
     result_path = GeneralSettings.root_folder / "new-files.txt"
 
