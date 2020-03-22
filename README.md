@@ -10,7 +10,7 @@ _Note: both installations need to have Python 3.6+ installed._
 1. Create a folder whenever you want.
 2. Inside that folder we will create the virtual environment. To do so, open the terminal and type `virtualenv venv`.
 3. Activate the environment using `call venv/scripts/activate.bat`.
-4. Install the program with `python -m pip install git+https://github.com/sralloza/vcm.git@dev`
+4. Install the program with `python -m pip install git+https://github.com/sralloza/vcm.git`
 5. Inside that folder, create another folder and add it to the `PATH`. If you don't know how to add folders to the `PATH`, visit [this site](https://docs.alfresco.com/4.2/tasks/fot-addpath.html).
 6. Finally, create a file named `vcm.cmd` in that
 
@@ -22,7 +22,7 @@ _Note: both installations need to have Python 3.6+ installed._
 
 
 ### General install
-1. Run `python -m pip install git+https://github.com/sralloza/vcm.git@dev`
+1. Run `python -m pip install git+https://github.com/sralloza/vcm.git`
 2. Done. To use the program, just type `vcm -h`
 
 # How to use
@@ -188,5 +188,5 @@ To sum up:
 
 
 ## What is a section
-![example](https://raw.githubusercontent.com/sralloza/vcm/dev/.github/example.png)
+![example](https://raw.githubusercontent.com/sralloza/vcm/master/.github/example.png)
 A section is how notes are classified in the virtual campus. In this example, you can see the title **`Tema 1`**, and then 3 resources (2 pdfs and 1 zip file). The title **`Tema 1`** is the section.
