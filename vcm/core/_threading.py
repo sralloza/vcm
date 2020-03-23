@@ -12,8 +12,6 @@ from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from vcm.downloader.link import BaseLink
-from vcm.downloader.subject import Subject
 
 from .modules import Modules
 from .time_operations import seconds_to_str
@@ -91,6 +89,12 @@ class Worker(Thread):
         self._last_state_update = time()
         self._update_state()
 
+        from vcm.downloader.subject import Subject
+        from vcm.downloader.link import BaseLink
+
+        self.Subject = Subject
+        self.BaseLink = BaseLink
+
     @property
     def state(self):
         self.update_state()
@@ -142,9 +146,9 @@ class Worker(Thread):
             timestamp = -float("inf") if not self.timestamp else self.timestamp
             status += f"[{seconds_to_str(time() - timestamp, integer=integer)}] "
 
-        if isinstance(self.current_object, BaseLink):
+        if isinstance(self.current_object, self.BaseLink):
             status += f"{self.current_object.subject.name} → {self.current_object.name}"
-        elif isinstance(self.current_object, Subject):
+        elif isinstance(self.current_object, self.Subject):
             status += f"{self.current_object.name}"
         elif isinstance(self.current_object, str):
             status += self.current_object
@@ -181,7 +185,7 @@ class Worker(Thread):
                 self.queue.unfinished_tasks,
             )
 
-            if isinstance(self.current_object, BaseLink):
+            if isinstance(self.current_object, self.BaseLink):
                 logger.debug("Found Link %r, processing", self.current_object.name)
                 try:
                     self.current_object.download()
@@ -195,7 +199,7 @@ class Worker(Thread):
                 )
                 self.queue.task_done()
 
-            elif isinstance(self.current_object, Subject):
+            elif isinstance(self.current_object, self.Subject):
                 logger.debug("Found Subject %r, processing", self.current_object.name)
                 try:
                     self.current_object.find_and_download_links()

@@ -11,10 +11,19 @@ from _sha1 import sha1
 from vcm.core.networking import Connection
 from vcm.core.settings import DownloadSettings, GeneralSettings
 from vcm.core.utils import secure_filename
-from vcm.downloader.link import Chat, Kalvidres
 
 from .alias import Alias
-from .link import BaseLink, Delivery, Folder, ForumList, Resource
+from .link import (
+    BaseLink,
+    Chat,
+    Delivery,
+    Folder,
+    ForumList,
+    Kalvidres,
+    Page,
+    Resource,
+    Url,
+)
 
 
 class Subject:
@@ -162,6 +171,12 @@ class Subject:
             elif "chat" in url:
                 self.logger.debug("Created Chat (subject search): %r, %s", name, url)
                 self.add_link(Chat(name, section, url, icon_url, self))
+            elif "page" in url:
+                self.logger.debug("Created Page (subject search): %r, %s", name, url)
+                self.add_link(Page(name, section, url, icon_url, self))
+            elif "url" in url:
+                self.logger.debug("Created Page (subject search): %r, %s", name, url)
+                self.add_link(Url(name, section, url, icon_url, self))
             elif "assign" in url:
                 self.logger.debug(
                     "Created Delivery (subject search): %r, %s", name, url

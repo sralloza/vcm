@@ -8,8 +8,6 @@ from time import time
 import flask
 import waitress
 
-from vcm.downloader.link import BaseLink
-from vcm.downloader.subject import Subject
 
 from .time_operations import seconds_to_str
 
@@ -17,6 +15,8 @@ logger = getLogger(__name__)
 
 
 def runserver(queue: Queue, threadlist):
+    from vcm.downloader.subject import Subject
+    from vcm.downloader.link import BaseLink
 
     t0 = time()
     logger.info("STARTED STATUS SERVER")

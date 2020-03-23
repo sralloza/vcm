@@ -8,7 +8,7 @@ from .exceptions import SettingsError
 def exclude_subjects_ids_setter(*args, **kwargs):
     if kwargs.pop("force", False):
         exclude_list = args[0]
-        for index,element in enumerate(exclude_list):
+        for index, element in enumerate(exclude_list):
             if not isinstance(element, int):
                 raise TypeError(
                     "Element %d (%r) of exclude-subjects-ids must be int, not %s"
@@ -102,7 +102,7 @@ defaults = {
         "section-indexing": [],
         "secure-section-filename": False,
     },
-    "notify": {"use-base64-icons": False, "email": "insert-email"},
+    "notify": {"email": "insert-email"},
 }
 
 checkers = {
@@ -119,7 +119,7 @@ checkers = {
         "section-indexing": Checkers.list,
         "secure-section-filename": Checkers.bool,
     },
-    "notify": {"use-base64-icons": Checkers.bool, "email": Checkers.str},
+    "notify": {"email": str},
 }
 
 # Transforms TOML → saved
@@ -137,7 +137,7 @@ constructors = {
         "section-indexing": list,
         "secure-section-filename": str2bool,
     },
-    "notify": {"use-base64-icons": str2bool, "email": str},
+    "notify": {"email": str},
 }
 
 # Transforms str → TOML
@@ -155,5 +155,5 @@ setters = {
         "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
-    "notify": {"use-base64-icons": str2bool, "email": Setters.str},
+    "notify": {"email": str},
 }
