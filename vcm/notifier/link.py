@@ -40,30 +40,32 @@ with base64path.open() as f:
 IMAGE_DATA = {icon_type: data.get(icon_type.name) for icon_type in IconType}
 del data
 
-URLS = {
-    IconType.assign: "https://campusvirtual.uva.es/theme/image.php/uva2017/assign/1577957563/icon",
-    IconType.avi: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/avi-24",
-    IconType.chat: "https://campusvirtual.uva.es/theme/image.php/uva2017/chat/1577957563/icon",
-    IconType.choice: "https://campusvirtual.uva.es/theme/image.php/uva2017/choice/1566299165/icon",
-    IconType.excel: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/spreadsheet-24",
-    IconType.feedback: "https://campusvirtual.uva.es/theme/image.php/uva2017/feedback/1566299165/icon",
-    IconType.folder: "https://campusvirtual.uva.es/theme/image.php/uva2017/folder/1577957563/icon",
-    IconType.forum: "https://campusvirtual.uva.es/theme/image.php/uva2017/forum/1577957563/icon",
-    IconType.jpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/jpeg-24",
-    IconType.kalvidres: "https://campusvirtual.uva.es/theme/image.php/uva2017/kalvidres/1577957563/icon",
-    IconType.mpeg: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1566299165/f/mpeg-24",
-    IconType.page: "https://campusvirtual.uva.es/theme/image.php/uva2017/page/1577957563/icon",
-    IconType.pdf: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/pdf-24",
-    IconType.powerpoint: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/powerpoint-24",
-    IconType.quiz: "https://campusvirtual.uva.es/theme/image.php/uva2017/quiz/1577957563/icon",
-    IconType.sourcecode: IconType.unknown,
-    IconType.unknown: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/html-24",
-    IconType.url: "https://campusvirtual.uva.es/theme/image.php/uva2017/url/1577957563/icon",
-    IconType.word: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/document-24",
-    IconType.workshop: "https://campusvirtual.uva.es/theme/image.php/uva2017/workshop/1566299165/icon",
-    IconType.zip: "https://campusvirtual.uva.es/theme/image.php/uva2017/core/1577957563/f/archive-24",
+ICON_URLS = {
+    IconType.assign: "1PRXBCb3DfAIUqLtq1MgtbkfQVrEd53rn",
+    IconType.avi: "1lK5PPQXOye3JF8_KMo-6597HykOHWIWt",
+    IconType.chat: "14HuXDc42lIS5xENXTnqwzsJUppZZHB7E",
+    IconType.choice: "1RRwJb2xEZjrthl3-KvMqLpYqQeY3jfDJ",
+    IconType.excel: "1OiJq2MDfE-OlRLLe8A1piBxEZLuWkZaN",
+    IconType.feedback: "1R1HwfJJCt5QHGIsq9BVI1aVQO0_MYD_7",
+    IconType.folder: "1uPJPWNafdsKDiSTVj76N-IVfHO4UjiuX",
+    IconType.forum: "1oQ0RfIXqW-Y5H3h46c5VAygDUpQuWUn5",
+    IconType.jpeg: "1_Q9H2qMNHESPPvCQhhEMPTH9-kPiwrhP",
+    IconType.kalvidres: "1j6v7D2DK7IP2iumxAcsHiMLEN90AbMsq",
+    IconType.mpeg: "1-Hvsx0JMCvLp-cBJmAAJYpl_stj468NM",
+    IconType.page: "1TH8Ljf5RFfG54Lg4HVGLnQDe2wWmH9Y-",
+    IconType.pdf: "1AXdOsygBu0KMHKbrhD3bY73KrKb6eHuD",
+    IconType.powerpoint: "1lBaoEmG9sz2-0Wu-WznKWm3WYoAyzSCC",
+    IconType.quiz: "1qyFrM5VrQWUVIMU3hSnkBa2th-04cH8t",
+    IconType.sourcecode: "1mBb_cSq5sCSxfAo6M9xx8QbIHUlOgFvz",
+    IconType.unknown: "1mBb_cSq5sCSxfAo6M9xx8QbIHUlOgFvz",
+    IconType.url: "1ikffKbgEuP8HrU1AJ9HL0VEWswLH2v1g",
+    IconType.word: "1Dce2TCwcYVfwrq43CMNbdTtUb3kjIUft",
+    IconType.workshop: "1CacYmQs-YYC-uce7HyPWWdemWi5uq3hd",
+    IconType.zip: "1zU7SfEx-DI5GpVJAJ3MN7isu9t48inAL",
 }
 
+TEMPLATE = "https://drive.google.com/uc?export=download&id=%s"
+ICON_URLS = {x: TEMPLATE % ICON_URLS[x] for x in ICON_URLS}
 
 class NotifierLink(BaseLink):
     def __init__(
@@ -174,7 +176,7 @@ class NotifierLink(BaseLink):
     @property
     def generated_icon_url(self):
         try:
-            return URLS[self.icon_type]
+            return ICON_URLS[self.icon_type]
         except KeyError:
             return str(self.icon_type)
 
