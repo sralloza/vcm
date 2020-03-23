@@ -687,6 +687,14 @@ class Delivery(BaseLink):
 
 
 class Kalvidres(BaseLink):
+class BaseUndownloableLink(BaseLink):
+    """Represents a link which can not be downloaded."""
+
+    def download(self):
+        """Doens't do anything, because this is an unparseable link."""
+        class_name = type(self).__name__.lower()
+        self.logger.debug("Downloading %s %r", class_name, self.name)
+        self.logger.info("%s links are unparseable.", class_name.title())
     """Representation of a kalvidres link.
 
     A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D.
