@@ -693,6 +693,18 @@ class Chat(BaseUndownloableLink):
     NOTIFY = True
 
 
+class Page(BaseUndownloableLink):
+    """Representation of a page link."""
+
+    NOTIFY = True
+
+
+class Url(BaseUndownloableLink):
+    """Representation of an url link."""
+
+    NOTIFY = True
+
+
 class Kalvidres(BaseUndownloableLink):
     """Representation of a kalvidres link.
 
