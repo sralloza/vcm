@@ -32,13 +32,6 @@ class IconType(Enum):
     zip = auto()
 
 
-base64path = Path(__file__).parent / "base64.json"
-
-with base64path.open() as f:
-    data = json.load(f)
-
-IMAGE_DATA = {icon_type: data.get(icon_type.name) for icon_type in IconType}
-del data
 
 URLS = {
     IconType.assign: "https://campusvirtual.uva.es/theme/image.php/uva2017/assign/1577957563/icon",
@@ -177,10 +170,6 @@ class NotifierLink(BaseLink):
             return URLS[self.icon_type]
         except KeyError:
             return str(self.icon_type)
-
-    @property
-    def icon_data_64(self):
-        return IMAGE_DATA[self.icon_type]
 
     def __repr__(self):
         return f"Link({self.subject!r}, {self.name!r})"
