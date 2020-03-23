@@ -62,7 +62,7 @@ types = {
         "section-indexing": list,
         "secure-section-filename": False,
     },
-    "notify": {¡"email": str},
+    "notify": {"email": str},
 }
 
 # Transforms TOML → saved
@@ -80,7 +80,7 @@ constructors = {
         "section-indexing": list,
         "secure-section-filename": str2bool,
     },
-    "notify": {¡"email": str},
+    "notify": {"email": str},
 }
 
 # Transforms str → TOML
