@@ -45,7 +45,7 @@ defaults = {
         "section-indexing": [],
         "secure-section-filename": False,
     },
-    "notify": {"use-base64-icons": False, "email": "insert-email"},
+    "notify": {"email": "insert-email"},
 }
 
 types = {
@@ -62,7 +62,7 @@ types = {
         "section-indexing": list,
         "secure-section-filename": False,
     },
-    "notify": {"use-base64-icons": bool, "email": str},
+    "notify": {¡"email": str},
 }
 
 # Transforms TOML → saved
@@ -80,7 +80,7 @@ constructors = {
         "section-indexing": list,
         "secure-section-filename": str2bool,
     },
-    "notify": {"use-base64-icons": str2bool, "email": str},
+    "notify": {¡"email": str},
 }
 
 # Transforms str → TOML
@@ -98,5 +98,5 @@ setters = {
         "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
-    "notify": {"use-base64-icons": str2bool, "email": str},
+    "notify": {"email": str},
 }
