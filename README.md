@@ -52,7 +52,6 @@ Settings:
 
 ### Notify section
 Settings:
-* **use-base64-icons** - If true, the icons will be sent as base64 data. If false, the icons will be sent as direct download links from google drive. Note that Gmail does not render base64 data. Defaults to false.
 * **email** - Recipient of the notify email. Must be set, it lacks of a default value.
 
 ### Settings file example
@@ -73,7 +72,6 @@ section-indexing = [16942, 82645, 45651, ]
 secure-section-filename = false
 
 [notify]
-use-base64-icons = false
 email = "email@example.com"
 
 ```

@@ -270,10 +270,6 @@ class _DownloadSettings(BaseSettings):
 
 class _NotifySettings(BaseSettings):
     @property
-    def use_base64_icons(self) -> bool:
-        return self["use-base64-icons"]
-
-    @property
     def email(self) -> str:
         return self["email"]
 
