@@ -1,21 +1,42 @@
-from vcm.core.credentials import _Credentials
 import pytest
+
+from vcm.core.credentials import (
+    EmailCredentials,
+    _Credentials,
+)
 
 
 class TestEmailCredentials:
     """Represents the data of a mailbox."""
 
-    @pytest.mark.xfail
     def test_init_attributes(self):
-        assert 0, "Not implemented"
+        credentials = EmailCredentials("a", "b", "c", 5)
+        assert hasattr(credentials, "username")
+        assert hasattr(credentials, "password")
+        assert hasattr(credentials, "smtp_server")
+        assert hasattr(credentials, "smtp_port")
 
-    @pytest.mark.xfail
+        assert isinstance(credentials.username, str)
+        assert isinstance(credentials.password, str)
+        assert isinstance(credentials.smtp_server, str)
+        assert isinstance(credentials.smtp_port, int)
+
+    def test_default_init_args(self):
+        credentials = EmailCredentials("a", "b")
+        assert "gmail" in credentials.smtp_server
+
     def test_str(self):
-        assert 0, "Not implemented"
+        credentials = EmailCredentials("<username>", "<password>")
+        assert str(credentials) == "EmailCredentials(username='<username>')"
 
-    @pytest.mark.xfail
     def test_to_json(self):
-        assert 0, "Not implemented"
+        credentials = EmailCredentials("<username>", "<password>")
+        creds_json = credentials.to_json()
+        assert creds_json["username"] == "<username>"
+        assert creds_json["password"] == "<password>"
+
+        creds_json["username"] = "<invalid-username>"
+        assert credentials.username == "<username>"
 
 
 class TestVirtualCampusCredentials:
