@@ -43,10 +43,6 @@ class TestNotifierLink:
         assert 0, "Not implemented"
 
     @pytest.mark.xfail
-    def test_icon_data_64(self):
-        assert 0, "Not implemented"
-
-    @pytest.mark.xfail
     def test_repr(self):
         assert 0, "Not implemented"
 

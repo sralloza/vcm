@@ -147,9 +147,6 @@ class TestHiddenDownloadSettings:
 
 @pytest.mark.xfail
 class TestHiddenNotifySettings:
-    def test_use_base64_icons(self):
-        assert 0, "Not implemented"
-
     def test_email(self):
         assert 0, "Not implemented"
 
