@@ -2,6 +2,7 @@ import pytest
 
 from vcm.core.credentials import (
     EmailCredentials,
+    VirtualCampusCredentials,
     _Credentials,
 )
 
@@ -42,17 +43,29 @@ class TestEmailCredentials:
 class TestVirtualCampusCredentials:
     """Represents a student with credentials."""
 
-    @pytest.mark.xfail
     def test_init_attributes(self):
-        assert 0, "Not implemented"
+        credentials = VirtualCampusCredentials("<username>", "<password>")
+        assert hasattr(credentials, "username")
+        assert hasattr(credentials, "password")
 
-    @pytest.mark.xfail
+        assert isinstance(credentials.username, str)
+        assert isinstance(credentials.password, str)
+
+        assert credentials.username == "<username>"
+        assert credentials.password == "<password>"
+
     def test_str(self):
-        assert 0, "Not implemented"
+        credentials = VirtualCampusCredentials("<username>", "<password>")
+        assert str(credentials) == "VirtualCampusCredentials(username='<username>')"
 
-    @pytest.mark.xfail
     def test_to_json(self):
-        assert 0, "Not implemented"
+        credentials = VirtualCampusCredentials("<username>", "<password>")
+        creds_json = credentials.to_json()
+        assert creds_json["username"] == "<username>"
+        assert creds_json["password"] == "<password>"
+
+        creds_json["username"] = "<invalid-username>"
+        assert credentials.username == "<username>"
 
 
 class TestHiddenCredentials:

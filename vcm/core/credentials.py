@@ -40,7 +40,7 @@ class VirtualCampusCredentials:
         self.password = password
 
     def __str__(self):
-        return f"{self.__class__.__name__}(username={self.username!r})"
+        return "%s(username=%r)" % (self.__class__.__name__, self.username)
 
     def to_json(self):
         """Returns self json serialized."""
