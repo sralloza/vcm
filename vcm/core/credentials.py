@@ -82,33 +82,33 @@ class _Credentials:
             )
             sys.exit(-1)
 
-        yaml_data = self.read_credentials()
+        toml_data = self.read_credentials()
 
         _Credentials.VirtualCampus = VirtualCampusCredentials(
-            **yaml_data["VirtualCampus"]
+            **toml_data["VirtualCampus"]
         )
-        _Credentials.Email = EmailCredentials(**yaml_data["Email"])
+        _Credentials.Email = EmailCredentials(**toml_data["Email"])
 
     @classmethod
     def save(cls):
         """Saves the credentials to the file."""
 
         data = {
-            "VirtualCampus": _Credentials.VirtualCampus.to_json(),
-            "Email": _Credentials.Email.to_json(),
+            "VirtualCampus": cls.VirtualCampus.to_json(),
+            "Email": cls.Email.to_json(),
         }
 
-        with _Credentials._path.open("wt") as file_handler:
+        with cls._path.open("wt") as file_handler:
             toml.dump(data, file_handler)
 
     @classmethod
     def make_example(cls):
         """Makes a dummy Student with field description."""
-        _Credentials.VirtualCampus = VirtualCampusCredentials(
+        cls.VirtualCampus = VirtualCampusCredentials(
             "username of the virtual campus", "password of the virtual campus"
         )
 
-        _Credentials.Email = EmailCredentials(
+        cls.Email = EmailCredentials(
             "email-username@domain.es", "email-password", "smtp.domain.es", 587
         )
 
