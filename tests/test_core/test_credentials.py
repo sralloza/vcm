@@ -73,9 +73,6 @@ class TestHiddenCredentials:
     def test_init_attributes(self):
         assert 0, "Not implemented"
 
-    @pytest.mark.xfail
-    def test_make_default(self):
-        assert 0, "Not implemented"
 
     @pytest.mark.xfail
     def test_read_credentials(self):

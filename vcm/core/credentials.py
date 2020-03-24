@@ -54,20 +54,11 @@ class _Credentials:
     VirtualCampus: VirtualCampusCredentials = None
     Email: EmailCredentials = None
 
-    def __init__(self, _auto=False):
+    def __init__(self):
         self.load()
 
     @classmethod
-    def make_default(cls, reason):
-        cls.make_example()
-        print(Fore.RED + reason + Fore.RESET, file=sys.stderr)
-        sys.exit(-1)
-
-    @classmethod
     def read_credentials(cls):
-        if not cls._path.exists():
-            cls.make_default(reason="Credentials file does not exist")
-
         with cls._path.open(encoding="utf-8") as pointer:
             try:
                 return toml.load(pointer)
@@ -81,7 +72,6 @@ class _Credentials:
     def load(self):
         """Loads the credentials settings."""
         if not self._path.exists():
-
             self.make_example()
             self.save()
             print(
