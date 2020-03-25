@@ -3,18 +3,18 @@ import logging
 import os
 import random
 import warnings
+from hashlib import sha1
 from pathlib import Path
 
 import unidecode
 from bs4 import BeautifulSoup
 from requests import Response
 
-from hashlib import sha1
 from vcm.core.modules import Modules
+from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Patterns, secure_filename
-from vcm.core.networking import Connection
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -710,5 +710,11 @@ class Kalvidres(BaseUndownloableLink):
 
     A Kalvidres is some kind of video, but it can't be downloaded yet due to lack of I+D.
     """
+
+    NOTIFY = True
+
+
+class Quiz(BaseUndownloableLink):
+    """Representation of a quiz link."""
 
     NOTIFY = True
