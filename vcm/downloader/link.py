@@ -573,11 +573,6 @@ class Delivery(BaseLink):
             )
             resource.subfolders = self.subfolders
 
-            # If the resource is not in campusvirtual.uva.es, then don't include in email
-            # TODO: check if not
-            if not valid:
-                resource.NOTIFY = False
-
             self.logger.debug(
                 "Created resource from delivery: %r, %s", resource.name, resource.url
             )
