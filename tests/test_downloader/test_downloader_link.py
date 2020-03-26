@@ -106,10 +106,6 @@ class TestResource:
     def test_download(self):
         assert 0, "Not implemented"
 
-    @pytest.mark.xfail
-    def test_parse_html(self):
-        assert 0, "Not implemented"
-
 
 class TestFolder:
     @pytest.mark.xfail
@@ -176,6 +172,51 @@ class TestDelivery:
 
 
 class TestKalvidres:
+    @pytest.mark.xfail
+    def test_download(self):
+        assert 0, "Not implemented"
+
+
+class TestQuiz:
+    @pytest.mark.xfail
+    def test_download(self):
+        assert 0, "Not implemented"
+
+
+class TestHtml:
+    @pytest.mark.xfail
+    def test_download(self):
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_try_algorithms(self):
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_check_algorithm_1(self):
+        assert 0, "Not implemented"
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_check_algorithm_2(self):
+        assert 0, "Not implemented"
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_check_algorithm_3(self):
+        assert 0, "Not implemented"
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_check_algorithm_4(self):
+        assert 0, "Not implemented"
+
+    @pytest.mark.xfail
+    def test_handle_algorithm_failure(self):
+        assert 0, "Not implemented"
+
+
+class TestImage:
     @pytest.mark.xfail
     def test_download(self):
         assert 0, "Not implemented"
