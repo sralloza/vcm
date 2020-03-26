@@ -23,6 +23,7 @@ from .link import (
     Page,
     Resource,
     Url,
+    Quiz,
 )
 
 
@@ -187,6 +188,9 @@ class Subject:
                     "Created Kalvidres (subject search): %r, %s", name, url
                 )
                 self.add_link(Kalvidres(name, section, url, icon_url, self))
+            elif "quiz" in url:
+                self.logger.debug("Created Quiz (subject search): %r, %s", name, url)
+                self.add_link(Quiz(name, section, url, icon_url, self))
 
         self.logger.debug("Downloading files for subject %r", self.name)
 

@@ -2,19 +2,21 @@
 import logging
 import os
 import random
+import re
 import warnings
 from hashlib import sha1
 from pathlib import Path
 
 import unidecode
 from bs4 import BeautifulSoup
+from colorama import Fore
 from requests import Response
 
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Patterns, secure_filename
+from vcm.core.utils import Patterns, Printer, secure_filename
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -400,7 +402,16 @@ class Resource(BaseLink):
 
         if "text/html" in self.content_type:
             self.set_resource_type("html")
-            return self.parse_html()
+
+            self.logger.debug(
+                "Created forum discussion from forum list: %r, %s", self.name, self.url,
+            )
+            self.subject.add_link(
+                Html(
+                    self.name, self.section, self.url, self.icon_url, self.subject, self
+                )
+            )
+            return
 
         if self.response.status_code % 300 < 100:
             self.url = self.response.headers["Location"]
@@ -414,90 +425,6 @@ class Resource(BaseLink):
             self.response.headers,
         )
         return None
-
-    def parse_html(self):
-        """Parses a HTML response."""
-        self.set_resource_type("html")
-        self.logger.debug("Parsing HTML (%r)", self.url)
-        resource = self.soup.find("object", {"id": "resourceobject"})
-
-        try:
-            name = self.soup.find("div", {"role": "main"}).h2.text
-        except AttributeError:
-            # Check if it is a weird page
-            if self.soup.find("applet"):
-                self.logger.debug("Identified as weird page without content, skipping")
-                return
-            raise
-
-        # Self does not contain the file, only a link to the real file.
-        self.NOTIFY = False
-
-        try:
-            resource = Resource(
-                name, self.section, resource["data"], self.icon_url, self.subject, self
-            )
-            self.logger.debug(
-                "Created resource from HTML: %r, %s", resource.name, resource.url
-            )
-            self.subject.add_link(resource)
-            return
-        except TypeError:
-            pass
-
-        try:
-            resource = self.soup.find("iframe", {"id": "resourceobject"})
-            resource = Resource(
-                name, self.section, resource["src"], self.icon_url, self.subject, self
-            )
-            self.logger.debug(
-                "Created resource from HTML: %r, %s", resource.name, resource.url
-            )
-            self.subject.add_link(resource)
-            return
-        except TypeError:
-            pass
-
-        try:
-            resource = self.soup.find("div", {"class": "resourceworkaround"})
-            resource = Resource(
-                name,
-                self.section,
-                resource.a["href"],
-                self.icon_url,
-                self.subject,
-                self,
-            )
-            self.logger.debug(
-                "Created resource from HTML: %r, %s", resource.name, resource.url
-            )
-            self.subject.add_link(resource)
-            return
-        except AttributeError:
-            pass
-
-        try:
-            resource = self.soup.find("div", class_="resourcecontent resourceimg")
-            resource = Resource(
-                name,
-                self.section,
-                resource.img["src"],
-                self.icon_url,
-                self.subject,
-                self,
-            )
-            self.logger.debug(
-                "Created resource from HTML: %r, %s", resource.name, resource.url
-            )
-            self.subject.add_link(resource)
-        except TypeError:
-            random_name = str(random.randint(0, 1000))
-            self.logger.exception("HTML ERROR (ID=%s)", random_name)
-            self.logger.error("ERROR LINK: %s", self.url)
-            self.logger.error("ERROR HEADS: %s", self.response.headers)
-
-            with open(random_name + ".html", "wb") as file_handler:
-                file_handler.write(self.response.content)
 
 
 class Folder(BaseLink):
@@ -598,14 +525,8 @@ class ForumDiscussion(BaseForum):
                 except KeyError:
                     url = image["src"]
 
-                image_ext = Path(url).suffix[1:]
-                if image_ext in ("jpg", "jpeg"):
-                    icon_url = "https://campusvirtual.uva.es/invalid/f/jpeg"
-                else:
-                    raise RuntimeError
-
-                resource = Resource(
-                    Path(url).stem, self.section, url, icon_url, self.subject, self
+                resource = Image(
+                    Path(url).stem, self.section, url, None, self.subject, self
                 )
                 resource.subfolders = self.subfolders
 
@@ -649,10 +570,6 @@ class Delivery(BaseLink):
                 self,
             )
             resource.subfolders = self.subfolders
-
-            # If the resource is not in campusvirtual.uva.es, then don't include in email
-            if not valid:
-                resource.NOTIFY = False
 
             self.logger.debug(
                 "Created resource from delivery: %r, %s", resource.name, resource.url
@@ -710,3 +627,125 @@ class Kalvidres(BaseUndownloableLink):
     """
 
     NOTIFY = True
+
+
+class Quiz(BaseUndownloableLink):
+    """Representation of a quiz link."""
+
+    NOTIFY = True
+
+
+class Html(BaseLink):
+    def download(self):
+        """Downloads the resources found in a html web page."""
+        self.logger.debug("Downloading html %r", self.name)
+        self.make_request()
+        self.process_request_bs4()
+
+        self.logger.debug("Parsing HTML (%r)", self.url)
+
+        try:
+            name = self.soup.find("div", {"role": "main"}).h2.text
+        except AttributeError:
+            # Check if it is a weird page
+            if self.soup.find("applet"):
+                self.logger.debug("Identified as weird page without content, skipping")
+                return
+            raise
+
+        return self.try_algorithms(name)
+
+    def try_algorithms(self, name):
+        # call actual algorithms
+        algorithms = [x for x in dir(self) if x.startswith("check_algorithm")]
+        algorithms = [getattr(self, x) for x in algorithms]
+        for algorithm in algorithms:
+            resource = algorithm(name)
+            if resource:
+                break
+        else:
+            # If not parsed:
+            return self.handle_algorithm_failure()
+
+        # If everithing ok:
+        self.logger.debug(
+            "Created resource from HTML: %r, %s", resource.name, resource.url
+        )
+        self.subject.add_link(resource)
+        return
+
+    def check_algorithm_1(self, name):
+        try:
+            resource = self.soup.find("object", {"id": "resourceobject"})
+            assert resource
+            return Resource(
+                name, self.section, resource["data"], self.icon_url, self.subject, self
+            )
+        except AssertionError:
+            return None
+
+    def check_algorithm_2(self, name):
+        try:
+            resource = self.soup.find("iframe", {"id": "resourceobject"})
+            assert resource
+            return Resource(
+                name, self.section, resource["src"], self.icon_url, self.subject, self
+            )
+        except AssertionError:
+            return None
+
+    def check_algorithm_3(self, name):
+        try:
+            container = self.soup.find("div", {"class": "resourceworkaround"})
+            return Resource(
+                name,
+                self.section,
+                container.a["href"],
+                self.icon_url,
+                self.subject,
+                self,
+            )
+        except AttributeError:
+            return None
+
+    def check_algorithm_4(self, name):
+        try:
+            resource = self.soup.find("div", class_="resourcecontent resourceimg")
+            assert resource
+            return Resource(
+                name,
+                self.section,
+                resource.img["src"],
+                self.icon_url,
+                self.subject,
+                self,
+            )
+        except AssertionError:
+            return None
+
+    def handle_algorithm_failure(self):
+        random_name = random.randint(0, 1000)
+        self.logger.error("HTML ALGORITHM FAILURE (ID=%s)", random_name)
+        message = "HTML ALGORITHM FAILURE (ID=%s)" % random_name
+        Printer.print(Fore.LIGHTRED_EX + message + Fore.RESET)
+
+        self.logger.error("ERROR LINK: %s", self.url)
+        self.logger.error("ERROR HEADS: %s", self.response.headers)
+
+        filename = GeneralSettings.root_folder.joinpath("error-%d.html" % random_name)
+        with filename.open("wb") as file_handler:
+            file_handler.write(self.response.content)
+
+
+class Image(BaseLink):
+    def download(self):
+        self.make_request()
+
+        match = re.search(r"image/(\w+)", self.content_type)
+        if not match:
+            raise RuntimeError
+
+        image_type = match.group(1)
+        self.logger.debug("Identified image as %r", image_type)
+        self.icon_url = "https://campusvirtual.uva.es/invalid/f/" + image_type
+        return self.save_response_content()
