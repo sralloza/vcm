@@ -15,15 +15,8 @@ class EmailCredentials:
         self.password = str(password)
 
         # Using gmail as default
-        if smtp_server is None:
-            self.smtp_server = "smtp.gmail.com"
-        else:
-            self.smtp_server = str(smtp_server)
-
-        if smtp_port is None:
-            self.smtp_port = 587
-        else:
-            self.smtp_port = int(smtp_port)
+        self.smtp_server = str(smtp_server) if smtp_server else "smtp.gmail.com"
+        self.smtp_port = int(smtp_port) if smtp_port else 587
 
     def __str__(self):
         return "%s(username=%r)" % (self.__class__.__name__, self.username)
@@ -63,10 +56,8 @@ class _Credentials:
             try:
                 return toml.load(pointer)
             except toml.TomlDecodeError:
-                print(
-                    Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET,
-                    file=sys.stderr,
-                )
+                error = "Invalid TOML file: %r" % cls._path
+                print(Fore.RED + error + Fore.RESET, file=sys.stderr)
                 sys.exit(-1)
 
     def load(self):
@@ -74,12 +65,8 @@ class _Credentials:
         if not self._path.exists():
             self.make_example()
             self.save()
-            print(
-                Fore.RED
-                + f"Credentials file not found, created sample ({self._path})"
-                + Fore.RESET,
-                file=sys.stderr,
-            )
+            error = "Credentials file not found, created sample (%s)" % self._path
+            print(Fore.RED + error + Fore.RESET, file=sys.stderr)
             sys.exit(-1)
 
         toml_data = self.read_credentials()
@@ -108,9 +95,7 @@ class _Credentials:
             "username of the virtual campus", "password of the virtual campus"
         )
 
-        cls.Email = EmailCredentials(
-            "email-username@domain.es", "email-password", "smtp.domain.es", 587
-        )
+        cls.Email = EmailCredentials("email-username@domain.es", "email-password")
 
         cls.save()
 

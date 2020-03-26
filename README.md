@@ -81,7 +81,7 @@ The credentials file path is `C:\Users\<username>\vcm-credentials.toml` (or `/ho
 **Note that the credentials will be stored in plain text.**
 
 It has 2 sections: VirtualCampus and Email.
-All settings must be set, there are no default values.
+If not stated otherwise, all settings must be set as they don't have default values.
 
 ### VirtualCampus section
 Settings:
@@ -90,10 +90,10 @@ Settings:
 
 ### Email section
 
-* **username** - email address to send the report from.
-* **password** - password of the email.
-* **smtp_server** - stmp server name. For Gmail is `smtp.gmail.com`.
-* **smtp_port** - stmp port. For Gmail is `587`
+* **username** - email address to send the report from. It doesn't have a default value.
+* **password** - password of the email. It doen't have a default value.
+* **smtp_server** - SMTP server name. Defaualt value is the SMTP server for Gmail, `smtp.gmail.com`.
+* **smtp_port** - SMTP port. Default value is the SMTP port for Gmail, `587`
 
 
 ## Command Line Interface arguments
