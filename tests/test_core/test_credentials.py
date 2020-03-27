@@ -1,4 +1,9 @@
+from pathlib import Path
+from unittest import mock
+
 import pytest
+from colorama.ansi import Fore
+from toml import TomlDecodeError
 
 from vcm.core.credentials import (
     EmailCredentials,
@@ -69,26 +74,173 @@ class TestVirtualCampusCredentials:
 
 
 class TestHiddenCredentials:
-    @pytest.mark.xfail
     def test_init_attributes(self):
-        assert 0, "Not implemented"
+        assert hasattr(_Credentials, "_path")
+        assert hasattr(_Credentials, "VirtualCampus")
+        assert hasattr(_Credentials, "Email")
 
+        NoneType = type(None)
+        assert isinstance(_Credentials._path, Path)
+        assert isinstance(
+            _Credentials.VirtualCampus, (VirtualCampusCredentials, NoneType)
+        )
+        assert isinstance(_Credentials.Email, (EmailCredentials, NoneType))
 
-    @pytest.mark.xfail
-    def test_read_credentials(self):
-        assert 0, "Not implemented"
+    @mock.patch("vcm.core.credentials._Credentials.load")
+    def test_call_arguments(self, load_m):
+        c = _Credentials()
+        load_m.assert_called_once()
 
-    @pytest.mark.xfail
-    def test_load(self):
-        assert 0, "Not implemented"
+        load_m.reset_mock()
 
-    @pytest.mark.xfail
-    def test_save(self):
-        assert 0, "Not implemented"
+        c = _Credentials(autoload=False)
+        load_m.assert_not_called()
 
-    @pytest.mark.xfail
-    def test_make_example(self):
-        assert 0, "Not implemented"
+        load_m.reset_mock()
+
+        c = _Credentials(autoload=True)
+        load_m.assert_called_once()
+
+    class TestReadCredentials:
+        @pytest.fixture(autouse=True)
+        def mocks(self):
+            self.load_m = mock.patch("toml.load").start()
+            self.path_m = mock.MagicMock()
+            self.path_m.__repr__ = lambda x: repr("<credentials-path>")
+            mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
+
+            yield
+
+            mock.patch.stopall()
+
+        def test_ok(self):
+            result = _Credentials.read_credentials()
+
+            self.path_m.open.assert_called_once_with(encoding="utf-8")
+            pointer = self.path_m.open.return_value.__enter__.return_value
+            self.load_m.assert_called_once_with(pointer)
+
+            assert result == self.load_m.return_value
+
+        def test_error(self, capsys):
+            self.load_m.side_effect = TomlDecodeError("a", "b", 1)
+
+            with pytest.raises(SystemExit, match="-1"):
+                _Credentials.read_credentials()
+
+            captured = capsys.readouterr()
+            message = "Invalid TOML file: %r" % "<credentials-path>"
+            message = Fore.LIGHTRED_EX + message + Fore.RESET + "\n"
+            assert captured.err == message
+            assert captured.out == ""
+
+    class TestLoad:
+        @pytest.fixture(autouse=True)
+        def mocks(self):
+            self.path_m = mock.MagicMock()
+            self.path_m.__str__ = lambda x: "<creds-path>"
+            mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
+            self.vcc_m = mock.patch(
+                "vcm.core.credentials.VirtualCampusCredentials"
+            ).start()
+            self.em_m = mock.patch("vcm.core.credentials.EmailCredentials").start()
+            self.rc_m = mock.patch(
+                "vcm.core.credentials._Credentials.read_credentials"
+            ).start()
+            self.me_m = mock.patch(
+                "vcm.core.credentials._Credentials.make_example"
+            ).start()
+            self.save_m = mock.patch("vcm.core.credentials._Credentials.save").start()
+
+            yield
+            mock.patch.stopall()
+
+        def test_ok(self):
+            self.rc_m.reset_mock()
+            self.path_m.exists.return_value = True
+            toml_data = {
+                "VirtualCampus": {"data": "<vc-data>"},
+                "Email": {"data": "<email-data>"},
+            }
+            self.rc_m.return_value = toml_data
+
+            creds = _Credentials(autoload=False).load()
+
+            self.rc_m.assert_called_once()
+            self.vcc_m.assert_called_once_with(**toml_data["VirtualCampus"])
+            self.em_m.assert_called_once_with(**toml_data["Email"])
+
+        def test_error(self, capsys):
+            self.path_m.exists.return_value = False
+
+            with pytest.raises(SystemExit, match="-1"):
+                _Credentials(autoload=False).load()
+
+            error = "Credentials file not found, created sample (%s)" % self.path_m
+            captured = capsys.readouterr()
+
+            assert captured.err == Fore.LIGHTRED_EX + error + Fore.RESET + "\n"
+            assert captured.out == ""
+
+            self.rc_m.assert_not_called()
+            self.me_m.assert_called_once()
+            self.save_m.assert_called_once()
+
+    class TestSave:
+        @pytest.fixture(autouse=True)
+        def mocks(self):
+            self.dump_m = mock.patch("toml.dump").start()
+            self.path_m = mock.MagicMock()
+            self.path_m.__repr__ = lambda x: repr("<credentials-path>")
+            mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
+            self.vcc_m = mock.MagicMock()
+            mock.patch(
+                "vcm.core.credentials._Credentials.VirtualCampus", self.vcc_m
+            ).start()
+            self.em_m = mock.MagicMock()
+            mock.patch("vcm.core.credentials._Credentials.Email", self.em_m).start()
+
+            yield
+
+            mock.patch.stopall()
+
+        def test_save(self):
+            self.vcc_m.to_json.return_value = {"data": "<VirtualCampusCreds>"}
+            self.em_m.to_json.return_value = {"data": "<EmailCreds>"}
+
+            data = {
+                "VirtualCampus": {"data": "<VirtualCampusCreds>"},
+                "Email": {"data": "<EmailCreds>"},
+            }
+
+            _Credentials(autoload=False).save()
+
+            self.vcc_m.to_json.assert_called_once()
+            self.em_m.to_json.assert_called_once()
+
+            self.path_m.open.assert_called_once_with("wt", encoding="utf-8")
+            pointer = self.path_m.open.return_value.__enter__.return_value
+            self.dump_m.assert_called_once_with(data, pointer)
+
+    @mock.patch("vcm.core.credentials._Credentials.save")
+    def test_make_example(self, save_m):
+        mock.patch("vcm.core.credentials._Credentials.Email", None)
+        mock.patch("vcm.core.credentials._Credentials.VirtualCampus", None)
+
+        _Credentials.make_example()
+
+        assert _Credentials.VirtualCampus
+        assert isinstance(_Credentials.VirtualCampus, VirtualCampusCredentials)
+        assert "username" in _Credentials.VirtualCampus.username
+        assert "password" in _Credentials.VirtualCampus.password
+
+        assert _Credentials.Email
+        assert isinstance(_Credentials.Email, EmailCredentials)
+        assert "username" in _Credentials.Email.username
+        assert "password" in _Credentials.Email.password
+        assert "gmail" in _Credentials.Email.smtp_server
+
+        save_m.assert_called_once()
 
 
 class TestGlobalImports:
