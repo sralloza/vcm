@@ -58,7 +58,7 @@ class _Credentials:
                 return toml.load(pointer)
             except toml.TomlDecodeError:
                 error = "Invalid TOML file: %r" % cls._path
-                print(Fore.RED + error + Fore.RESET, file=sys.stderr)
+                print(Fore.LIGHTRED_EX + error + Fore.RESET, file=sys.stderr)
                 sys.exit(-1)
 
     def load(self):
@@ -67,7 +67,7 @@ class _Credentials:
             self.make_example()
             self.save()
             error = "Credentials file not found, created sample (%s)" % self._path
-            print(Fore.RED + error + Fore.RESET, file=sys.stderr)
+            print(Fore.LIGHTRED_EX + error + Fore.RESET, file=sys.stderr)
             sys.exit(-1)
 
         toml_data = self.read_credentials()
