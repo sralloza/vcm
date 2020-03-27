@@ -47,8 +47,9 @@ class _Credentials:
     VirtualCampus: VirtualCampusCredentials = None
     Email: EmailCredentials = None
 
-    def __init__(self):
-        self.load()
+    def __init__(self, autoload=True):
+        if autoload:
+            self.load()
 
     @classmethod
     def read_credentials(cls):
