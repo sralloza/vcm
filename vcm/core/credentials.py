@@ -86,7 +86,7 @@ class _Credentials:
             "Email": cls.Email.to_json(),
         }
 
-        with cls._path.open("wt") as file_handler:
+        with cls._path.open("wt", encoding="utf-8") as file_handler:
             toml.dump(data, file_handler)
 
     @classmethod
