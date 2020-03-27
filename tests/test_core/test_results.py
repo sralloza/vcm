@@ -79,9 +79,9 @@ class TestResults:
 
         self.counters_m.count_updated.assert_called_once()
         atrf_m.assert_called_with(message)
-        results = capsys.readouterr()
-        assert results.out == color_message + "\n"
-        assert results.err == ""
+        captured = capsys.readouterr()
+        assert captured.out == color_message + "\n"
+        assert captured.err == ""
 
         self.print_lock_m.__enter__.assert_called_once()
         self.print_lock_m.__exit__.assert_called_once()
@@ -95,9 +95,9 @@ class TestResults:
 
         self.counters_m.count_new.assert_called_once()
         atrf_m.assert_called_with(message)
-        results = capsys.readouterr()
-        assert results.out == color_message + "\n"
-        assert results.err == ""
+        captured = capsys.readouterr()
+        assert captured.out == color_message + "\n"
+        assert captured.err == ""
 
         self.print_lock_m.__enter__.assert_called_once()
         self.print_lock_m.__exit__.assert_called_once()

@@ -81,9 +81,9 @@ class TestParseArgs:
             with pytest.raises(SystemExit):
                 opt = modified_parse_args("-check-updates")
 
-            result = capsys.readouterr()
-            assert "unrecognized arguments: -check-updates" in result.err
-            assert result.out == ""
+            captured = capsys.readouterr()
+            assert "unrecognized arguments: -check-updates" in captured.err
+            assert captured.out == ""
 
             opt = modified_parse_args("--check-updates")
             assert opt.check_updates is True
@@ -117,9 +117,9 @@ class TestParseArgs:
             with pytest.raises(SystemExit):
                 modified_parse_args("download --nthreads <invalid>")
 
-            results = capsys.readouterr()
-            assert "invalid int value: '<invalid>'" in results.err
-            assert results.out == ""
+            captured = capsys.readouterr()
+            assert "invalid int value: '<invalid>'" in captured.err
+            assert captured.out == ""
 
         def test_no_killer(self):
             opt = modified_parse_args("download --no-killer")
@@ -183,9 +183,9 @@ class TestParseArgs:
             with pytest.raises(SystemExit):
                 modified_parse_args("notify --nthreads <invalid>")
 
-            results = capsys.readouterr()
-            assert "invalid int value: '<invalid>'" in results.err
-            assert results.out == ""
+            captured = capsys.readouterr()
+            assert "invalid int value: '<invalid>'" in captured.err
+            assert captured.out == ""
 
         def test_no_icons(self):
             opt = modified_parse_args("notify --no-icons")
@@ -199,12 +199,10 @@ class TestParseArgs:
             with pytest.raises(SystemExit):
                 modified_parse_args("settings")
 
-            results = capsys.readouterr()
-            assert (
-                "the following arguments are required: settings_subcommand"
-                in results.err
-            )
-            assert results.out == ""
+            captured = capsys.readouterr()
+            expected = "the following arguments are required: settings_subcommand"
+            assert expected in captured.err
+            assert captured.out == ""
 
         def test_list(self):
             opt = modified_parse_args("settings list")
@@ -217,17 +215,18 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings set")
 
-                results = capsys.readouterr()
-                assert "the following arguments are required: key, value" in results.err
-                assert results.out == ""
+                captured = capsys.readouterr()
+                expected = "the following arguments are required: key, value"
+                assert expected in captured.err
+                assert captured.out == ""
 
             def test_no_value(self, capsys):
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings set key")
 
-                results = capsys.readouterr()
-                assert "the following arguments are required: value" in results.err
-                assert results.out == ""
+                captured = capsys.readouterr()
+                assert "the following arguments are required: value" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings set key value")
@@ -242,9 +241,9 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings show")
 
-                results = capsys.readouterr()
-                assert "the following arguments are required: key" in results.err
-                assert results.out == ""
+                captured = capsys.readouterr()
+                assert "the following arguments are required: key" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings show key")
@@ -258,17 +257,18 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings exclude")
 
-                result = capsys.readouterr()
-                assert "the following arguments are required: subject_id" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                expected = "the following arguments are required: subject_id"
+                assert expected in captured.err
+                assert captured.out == ""
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings exclude <subject-id>")
 
-                result = capsys.readouterr()
-                assert "invalid int value: '<subject-id>'" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                assert "invalid int value: '<subject-id>'" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings exclude 654321")
@@ -282,17 +282,18 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings include")
 
-                result = capsys.readouterr()
-                assert "the following arguments are required: subject_id" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                expected = "the following arguments are required: subject_id"
+                assert expected in captured.err
+                assert captured.out == ""
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings include <subject-id>")
 
-                result = capsys.readouterr()
-                assert "invalid int value: '<subject-id>'" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                assert "invalid int value: '<subject-id>'" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings include 654321")
@@ -306,17 +307,18 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings index")
 
-                result = capsys.readouterr()
-                assert "the following arguments are required: subject_id" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                expected = "the following arguments are required: subject_id"
+                assert expected in captured.err
+                assert captured.out == ""
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings index <subject-id>")
 
-                result = capsys.readouterr()
-                assert "invalid int value: '<subject-id>'" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                assert "invalid int value: '<subject-id>'" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings index 654321")
@@ -330,17 +332,18 @@ class TestParseArgs:
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings unindex")
 
-                result = capsys.readouterr()
-                assert "the following arguments are required: subject_id" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                expected = "the following arguments are required: subject_id"
+                assert expected in captured.err
+                assert captured.out == ""
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
                     modified_parse_args("settings unindex <subject-id>")
 
-                result = capsys.readouterr()
-                assert "invalid int value: '<subject-id>'" in result.err
-                assert result.out == ""
+                captured = capsys.readouterr()
+                assert "invalid int value: '<subject-id>'" in captured.err
+                assert captured.out == ""
 
             def test_ok(self):
                 opt = modified_parse_args("settings unindex 654321")
@@ -443,9 +446,9 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        result = capsys.readouterr()
-        assert self.virtual_version in result.out
-        assert result.err == ""
+        captured = capsys.readouterr()
+        assert self.virtual_version in captured.out
+        assert captured.err == ""
 
     def test_check_updates(self):
         self.set_namespace(check_updates=True)
@@ -471,9 +474,9 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        result = capsys.readouterr()
-        assert "Invalid command: 'invalid-command'" in result.err
-        assert result.out == ""
+        captured = capsys.readouterr()
+        assert "Invalid command: 'invalid-command'" in captured.err
+        assert captured.out == ""
 
     def test_settings_check(self):
         self.set_namespace(command="settings", settings_subcommand="check")
@@ -538,13 +541,13 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        result = capsys.readouterr()
-        assert result.err == ""
+        captured = capsys.readouterr()
+        assert captured.err == ""
 
         for settings_class, settings_values in self.sntc_dict.items():
             for key in settings_values.keys():
                 string = "- %s.%s" % (settings_class, key)
-                assert string in result.out
+                assert string in captured.out
 
     def test_settings_invalid_key_format_error(self, capsys):
         self.set_namespace(
@@ -554,9 +557,9 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        results = capsys.readouterr()
-        assert "Invalid key (must be section.setting)" in results.err
-        assert results.out == ""
+        captured = capsys.readouterr()
+        assert "Invalid key (must be section.setting)" in captured.err
+        assert captured.out == ""
 
     def test_settings_invalid_class_error(self, capsys):
         self.set_namespace(
@@ -566,9 +569,9 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        results = capsys.readouterr()
-        assert "Invalid setting class: 'invalid'" in results.err
-        assert results.out == ""
+        captured = capsys.readouterr()
+        assert "Invalid setting class: 'invalid'" in captured.err
+        assert captured.out == ""
 
     def test_settings_invalid_key_error(self, capsys):
         self.set_namespace(
@@ -578,12 +581,12 @@ class TestMain:
         with pytest.raises(SystemExit):
             main()
 
-        results = capsys.readouterr()
+        captured = capsys.readouterr()
         assert (
             "'invalid_key' is not a valid set_class_b setting (valids are"
-            in results.err
+            in captured.err
         )
-        assert results.out == ""
+        assert captured.out == ""
 
     def test_settings_set(self):
         self.set_namespace(
@@ -615,9 +618,9 @@ class TestMain:
         message = "set_class_b.b2: '%s'" % set_class["b2"]
         self.getattr_m.assert_called_once_with(set_class, "b2")
 
-        results = capsys.readouterr()
-        assert message in results.out
-        assert results.err == ""
+        captured = capsys.readouterr()
+        assert message in captured.out
+        assert captured.err == ""
 
     def test_discover(self):
         self.set_namespace(command="discover")
