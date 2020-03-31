@@ -1,5 +1,5 @@
 # How to install
-There are 2 diferent ways: normal instalation and virtualv instalation.
+There are 2 diferent ways: normal instalation and virtualenv instalation.
 - Developers who prefer to use a single interpreter should get the normal instalation.
 - Developers who doesn't want to have dependency problems and like to manage projects in sepparate virtual environment should get the virtualenv instalation.
 
