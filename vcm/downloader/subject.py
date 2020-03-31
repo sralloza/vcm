@@ -148,6 +148,9 @@ class Subject:
             )
 
         for resource in self.soup.find_all("div", class_="activityinstance"):
+            if not resource.a:
+                continue
+
             section = self.find_section_by_child(resource)
 
             name = resource.a.span.text
