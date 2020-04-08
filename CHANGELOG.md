@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+
+## [3.1.3] - 2020-04-08
 ### Fixed
 * Use `content-type` to define extension if all other methods fail.
 
@@ -92,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix notifier error.
 
 
-[unreleased]: https://github.com/sralloza/vcm/compare/v3.1.2...HEAD
+[unreleased]: https://github.com/sralloza/vcm/compare/v3.1.3...HEAD
+[3.1.3]: https://github.com/sralloza/vcm/compare/v3.1.2...v3.1.3
 [3.1.2]: https://github.com/sralloza/vcm/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/sralloza/vcm/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/sralloza/vcm/compare/v3.0.2...v3.1.0
