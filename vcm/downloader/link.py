@@ -136,12 +136,18 @@ class BaseLink(_Notify):
             self.response_name = Patterns.FILENAME_PATTERN.search(
                 self.content_disposition
             ).group(1)
-            return self._filename_to_ext(self.response_name)
+            extension = self._filename_to_ext(self.response_name)
+            if extension:
+                return extension
         except KeyError:
             pass
 
         self.response_name = Path(self.url).name
-        return self._filename_to_ext(self.response_name) or "ukn"
+        extension = self._filename_to_ext(self.response_name)
+        if extension:
+            return extension
+        return self.content_type.split("/")[-1]
+
 
     def create_subject_folder(self):
         """Creates the subject's principal folder."""
@@ -190,6 +196,7 @@ class BaseLink(_Notify):
         filename = secure_filename(
             self._process_filename(self.name) + "." + self._get_ext_from_response()
         )
+        self.logger.debug("Initial filename: %s", filename)
 
         temp_filepath = self.subject.folder
 
