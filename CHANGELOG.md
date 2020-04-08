@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Fixed
+* Use `content-type` to define extension if all other methods fail.
 
 
 ## [3.1.2] - 2020-03-31
