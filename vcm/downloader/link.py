@@ -190,6 +190,7 @@ class BaseLink(_Notify):
         filename = secure_filename(
             self._process_filename(self.name) + "." + self._get_ext_from_response()
         )
+        self.logger.debug("Initial filename: %s", filename)
 
         temp_filepath = self.subject.folder
 
