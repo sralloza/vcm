@@ -148,7 +148,6 @@ class BaseLink(_Notify):
             return extension
         return self.content_type.split("/")[-1]
 
-
     def create_subject_folder(self):
         """Creates the subject's principal folder."""
         return self.subject.create_folder()
@@ -162,7 +161,9 @@ class BaseLink(_Notify):
             self.redirect_url or self.url, timeout=GeneralSettings.timeout
         )
 
-        self.logger.debug("Response obtained [%d]", self.response.status_code)
+        self.logger.debug(
+            "Response obtained [%d | %s]", self.response.status_code, self.content_type
+        )
 
         if self.response.status_code == 408:
             self.logger.warning("Received response with code 408, retrying")
@@ -222,8 +223,15 @@ class BaseLink(_Notify):
         self.logger.debug("Set filepath: %r", self.filepath)
 
     def download(self):
+        """Wrapper for self.do_download()."""
+        try:
+            self.do_download()
+        finally:
+            del self.response
+
+    def do_download(self):
         """Abstract method to download the Link. Must be overridden by subclasses."""
-        self.logger.debug("Called download() but it was not implemented")
+        self.logger.debug("Called do_download() but it was not implemented")
         raise NotImplementedError
 
     def get_header_length(self):
@@ -315,7 +323,7 @@ class Resource(BaseLink):
         if self.resource_type == "html":
             self.process_request_bs4()
 
-    def download(self):
+    def do_download(self):
         """Downloads the resource."""
         self.logger.debug("Downloading resource %r", self.name)
 
@@ -453,7 +461,7 @@ class Folder(BaseLink):
         )
         self.logger.debug("Response obtained [%d]", self.response.status_code)
 
-    def download(self):
+    def do_download(self):
         """Downloads the folder."""
         self.logger.debug("Downloading folder %r", self.name)
         self.make_request()
@@ -465,13 +473,13 @@ class BaseForum(BaseLink):
 
     BASE_DIR = "foros"
 
-    def download(self):
+    def do_download(self):
         """Downloads the resources found in the forum hierarchy."""
         raise NotImplementedError
 
 
 class ForumList(BaseForum):
-    def download(self):
+    def do_download(self):
         self.logger.debug("Downloading forum list %r", self.name)
         self.make_request()
         self.process_request_bs4()
@@ -499,7 +507,7 @@ class ForumList(BaseForum):
 class ForumDiscussion(BaseForum):
     # NOTIFY = True
 
-    def download(self):
+    def do_download(self):
         self.logger.debug("Downloading forum discussion %r", self.name)
         self.make_request()
         self.process_request_bs4()
@@ -552,7 +560,7 @@ class Delivery(BaseLink):
 
     NOTIFY = True
 
-    def download(self):
+    def do_download(self):
         """Downloads the resources found in the delivery."""
         self.logger.debug("Downloading delivery %r", self.name)
         self.make_request()
@@ -604,7 +612,7 @@ class Delivery(BaseLink):
 class BaseUndownloableLink(BaseLink):
     """Represents a link which can not be downloaded."""
 
-    def download(self):
+    def do_download(self):
         """Doens't do anything, because this is an unparseable link."""
         class_name = type(self).__name__.lower()
         self.logger.debug("Downloading %s %r", class_name, self.name)
@@ -645,7 +653,7 @@ class Quiz(BaseUndownloableLink):
 
 
 class Html(BaseLink):
-    def download(self):
+    def do_download(self):
         """Downloads the resources found in a html web page."""
         self.logger.debug("Downloading html %r", self.name)
         self.make_request()
@@ -747,7 +755,7 @@ class Html(BaseLink):
 
 
 class Image(BaseLink):
-    def download(self):
+    def do_download(self):
         self.make_request()
 
         match = re.search(r"image/(\w+)", self.content_type)
