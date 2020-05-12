@@ -72,3 +72,11 @@ class AlreadyIndexedError(VcmError):
 
 class NotIndexedError(VcmError):
     """Not indexed error."""
+
+
+class VcmWarning(Warning):
+    """Base class for warnings."""
+
+
+class UnkownIconWarning(VcmWarning):
+    """Unkown icon warning."""
