@@ -228,6 +228,7 @@ class BaseLink(_Notify):
             self.do_download()
         finally:
             self.response = None
+            self.soup = None
 
     def do_download(self):
         """Abstract method to download the Link. Must be overridden by subclasses."""
