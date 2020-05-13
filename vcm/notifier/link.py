@@ -1,7 +1,9 @@
 import json
+import warnings
 from enum import Enum, auto
 from pathlib import Path
 
+from vcm.core.exceptions import UnkownIconWarning
 from vcm.downloader.link import BaseLink, Folder
 from vcm.notifier.database import DatabaseLinkInterface
 
@@ -11,6 +13,7 @@ inline_style = "border: none; outline: none; background: none; cursor: pointer; 
 class IconType(Enum):
     assign = auto()
     avi = auto()
+    blackboard = auto()
     chat = auto()
     choice = auto()
     excel = auto()
@@ -32,10 +35,10 @@ class IconType(Enum):
     zip = auto()
 
 
-
 ICON_URLS = {
     IconType.assign: "1PRXBCb3DfAIUqLtq1MgtbkfQVrEd53rn",
     IconType.avi: "1lK5PPQXOye3JF8_KMo-6597HykOHWIWt",
+    IconType.blackboard: "1oXzXqyMbMAom1jffhkpn4dAbgnJsyiF6",
     IconType.chat: "14HuXDc42lIS5xENXTnqwzsJUppZZHB7E",
     IconType.choice: "1RRwJb2xEZjrthl3-KvMqLpYqQeY3jfDJ",
     IconType.excel: "1OiJq2MDfE-OlRLLe8A1piBxEZLuWkZaN",
@@ -59,6 +62,7 @@ ICON_URLS = {
 
 TEMPLATE = "https://drive.google.com/uc?export=download&id=%s"
 ICON_URLS = {x: TEMPLATE % ICON_URLS[x] for x in ICON_URLS}
+
 
 class NotifierLink(BaseLink):
     def __init__(
@@ -127,6 +131,8 @@ class NotifierLink(BaseLink):
             self._icon_type = IconType.forum
         elif "/chat" in self.icon_url:
             self._icon_type = IconType.chat
+        elif "/collaborate" in self.icon_url:
+            self._icon_type = IconType.blackboard
         elif "/page" in self.icon_url:
             self._icon_type = IconType.page
         elif "/url" in self.icon_url:
@@ -162,6 +168,7 @@ class NotifierLink(BaseLink):
         elif "/f/jpeg" in self.icon_url:
             self._icon_type = IconType.jpeg
         else:
+            # warnings.warn(f"Unkown icon type: {self.icon_url}", UnkownIconWarning)
             self._icon_type = IconType.unknown
 
         return self._icon_type
