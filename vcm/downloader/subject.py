@@ -15,15 +15,16 @@ from vcm.core.utils import secure_filename
 from .alias import Alias
 from .link import (
     BaseLink,
+    BlackBoard,
     Chat,
     Delivery,
     Folder,
     ForumList,
     Kalvidres,
     Page,
+    Quiz,
     Resource,
     Url,
-    Quiz,
 )
 
 
@@ -195,6 +196,11 @@ class Subject:
             elif "quiz" in url:
                 self.logger.debug("Created Quiz (subject search): %r, %s", name, url)
                 self.add_link(Quiz(name, section, url, icon_url, self))
+            elif "collaborate" in url:
+                self.logger.debug(
+                    "Created Blackboard (subject search): %r, %s", name, url
+                )
+                self.add_link(BlackBoard(name, section, url, icon_url, self))
 
         self.logger.debug("Downloading files for subject %r", self.name)
 

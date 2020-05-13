@@ -643,6 +643,14 @@ class Quiz(BaseUndownloableLink):
 
     NOTIFY = True
 
+class BlackBoard(BaseUndownloableLink):
+    """Representation of a blackboard link.
+
+    A blackboard is a link to a VoIP chat.
+    """
+
+    NOTIFY = True
+
 
 class Html(BaseLink):
     def download(self):
