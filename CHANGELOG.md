@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add support for `Blackboard` links.
 
+### Changed
+* Improved memory management.
+
 
 ## [3.1.3] - 2020-04-08
 ### Fixed
