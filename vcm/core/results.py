@@ -1,4 +1,5 @@
 """Print real-time alerts."""
+from datetime import datetime
 from threading import Lock
 
 from colorama import Fore
@@ -32,7 +33,8 @@ class Results:
     def print_updated(filepath):
         """Prints an updated message (yellow) thread-safely."""
         Counters.count_updated()
-        message = "File updated no. %3d: %s" % (Counters.updated, filepath)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        message = "[%s] File updated: %s" % (timestamp, filepath)
         with Results.print_lock:
             Printer.print(Fore.LIGHTYELLOW_EX + message + Fore.RESET)
 
@@ -42,7 +44,8 @@ class Results:
     def print_new(filepath):
         """Prints an new message (green) thread-safely."""
         Counters.count_new()
-        message = "New file no. %3d: %s" % (Counters.new, filepath)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        message = "[%s] New file: %s" % (timestamp, filepath)
         with Results.print_lock:
             Printer.print(Fore.LIGHTGREEN_EX + message + Fore.RESET)
 
