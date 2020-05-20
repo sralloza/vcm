@@ -85,12 +85,7 @@ def download(nthreads=20, no_killer=False, status_server=True, discover_only=Fal
     Modules.set_current(Modules.download)
     init_colorama()
 
-    logger.info("STARTING APP")
-    logger.debug("Starting queue")
     queue = Queue()
-
-    logger.debug("Launching subjects finder")
-
     threads = start_workers(queue, nthreads, no_killer=no_killer)
 
     if status_server:
