@@ -255,6 +255,7 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     raise_exc = False
     exception = None
 
+    logger.log(level, "Starting execution of %s", name)
     try:
         result = func(*args, **kwargs)
     except SystemExit as exc:
