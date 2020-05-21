@@ -71,6 +71,11 @@ class Connection(metaclass=MetaSingleton):
         )
 
         if "Usted no se ha identificado" not in self._logout_response.text:
+            import pickle
+            now = datetime.now()
+            GeneralSettings.root_folder.joinpath(
+                "logout-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
+            ).write_bytes(pickle.dumps(self._logout_response))
             raise LogoutError
 
         logger.info("Logged out")
@@ -85,10 +90,11 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= 10:
+                import pickle
                 now = datetime.now()
                 GeneralSettings.root_folder.joinpath(
-                    "login.error.%s.html" % now.strftime("%Y.%m.%d-%H.%M.%S")
-                ).write_text(self._login_response.text, encoding="utf-8")
+                    "login-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
+                ).write_bytes(pickle.dumps(self._login_response))
                 raise LoginError("10 login attempts, unkwown error. See logs.") from exc
             return self.login()
 
