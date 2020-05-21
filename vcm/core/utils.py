@@ -374,7 +374,7 @@ class Printer:
 
 
 def check_updates():
-    from vcm import version as current_version
+    from vcm import __version__ as current_version
     from .networking import connection
 
     response = connection.get(

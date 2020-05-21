@@ -7,8 +7,14 @@ __all__ = []
 
 
 def get_version():
+    """Returns the current version.
+
+    Returns:
+        str: current version.
+    """
+
     version_path = Path(__file__).with_name("VERSION")
-    return version_path.read_text()
+    return version_path.read_text().strip()
 
 
-version = get_version()
+__version__ = get_version()

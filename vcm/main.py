@@ -100,9 +100,9 @@ def main(args=None):
     opt, parser = parse_args(args, parser=True)
 
     if opt.version:
-        from vcm import version
+        from vcm import __version__
 
-        exit("Version: %s" % version)
+        exit("Version: %s" % __version__)
 
     if opt.check_updates:
         check_updates()
