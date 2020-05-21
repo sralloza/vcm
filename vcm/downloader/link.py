@@ -220,7 +220,7 @@ class BaseLink(_Notify):
             )
         )
 
-        self.logger.debug("Set filepath: %r", self.filepath)
+        self.logger.debug("Set filepath: %r", self.filepath.as_posix())
 
     def download(self):
         """Wrapper for self.do_download()."""
