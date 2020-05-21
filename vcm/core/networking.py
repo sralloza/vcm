@@ -13,6 +13,11 @@ from .settings import GeneralSettings
 
 logger = logging.getLogger(__name__)
 
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, "
+    "like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+)
+
 
 class MetaSingleton(type):
     """Metaclass to always make class return the same instance."""
@@ -82,22 +87,25 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logged out")
 
     def login(self):
+        login_attempts = 5
         try:
             logger.debug("Logging in")
             self._login()
             logger.info("Logged in")
-        except (KeyError, TypeError, LoginError) as exc:
+        except Exception as exc:
             logger.warning("Needed to call again Connection.login() due to %r", exc)
             self._login_attempts += 1
 
-            if self._login_attempts >= 10:
+            if self._login_attempts >= login_attempts:
                 import pickle
 
                 now = datetime.now()
                 GeneralSettings.root_folder.joinpath(
                     "login-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
                 ).write_bytes(pickle.dumps(self._login_response))
-                raise LoginError("10 login attempts, unkwown error. See logs.") from exc
+                raise LoginError(
+                    f"{login_attempts} login attempts, unkwown error. See logs."
+                ) from exc
             return self.login()
 
     def _login(self):
@@ -175,12 +183,7 @@ class Downloader(requests.Session):
             self.logger.setLevel(logging.CRITICAL)
 
         super().__init__()
-        self.headers.update(
-            {
-                "User-Agent": "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
-            }
-        )
+        self.headers.update({"User-Agent": USER_AGENT})
 
     def request(self, method, url, **kwargs):
         self.logger.debug("%s %r", method, url)
