@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from colorama import Fore
 from requests import Response
 
+from vcm.core.exceptions import MoodleError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
@@ -164,6 +165,9 @@ class BaseLink(_Notify):
         self.logger.debug(
             "Response obtained [%d | %s]", self.response.status_code, self.content_type
         )
+
+        if self.response.status_code == 503:
+            raise MoodleError("Moodle server replied with 503")
 
         if self.response.status_code == 408:
             self.logger.warning("Received response with code 408, retrying")

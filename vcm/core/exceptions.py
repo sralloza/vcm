@@ -74,6 +74,10 @@ class NotIndexedError(VcmError):
     """Not indexed error."""
 
 
+class MoodleError(VcmError):
+    """Moodle error."""
+
+
 class VcmWarning(Warning):
     """Base class for warnings."""
 
