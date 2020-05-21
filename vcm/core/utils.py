@@ -5,7 +5,7 @@ import sys
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from threading import current_thread
+from threading import Lock, current_thread
 from traceback import format_exc
 from typing import Union
 
@@ -363,6 +363,7 @@ def useless(*args, **kwargs):
 
 class Printer:
     _print = print
+    _lock = Lock()
 
     @classmethod
     def silence(cls):
@@ -370,7 +371,8 @@ class Printer:
 
     @classmethod
     def print(cls, *args, **kwargs):
-        return cls._print(*args, **kwargs)
+        with cls._lock:
+            return cls._print(*args, **kwargs)
 
 
 def check_updates():
