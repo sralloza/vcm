@@ -30,7 +30,7 @@ def notify(send_to: _A, use_icons=True, nthreads=20, status_server=False):
 
     logger = logging.getLogger(__name__)
     logger.info(
-        "Launching notify(send_to=%r, use_icons=%s, nthreads=%s, status_server=%s",
+        "Launching notify(send_to=%r, use_icons=%s, nthreads=%s, status_server=%s)",
         send_to,
         use_icons,
         nthreads,
