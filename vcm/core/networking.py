@@ -168,38 +168,23 @@ class Downloader(requests.Session):
             }
         )
 
-    def get(self, url, **kwargs):
-        self.logger.debug("GET %r", url)
+    def request(self, method, url, **kwargs):
+        self.logger.debug("%s %r", method, url)
         retries = GeneralSettings.retries
 
         while retries > 0:
             try:
-                return super().get(url, **kwargs)
+                return super().request(method, url, **kwargs)
             except requests.exceptions.ConnectionError:
                 retries -= 1
-                self.logger.warning("Connection error in GET, retries=%s", retries)
+                self.logger.warning(
+                    "Connection error in %s, retries=%s", method, retries
+                )
             except requests.exceptions.ReadTimeout:
                 retries -= 1
-                self.logger.warning("Timeout error in GET, retries=%s", retries)
+                self.logger.warning("Timeout error in %s, retries=%s", method, retries)
 
-        self.logger.critical("Download error in GET %r", url)
-        raise DownloaderError("max retries failed.")
-
-    def post(self, url, data=None, json=None, **kwargs):
-        self.logger.debug("POST %r", url)
-        retries = GeneralSettings.retries
-
-        while retries > 0:
-            try:
-                return super().post(url=url, data=data, json=json, **kwargs)
-            except requests.exceptions.ConnectionError:
-                retries -= 1
-                self.logger.warning("Connection error in POST, retries=%s", retries)
-            except requests.exceptions.ReadTimeout:
-                retries -= 1
-                self.logger.warning("Timeout error in POST, retries=%s", retries)
-
-        self.logger.critical("Download error in POST %r", url)
+        self.logger.critical("Download error in %s %r", method, url)
         raise DownloaderError("max retries failed.")
 
 
