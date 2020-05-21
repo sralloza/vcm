@@ -1,5 +1,4 @@
 """Multithreading workers for the VCM."""
-
 from enum import Enum, auto
 from logging import getLogger
 from queue import Empty as EmptyQueue
@@ -11,6 +10,7 @@ from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
+from vcm.core.utils import ErrorCounter
 
 from .modules import Modules
 from .time_operations import seconds_to_str
@@ -18,9 +18,6 @@ from .utils import Printer, getch
 
 logger = getLogger(__name__)
 
-
-class Empty:
-    pass
 
 
 running = Event()
@@ -90,6 +87,7 @@ class Worker(Thread):
 
         from vcm.downloader.subject import Subject
         from vcm.downloader.link import BaseLink
+
         self.Subject = Subject
         self.BaseLink = BaseLink
 
@@ -291,6 +289,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
 
 
 def print_fatal_error(exception, current_object):
+    ErrorCounter.record_error(exception)
     logger.exception(
         "%s in %r(url=%r) (%r)",
         type(exception).__name__,

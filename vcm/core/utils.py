@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import time
+from collections import defaultdict
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import Lock, current_thread
@@ -260,10 +261,13 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     try:
         result = func(*args, **kwargs)
     finally:
-        is_exception = sys.exc_info()[0] is not None
+        if ErrorCounter.has_errors():
+            logger.warning(ErrorCounter.report())
+
         delta_t = time.time() - t0
         logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
 
+        is_exception = sys.exc_info()[0] is not None
         if not is_exception:
             return result
 
@@ -403,3 +407,26 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+class ErrorCounter:
+    error_map = defaultdict(lambda: 0)
+
+    @classmethod
+    def has_errors(cls) -> bool:
+        return bool(cls.error_map)
+
+    @classmethod
+    def format_exc(cls, exc: Exception) -> str:
+        return re.search(r"(\w+)\'>", str(exc)).group(1)
+
+    @classmethod
+    def record_error(cls, exc: Exception):
+        cls.error_map[exc.__class__] += 1
+
+    @classmethod
+    def report(cls) -> str:
+        message = f"{sum(cls.error_map.values())} errors found: "
+        errors = [f"{cls.format_exc(k)}: {v}" for k, v in cls.error_map.items()]
+        message += ", ".join(errors)
+        return message
