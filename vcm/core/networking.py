@@ -72,6 +72,7 @@ class Connection(metaclass=MetaSingleton):
 
         if "Usted no se ha identificado" not in self._logout_response.text:
             import pickle
+
             now = datetime.now()
             GeneralSettings.root_folder.joinpath(
                 "logout-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
@@ -91,6 +92,7 @@ class Connection(metaclass=MetaSingleton):
 
             if self._login_attempts >= 10:
                 import pickle
+
                 now = datetime.now()
                 GeneralSettings.root_folder.joinpath(
                     "login-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
@@ -100,12 +102,18 @@ class Connection(metaclass=MetaSingleton):
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
-        if response.status_code == 503 and "maintenance" in response.reason:
-            logger.critical(
-                "Moodle under maintenance (%d - %s)",
-                response.status_code,
-                response.reason,
-            )
+        if response.status_code == 503:
+            if "maintenance" in response.reason:
+                logger.critical(
+                    "Moodle under maintenance (%d - %s)",
+                    response.status_code,
+                    response.reason,
+                )
+            else:
+                logger.critical(
+                    "Moodle error (%d - %s)", response.status_code, response.reason
+                )
+
             exit(-1)
 
         soup = BeautifulSoup(response.text, "html.parser")
