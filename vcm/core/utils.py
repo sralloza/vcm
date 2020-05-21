@@ -245,6 +245,7 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except Exception as exc:
+        logger.exception("Exception catched:")
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 
 
