@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import sys
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -253,22 +254,18 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     name = name or func.__name__
     t0 = time.time()
-    raise_exc = False
-    exception = None
+    result = None
 
     logger.log(level, "Starting execution of %s", name)
     try:
         result = func(*args, **kwargs)
-    except SystemExit as exc:
-        raise_exc = True
-        exception = exc
+    finally:
+        is_exception = sys.exc_info()[0] is not None
+        delta_t = time.time() - t0
+        logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
 
-    delta_t = time.time() - t0
-    logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
-
-    if raise_exc:
-        raise exception
-    return result
+        if not is_exception:
+            return result
 
 
 _true_set = {"yes", "true", "t", "y", "1"}
