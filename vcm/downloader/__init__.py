@@ -18,10 +18,10 @@ from vcm.core.utils import Printer, timing
 
 from .subject import Subject
 
-logger = logging.getLogger(__name__)
-
 
 def get_subjects(queue):
+    logger = logging.getLogger(__name__)
+
     connection = Connection()
     request = connection.get(connection.user_url)
     soup = BeautifulSoup(request.text, "html.parser")
@@ -59,6 +59,7 @@ def find_subjects(queue, discover_only=False):
         queue (Queue): queue to organize threads.
 
     """
+    logger = logging.getLogger(__name__)
     logger.debug("Finding subjects")
 
     subjects = get_subjects(queue)
@@ -75,12 +76,26 @@ def find_subjects(queue, discover_only=False):
 
 @timing(name="VCM downloader")
 def download(nthreads=20, no_killer=False, status_server=True, discover_only=False):
-    """Starts the app.
+    """
 
     Args:
-        nthreads (int): number of threads to start.
-        no_killer (bool): desactivate Killer thread.
+        nthreads (int, optional): number of threads to use. Defaults to 20.
+        no_killer (bool, optional): if True, an extra thread will be launched
+            to detect key pressings, shuch as K for kill the app. Defaults to False.
+        status_server (bool, optional): if true, a http server will be opened
+            in port 80 to show the status of each thread. Defaults to True.
+        discover_only (bool, optional): if true, it will only discover the subjects,
+            without downloading anything. Defaults to False.
     """
+
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Launching notify(nthreads=%r, no_killer=%s, status_server=%s, discover_only=%s)",
+        nthreads,
+        no_killer,
+        status_server,
+        discover_only,
+    )
 
     Modules.set_current(Modules.download)
     init_colorama()
