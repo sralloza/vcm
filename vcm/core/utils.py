@@ -364,17 +364,17 @@ def create_desktop_cmds():
         file_handler.write(template % "download")
 
 
-def useless(*args, **kwargs):
-    pass
-
-
 class Printer:
     _print = print
     _lock = Lock()
 
     @classmethod
     def silence(cls):
-        cls._print = useless
+        cls._print = cls.useless
+
+    @classmethod
+    def useless(cls, *args, **kwargs):
+        pass
 
     @classmethod
     def print(cls, *args, **kwargs):
