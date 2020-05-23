@@ -343,27 +343,6 @@ def setup_vcm():
     configure_logging()
 
 
-def is_called_from_shell():
-    ppid = os.getppid()  # Get parent process id
-    a = psutil.Process(ppid).name().lower()
-    return "bash" in a or "cmd" in a
-
-
-def create_desktop_cmds():
-    desktop_path = Path.home() / "desktop"
-    notify_path = desktop_path / "notify.cmd"
-    download_path = desktop_path / "download.cmd"
-
-    exe_path = Path.cwd() / "vcm.exe"
-
-    template = f'@echo off\n"{exe_path}" %s'
-
-    with notify_path.open("wt") as file_handler:
-        file_handler.write(template % "notify")
-    with download_path.open("wt") as file_handler:
-        file_handler.write(template % "download")
-
-
 class Printer:
     _print = print
     _lock = Lock()
