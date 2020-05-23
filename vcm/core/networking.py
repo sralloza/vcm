@@ -2,7 +2,6 @@
 
 """Custom downloader with retries control."""
 import logging
-from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,6 +9,7 @@ from bs4 import BeautifulSoup
 from .credentials import Credentials
 from .exceptions import DownloaderError, LoginError, LogoutError
 from .settings import GeneralSettings
+from .utils import save_crash_context
 
 logger = logging.getLogger(__name__)
 
@@ -76,12 +76,7 @@ class Connection(metaclass=MetaSingleton):
         )
 
         if "Usted no se ha identificado" not in self._logout_response.text:
-            import pickle
-
-            now = datetime.now()
-            GeneralSettings.root_folder.joinpath(
-                "logout-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
-            ).write_bytes(pickle.dumps(self._logout_response))
+            save_crash_context(self._logout_response, "logout-error")
             raise LogoutError
 
         logger.info("Logged out")
@@ -97,12 +92,8 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= login_attempts:
-                import pickle
+                save_crash_context(self._login_response, "login-error")
 
-                now = datetime.now()
-                GeneralSettings.root_folder.joinpath(
-                    "login-error.%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
-                ).write_bytes(pickle.dumps(self._login_response))
                 raise LoginError(
                     f"{login_attempts} login attempts, unkwown error. See logs."
                 ) from exc

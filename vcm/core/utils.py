@@ -1,9 +1,11 @@
 import logging
 import os
+import pickle
 import re
 import sys
 import time
 from collections import defaultdict
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from threading import Lock, current_thread
@@ -16,6 +18,7 @@ from colorama import init as start_colorama
 from decorator import decorator
 from packaging import version
 
+from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
@@ -430,3 +433,10 @@ class ErrorCounter:
         errors = [f"{cls.format_exc(k)}: {v}" for k, v in cls.error_map.items()]
         message += ", ".join(errors)
         return message
+
+
+def save_crash_context(crash_object, object_name):
+    now = datetime.now()
+    GeneralSettings.root_folder.joinpath(
+        object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
+    ).write_bytes(pickle.dumps(crash_object))

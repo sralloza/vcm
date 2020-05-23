@@ -17,7 +17,7 @@ from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Patterns, Printer, secure_filename
+from vcm.core.utils import Patterns, Printer, save_crash_context, secure_filename
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -656,6 +656,7 @@ class Quiz(BaseUndownloableLink):
 
     NOTIFY = True
 
+
 class BlackBoard(BaseUndownloableLink):
     """Representation of a blackboard link.
 
@@ -762,9 +763,7 @@ class Html(BaseLink):
         self.logger.error("ERROR LINK: %s", self.url)
         self.logger.error("ERROR HEADS: %s", self.response.headers)
 
-        filename = GeneralSettings.root_folder.joinpath("error-%d.html" % random_name)
-        with filename.open("wb") as file_handler:
-            file_handler.write(self.response.content)
+        save_crash_context(self.response, "html-algorithm-failure-%d" % random_name)
 
 
 class Image(BaseLink):
