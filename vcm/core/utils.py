@@ -18,7 +18,6 @@ from colorama import init as start_colorama
 from decorator import decorator
 from packaging import version
 
-from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 
 logger = logging.getLogger(__name__)
@@ -415,7 +414,14 @@ class ErrorCounter:
 
 
 def save_crash_context(crash_object, object_name):
+    from .settings import GeneralSettings
+
     now = datetime.now()
     GeneralSettings.root_folder.joinpath(
         object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
     ).write_bytes(pickle.dumps(crash_object))
+
+
+def handle_fatal_error_exit(exit_message, exit_code=-1):
+    print(Fore.RED + exit_message + Fore.RESET, file=sys.stderr)
+    sys.exit(exit_code)

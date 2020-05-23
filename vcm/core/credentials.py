@@ -2,7 +2,8 @@
 import toml
 from colorama import Fore
 
-from vcm.core.settings import CoreSettings
+from .settings import CoreSettings
+from .utils import handle_fatal_error_exit
 
 
 class EmailCredentials:
@@ -58,7 +59,7 @@ class _Credentials:
     @classmethod
     def make_default(cls, reason):
         cls.make_example()
-        exit(Fore.RED + reason + Fore.RESET)
+        return handle_fatal_error_exit(reason)
 
     @classmethod
     def read_credentials(cls):
@@ -69,7 +70,7 @@ class _Credentials:
             try:
                 return toml.load(pointer)
             except toml.TomlDecodeError:
-                exit(Fore.RED + "Invalid TOML file: %r" % cls._path + Fore.RESET)
+                return handle_fatal_error_exit("Invalid TOML file: %r" % cls._path)
 
     def load(self):
         """Loads the credentials settings."""
@@ -77,10 +78,8 @@ class _Credentials:
 
             self.make_example()
             self.save()
-            return exit(
-                Fore.RED
-                + f"Credentials file not found, created sample ({self._path})"
-                + Fore.RESET
+            return handle_fatal_error_exit(
+                f"Credentials file not found, created sample ({self._path})"
             )
 
         yaml_data = self.read_credentials()
