@@ -205,7 +205,7 @@ class Patterns:
     FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
 
 
-def exception_exit(exception, to_stderr=False, red=True):
+def exception_exit(exception, to_stderr=True, red=True):
     """Exists the progam showing an exception.
 
     Args:
