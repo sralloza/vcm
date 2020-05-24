@@ -78,6 +78,10 @@ class MoodleError(VcmError):
     """Moodle error."""
 
 
+class ResponseError(Exception):
+    """Response error."""
+
+
 class VcmWarning(Warning):
     """Base class for warnings."""
 
