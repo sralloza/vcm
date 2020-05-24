@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from colorama import Fore
 from requests import Response
 
-from vcm.core.exceptions import MoodleError
+from vcm.core.exceptions import MoodleError, ResponseError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
@@ -166,12 +166,15 @@ class BaseLink(_Notify):
             "Response obtained [%d | %s]", self.response.status_code, self.content_type
         )
 
-        if self.response.status_code == 503:
-            raise MoodleError("Moodle server replied with 503")
+        if 500 <= self.response.status_code <= 599:
+            raise MoodleError(f"Moodle server replied with {self.response.status_code}")
 
         if self.response.status_code == 408:
             self.logger.warning("Received response with code 408, retrying")
             return self.make_request()
+
+        if not self.response.ok:
+            raise ResponseError(f"Got HTTP {self.response.status_code}")
 
     def close_connection(self):
         warnings.warn(
