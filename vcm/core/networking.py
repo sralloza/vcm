@@ -2,6 +2,7 @@
 
 """Custom downloader with retries control."""
 import logging
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -38,10 +39,10 @@ class MetaSingleton(type):
 class Connection(metaclass=MetaSingleton):
     def __init__(self):
         self._downloader = Downloader()
-        self._logout_response: requests.Response = None
-        self._login_response: requests.Response = None
-        self._sesskey: str = None
-        self._user_url: str = None
+        self._logout_response: Optional[requests.Response] = None
+        self._login_response: Optional[requests.Response] = None
+        self._sesskey: Optional[str] = None
+        self._user_url: Optional[str] = None
         self._login_attempts = 0
 
     @property
