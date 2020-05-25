@@ -1,20 +1,17 @@
 """File downloader for the Virtual Campus of the Valladolid Unversity."""
 import logging
-import re
 from queue import Queue
+import re
 
 from bs4 import BeautifulSoup
-from colorama import Fore
 from colorama import init as init_colorama
 
 from vcm.core._threading import start_workers
-from vcm.core.exceptions import LoginError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
-from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
-from vcm.core.utils import Printer, timing
+from vcm.core.utils import timing
 
 from .subject import Subject
 
