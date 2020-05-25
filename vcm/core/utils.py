@@ -1,18 +1,16 @@
+from collections import defaultdict
+from datetime import datetime
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-import time
-from collections import defaultdict
-from datetime import datetime
-from logging.handlers import RotatingFileHandler
-from pathlib import Path
 from threading import Lock, current_thread
+import time
 from traceback import format_exc
 from typing import Union
 
-import psutil
 from colorama import Fore
 from colorama import init as start_colorama
 from decorator import decorator
