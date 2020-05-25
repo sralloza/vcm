@@ -417,9 +417,11 @@ def save_crash_context(crash_object, object_name):
     from .settings import GeneralSettings
 
     now = datetime.now()
-    GeneralSettings.root_folder.joinpath(
+    crash_path = GeneralSettings.root_folder.joinpath(
         object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
-    ).write_bytes(pickle.dumps(crash_object))
+    )
+    crash_path.write_bytes(pickle.dumps(crash_object))
+    logger.info("Crashed saved as %s", crash_path.as_posix())
 
 
 def handle_fatal_error_exit(exit_message, exit_code=-1):
