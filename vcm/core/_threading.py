@@ -10,14 +10,11 @@ from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from vcm.core.utils import ErrorCounter
-
 from .modules import Modules
 from .time_operations import seconds_to_str
-from .utils import Printer, getch
+from .utils import ErrorCounter, Printer, getch
 
 logger = getLogger(__name__)
-
 
 
 running = Event()
