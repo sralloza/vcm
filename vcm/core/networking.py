@@ -71,10 +71,30 @@ class Connection(metaclass=MetaSingleton):
 
     def logout(self):
         logger.debug("Logging out")
-        self._logout_response = self.post(
-            "https://campusvirtual.uva.es/login/logout.php?sesskey=%s" % self.sesskey,
-            data={"sesskey": self.sesskey},
-        )
+        logout_retries = 5
+
+        while True:
+            self._logout_response = self.post(
+                "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
+                % self.sesskey,
+                data={"sesskey": self.sesskey},
+            )
+            if 500 <= self._logout_response.status_code <= 599:
+                logout_retries -= 1
+
+                if logout_retries <= 0:
+                    save_crash_context(
+                        self._logout_response, "logout-error", "Logout retries expired"
+                    )
+                    raise LogoutError("Logout retries expired")
+
+                logger.warning(
+                    "Server Error during logout [%d], %d retries left",
+                    self._logout_response.status_code,
+                    logout_retries,
+                )
+                continue
+            break
 
         if "Usted no se ha identificado" not in self._logout_response.text:
             save_crash_context(
