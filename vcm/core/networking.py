@@ -136,6 +136,10 @@ class Connection(metaclass=MetaSingleton):
                     "Moodle error (%d - %s)", response.status_code, response.reason
                 )
 
+                raise MoodleError(
+                    f"Moodle error ({response.status_code} - {response.reason})",
+                )
+
             exit(-1)
 
         soup = BeautifulSoup(response.text, "html.parser")
