@@ -4,6 +4,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+### Added
+* Added retry control to `logout`.
+* Added summary of errors at the end of the log.
+* Added system to save context in case of fatal error.
+* Insert retry control for every http method.
+
+### Changed
+* Changed status http server port from `80` to `8080`.
+* In case of error dump login or logout response as `pickle`.
+* `Login attempts` reduced to 5.
+
+### Fixed
+* `@timing` always logs time delta, whether an exception is raised or not.
+* Detect initial failure of moodle.
+* Improve detection of `4xx` and `5xx` errors from the server.
+* Support handing of `503` errors from the server.
+* `utils.Printer` is now thread safe.
+
+
 ## [3.2.1] - 2020-05-21
 ### Added
 * Log message when starting execution.
