@@ -766,7 +766,11 @@ class Html(BaseLink):
         self.logger.error("ERROR LINK: %s", self.url)
         self.logger.error("ERROR HEADS: %s", self.response.headers)
 
-        save_crash_context(self.response, "html-algorithm-failure-%d" % random_name)
+        save_crash_context(
+            self.response,
+            "html-algorithm-failure-%d" % random_name,
+            "html algorithm failure",
+        )
 
 
 class Image(BaseLink):

@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .credentials import Credentials
-from .exceptions import DownloaderError, LoginError, LogoutError
+from .exceptions import DownloaderError, LoginError, LogoutError, MoodleError
 from .settings import GeneralSettings
 from .utils import save_crash_context
 
@@ -77,8 +77,10 @@ class Connection(metaclass=MetaSingleton):
         )
 
         if "Usted no se ha identificado" not in self._logout_response.text:
-            save_crash_context(self._logout_response, "logout-error")
-            raise LogoutError
+            save_crash_context(
+                self._logout_response, "logout-error", "unkown error happened"
+            )
+            raise LogoutError("Unkown error happened")
 
         logger.info("Logged out")
 
@@ -93,7 +95,7 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= login_attempts:
-                save_crash_context(self._login_response, "login-error")
+                save_crash_context(self._login_response, "login-error", "Login retries expired")
 
                 raise LoginError(
                     f"{login_attempts} login attempts, unkwown error. See logs."

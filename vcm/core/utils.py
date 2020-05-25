@@ -1,13 +1,14 @@
-from collections import defaultdict
-from datetime import datetime
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-from threading import Lock, current_thread
 import time
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from threading import Lock, current_thread
 from traceback import format_exc
 from typing import Union
 
@@ -411,14 +412,20 @@ class ErrorCounter:
         return message
 
 
-def save_crash_context(crash_object, object_name):
+def save_crash_context(crash_object, object_name, reason=None):
     from .settings import GeneralSettings
 
     now = datetime.now()
     crash_path = GeneralSettings.root_folder.joinpath(
         object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
     )
-    crash_path.write_bytes(pickle.dumps(crash_object))
+
+    crash_object_copy = deepcopy(crash_object)
+
+    if reason:
+        setattr(crash_object_copy,"vcm_crash_reason", reason)
+
+    crash_path.write_bytes(pickle.dumps(crash_object_copy))
     logger.info("Crashed saved as %s", crash_path.as_posix())
 
 
