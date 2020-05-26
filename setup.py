@@ -1,10 +1,13 @@
-import sys
 from pathlib import Path
+import sys
 
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-version = Path(__file__).parent.joinpath("vcm/VERSION").read_text()
+import versioneer
+
+version = versioneer.get_version()
+cmdclass = versioneer.get_cmdclass()
 requirements = Path(__file__).with_name("requirements.txt").read_text().splitlines()
 
 
@@ -28,6 +31,8 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+cmdclass["test"] = PyTest
+
 setup(
     name="vcm",
     url="https://github.com/sralloza/vcm.git",
@@ -40,7 +45,7 @@ setup(
     packages=["vcm", "vcm.core", "vcm.notifier", "vcm.downloader"],
     install_requires=requirements,
     package_data={"vcm": ["VERSION"]},
-    tests_require=["pytest"],
-    cmdclass={"test": PyTest},
+    tests_require=["pytest", "coverage"],
+    cmdclass=cmdclass,
     zip_safe=False,
 )
