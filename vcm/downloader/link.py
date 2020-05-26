@@ -1,23 +1,21 @@
 """Contains the links that can be downloaded."""
+from hashlib import sha1
 import logging
 import os
-import random
+from pathlib import Path
 import re
 import warnings
-from hashlib import sha1
-from pathlib import Path
 
-import unidecode
 from bs4 import BeautifulSoup
-from colorama import Fore
 from requests import Response
+import unidecode
 
-from vcm.core.exceptions import MoodleError, ResponseError
+from vcm.core.exceptions import AlgorithmFailureError, MoodleError, ResponseError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Patterns, Printer, save_crash_context, secure_filename
+from vcm.core.utils import Patterns, save_crash_context, secure_filename
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -760,19 +758,13 @@ class Html(BaseLink):
             return None
 
     def handle_algorithm_failure(self):
-        random_name = random.randint(0, 1000)
-        self.logger.error("HTML ALGORITHM FAILURE (ID=%s)", random_name)
-        message = "HTML ALGORITHM FAILURE (ID=%s)" % random_name
-        Printer.print(Fore.LIGHTRED_EX + message + Fore.RESET)
-
-        self.logger.error("ERROR LINK: %s", self.url)
-        self.logger.error("ERROR HEADS: %s", self.response.headers)
+        self.logger.error("HTML ALGORITHM FAILURE")
 
         save_crash_context(
-            self.response,
-            "html-algorithm-failure-%d" % random_name,
-            "html algorithm failure",
+            self.response, "html-algorithm-failure", "html algorithm failure",
         )
+
+        raise AlgorithmFailureError
 
 
 class Image(BaseLink):
