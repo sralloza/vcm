@@ -693,6 +693,8 @@ class Html(BaseLink):
         # call actual algorithms
         algorithms = [x for x in dir(self) if x.startswith("check_algorithm")]
         algorithms = [getattr(self, x) for x in algorithms]
+        algorithms.sort(key=lambda x: x.__name__)
+
         for algorithm in algorithms:
             resource = algorithm(name)
             if resource:
