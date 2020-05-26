@@ -78,7 +78,7 @@ class MoodleError(VcmError):
     """Moodle error."""
 
 
-class ResponseError(Exception):
+class ResponseError(VcmError):
     """Response error."""
 
 
