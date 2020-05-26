@@ -82,17 +82,18 @@ class Connection(metaclass=MetaSingleton):
             if 500 <= self._logout_response.status_code <= 599:
                 logout_retries -= 1
 
+                logger.warning(
+                    "Server Error during logout [%d], %d retries left",
+                    self._logout_response.status_code,
+                    logout_retries,
+                )
+
                 if logout_retries <= 0:
                     save_crash_context(
                         self._logout_response, "logout-error", "Logout retries expired"
                     )
                     raise LogoutError("Logout retries expired")
 
-                logger.warning(
-                    "Server Error during logout [%d], %d retries left",
-                    self._logout_response.status_code,
-                    logout_retries,
-                )
                 continue
             break
 
@@ -115,7 +116,9 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= login_attempts:
-                save_crash_context(self._login_response, "login-error", "Login retries expired")
+                save_crash_context(
+                    self._login_response, "login-error", "Login retries expired"
+                )
 
                 raise LoginError(
                     f"{login_attempts} login attempts, unkwown error. See logs."
