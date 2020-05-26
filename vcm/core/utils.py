@@ -416,14 +416,25 @@ def save_crash_context(crash_object, object_name, reason=None):
     from .settings import GeneralSettings
 
     now = datetime.now()
-    crash_path = GeneralSettings.root_folder.joinpath(
-        object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
-    )
+    index = 0
+    while True:
+        crash_path = GeneralSettings.root_folder.joinpath(
+            object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
+        )
+        if index:
+            crash_path = crash_path.with_name(
+                crash_path.stem + f".{index}" + crash_path.suffix
+            )
+
+        if not crash_path.exists():
+            break
+
+        index += 1
 
     crash_object_copy = deepcopy(crash_object)
 
     if reason:
-        setattr(crash_object_copy,"vcm_crash_reason", reason)
+        setattr(crash_object_copy, "vcm_crash_reason", reason)
 
     crash_path.write_bytes(pickle.dumps(crash_object_copy))
     logger.info("Crashed saved as %s", crash_path.as_posix())
