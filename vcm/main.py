@@ -1,9 +1,11 @@
 import argparse
 from enum import Enum
+import logging
 
+from vcm import __version__ as version
 from vcm.core.settings import (
-    SETTINGS_CLASSES,
     NotifySettings,
+    SETTINGS_CLASSES,
     exclude,
     include,
     section_index,
@@ -20,6 +22,8 @@ from vcm.core.utils import (
 )
 from vcm.downloader import download
 from vcm.notifier import notify
+
+logger = logging.getLogger(__name__)
 
 
 class Command(Enum):
@@ -100,9 +104,7 @@ def main(args=None):
     opt, parser = parse_args(args, parser=True)
 
     if opt.version:
-        from vcm import __version__
-
-        exit("Version: %s" % __version__)
+        exit("Version: %s" % version)
 
     if opt.check_updates:
         check_updates()
@@ -191,6 +193,7 @@ def main(args=None):
 
     # Command executed is not 'settings', so check settings
     setup_vcm()
+    logger.info("vcm version: %s", version)
 
     if opt.command == Command.discover:
         Printer.silence()
