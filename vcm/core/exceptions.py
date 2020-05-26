@@ -82,6 +82,10 @@ class ResponseError(VcmError):
     """Response error."""
 
 
+class AlgorithmFailureError(VcmError):
+    """Algorihm failure error."""
+
+
 class VcmWarning(Warning):
     """Base class for warnings."""
 
