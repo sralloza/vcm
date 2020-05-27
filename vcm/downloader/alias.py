@@ -5,7 +5,7 @@ from hashlib import sha1
 from pathlib import Path
 from threading import Semaphore
 
-from vcm.core.exceptions import AliasFatalError, AliasNotFoundError, IdError
+from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
 from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Singleton
 

@@ -2,7 +2,8 @@ import logging
 from typing import List
 
 from vcm.downloader.subject import Subject
-from vcm.notifier.link import NotifierLink
+
+from .link import NotifierLink
 
 NL = List[NotifierLink]
 

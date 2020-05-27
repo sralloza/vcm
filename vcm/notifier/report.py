@@ -2,31 +2,15 @@ import logging
 import platform
 from typing import List, Union
 
-from vcm.core.settings import NotifySettings
 from vcm.downloader.subject import Subject
-from vcm.notifier.subject import NotifierSubject
 
 from .email_backup import send_email
+from .subject import NotifierSubject
 
 logger = logging.getLogger(__name__)
 
 A = Union[List[str], str]
 S = List[Subject]
-
-
-# FORM_LIKE_A_STYLE = """<style>
-#     .btn-link {
-#     border: none;
-#     outline: none;
-#     background: none;
-#     cursor: pointer;
-#     color: #0000EE;
-#     padding: 0;
-#     text-decoration: underline;
-#     font-family: inherit;
-#     font-size: inherit;
-# }
-#     </style>"""
 
 
 def send_report(subjects: S, use_icons: bool, send_to: A):

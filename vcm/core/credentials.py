@@ -1,6 +1,5 @@
 """Credentials manager for the web page of the University of Valladolid."""
 import toml
-from colorama import Fore
 
 from .settings import CoreSettings
 from .utils import handle_fatal_error_exit
