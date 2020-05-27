@@ -346,6 +346,10 @@ class Printer:
     _lock = Lock()
 
     @classmethod
+    def reset(cls):
+        cls._print = print
+
+    @classmethod
     def silence(cls):
         cls._print = cls.useless
 
