@@ -31,6 +31,63 @@ def section_indexing_setter(*args, **kwargs):
     raise SettingsError("download.section-indexing can't be set using the CLI")
 
 
+class Checkers:
+    @staticmethod
+    def logging(item):
+        if isinstance(item, str):
+            item = item.upper()
+
+        return item in (
+            "NOTSET",
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
+            50,
+            40,
+            30,
+            20,
+            10,
+        )
+
+    @staticmethod
+    def bool(item):
+        return isinstance(item, bool)
+
+    @staticmethod
+    def int(item):
+        if isinstance(item, bool):
+            return False
+        return isinstance(item, int)
+
+    @staticmethod
+    def str(item):
+        return isinstance(item, str)
+
+    @staticmethod
+    def list(item):
+        return isinstance(item, list)
+
+    @staticmethod
+    def float(item):
+        return isinstance(item, float)
+
+
+class Setters:
+    @staticmethod
+    def int(item, force=False):
+        return int(item)
+
+    @staticmethod
+    def list(item, force=False):
+        return list(item)
+
+    @staticmethod
+    def str(item, force=False):
+        return str(item)
+
+
 defaults = {
     "general": {
         "root-folder": "insert-root-folder",
@@ -48,19 +105,19 @@ defaults = {
     "notify": {"email": "insert-email"},
 }
 
-types = {
+checkers = {
     "general": {
-        "root-folder": str,
-        "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
-        "timeout": int,
-        "retries": int,
-        "max-logs": int,
-        "exclude-subjects-ids": list,
+        "root-folder": Checkers.str,
+        "logging-level": Checkers.logging,
+        "timeout": Checkers.int,
+        "retries": Checkers.int,
+        "max-logs": Checkers.int,
+        "exclude-subjects-ids": Checkers.list,
     },
     "download": {
-        "forum-subfolders": bool,
-        "section-indexing": list,
-        "secure-section-filename": False,
+        "forum-subfolders": Checkers.bool,
+        "section-indexing": Checkers.list,
+        "secure-section-filename": Checkers.bool,
     },
     "notify": {"email": str},
 }
@@ -86,11 +143,11 @@ constructors = {
 # Transforms str → TOML
 setters = {
     "general": {
-        "root-folder": str,
-        "logging-level": str,
-        "timeout": int,
-        "retries": int,
-        "max-logs": int,
+        "root-folder": Setters.str,
+        "logging-level": Setters.str,
+        "timeout": Setters.int,
+        "retries": Setters.int,
+        "max-logs": Setters.int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
@@ -98,5 +155,5 @@ setters = {
         "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
-    "notify": {"email": str},
+    "notify": {"email": str}
 }
