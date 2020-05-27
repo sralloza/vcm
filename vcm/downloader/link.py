@@ -1,22 +1,21 @@
 """Contains the links that can be downloaded."""
+from hashlib import sha1
 import logging
 import os
-import random
+from pathlib import Path
 import re
 import warnings
-from hashlib import sha1
-from pathlib import Path
 
-import unidecode
 from bs4 import BeautifulSoup
-from colorama import Fore
 from requests import Response
+import unidecode
 
+from vcm.core.exceptions import AlgorithmFailureError, MoodleError, ResponseError
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Patterns, Printer, secure_filename
+from vcm.core.utils import Patterns, save_crash_context, secure_filename
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -165,9 +164,15 @@ class BaseLink(_Notify):
             "Response obtained [%d | %s]", self.response.status_code, self.content_type
         )
 
+        if 500 <= self.response.status_code <= 599:
+            raise MoodleError(f"Moodle server replied with {self.response.status_code}")
+
         if self.response.status_code == 408:
             self.logger.warning("Received response with code 408, retrying")
             return self.make_request()
+
+        if not self.response.ok:
+            raise ResponseError(f"Got HTTP {self.response.status_code}")
 
     def close_connection(self):
         warnings.warn(
@@ -220,7 +225,7 @@ class BaseLink(_Notify):
             )
         )
 
-        self.logger.debug("Set filepath: %r", self.filepath)
+        self.logger.debug("Set filepath: %r", self.filepath.as_posix())
 
     def download(self):
         """Wrapper for self.do_download()."""
@@ -652,6 +657,7 @@ class Quiz(BaseUndownloableLink):
 
     NOTIFY = True
 
+
 class BlackBoard(BaseUndownloableLink):
     """Representation of a blackboard link.
 
@@ -685,6 +691,8 @@ class Html(BaseLink):
         # call actual algorithms
         algorithms = [x for x in dir(self) if x.startswith("check_algorithm")]
         algorithms = [getattr(self, x) for x in algorithms]
+        algorithms.sort(key=lambda x: x.__name__)
+
         for algorithm in algorithms:
             resource = algorithm(name)
             if resource:
@@ -750,17 +758,13 @@ class Html(BaseLink):
             return None
 
     def handle_algorithm_failure(self):
-        random_name = random.randint(0, 1000)
-        self.logger.error("HTML ALGORITHM FAILURE (ID=%s)", random_name)
-        message = "HTML ALGORITHM FAILURE (ID=%s)" % random_name
-        Printer.print(Fore.LIGHTRED_EX + message + Fore.RESET)
+        self.logger.error("HTML ALGORITHM FAILURE")
 
-        self.logger.error("ERROR LINK: %s", self.url)
-        self.logger.error("ERROR HEADS: %s", self.response.headers)
+        save_crash_context(
+            self.response, "html-algorithm-failure", "html algorithm failure",
+        )
 
-        filename = GeneralSettings.root_folder.joinpath("error-%d.html" % random_name)
-        with filename.open("wb") as file_handler:
-            file_handler.write(self.response.content)
+        raise AlgorithmFailureError
 
 
 class Image(BaseLink):

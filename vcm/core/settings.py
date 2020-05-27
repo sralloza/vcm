@@ -4,17 +4,16 @@ from pathlib import Path
 from typing import List
 
 import toml
-from colorama.ansi import Fore
 
-from vcm.core.exceptions import (
+from ._settings import constructors, defaults, setters, types
+from .exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
+    InvalidSettingsFileError,
     NotExcludedError,
     NotIndexedError,
 )
-
-from ._settings import constructors, defaults, setters, types
-from .exceptions import InvalidSettingsFileError
+from .utils import handle_fatal_error_exit
 
 
 def extend_settings_class_name(base_settings_class_name):
@@ -135,11 +134,8 @@ class MetaSettings(type):
             real_dict = toml.load(file_handler)
     except FileNotFoundError:
         create_default()
-        exit(
-            Fore.RED
-            + "Missing settings file, created sample (%s)" % CoreSettings.settings_path
-            + Fore.RESET
-        )
+        message = "Missing settings file, created sample (%s)"
+        handle_fatal_error_exit(message % CoreSettings.settings_path)
 
     def __new__(mcs, name, bases, attrs, **kwargs):
         lookup_name = name.lower().replace("_", "").replace("settings", "")

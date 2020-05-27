@@ -1,13 +1,13 @@
 """Contains all related to subjects."""
 import logging
 import os
+from hashlib import sha1
 from threading import Lock
 from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 from requests import Response
 
-from _sha1 import sha1
 from vcm.core.networking import Connection
 from vcm.core.settings import DownloadSettings, GeneralSettings
 from vcm.core.utils import secure_filename

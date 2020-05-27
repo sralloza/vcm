@@ -7,7 +7,11 @@ from vcm.core.exceptions import UnkownIconWarning
 from vcm.downloader.link import BaseLink, Folder
 from vcm.notifier.database import DatabaseLinkInterface
 
-inline_style = "border: none; outline: none; background: none; cursor: pointer; color: #0000EE; padding: 0; text-decoration: underline; font-family: inherit; font-size: inherit;"
+inline_style = (
+    "border: none; outline: none; background: none; cursor:"
+    " pointer; color: #0000EE; padding: 0; text-decoration:"
+    " underline; font-family: inherit; font-size: inherit;"
+)
 
 
 class IconType(Enum):

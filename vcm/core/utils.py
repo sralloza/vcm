@@ -1,14 +1,17 @@
 import logging
 import os
+import pickle
 import re
+import sys
 import time
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
-from threading import current_thread
+from threading import Lock, current_thread
 from traceback import format_exc
 from typing import Union
 
-import psutil
 from colorama import Fore
 from colorama import init as start_colorama
 from decorator import decorator
@@ -201,7 +204,7 @@ class Patterns:
     FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
 
 
-def exception_exit(exception, to_stderr=False, red=True):
+def exception_exit(exception, to_stderr=True, red=True):
     """Exists the progam showing an exception.
 
     Args:
@@ -245,6 +248,7 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except Exception as exc:
+        logger.exception("Exception catched:")
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 
 
@@ -252,22 +256,21 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 def timing(func, name=None, level=logging.INFO, *args, **kwargs):
     name = name or func.__name__
     t0 = time.time()
-    raise_exc = False
-    exception = None
+    result = None
 
     logger.log(level, "Starting execution of %s", name)
     try:
         result = func(*args, **kwargs)
-    except SystemExit as exc:
-        raise_exc = True
-        exception = exc
+    finally:
+        if ErrorCounter.has_errors():
+            logger.warning(ErrorCounter.report())
 
-    delta_t = time.time() - t0
-    logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
+        delta_t = time.time() - t0
+        logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
 
-    if raise_exc:
-        raise exception
-    return result
+        is_exception = sys.exc_info()[0] is not None
+        if not is_exception:
+            return result
 
 
 _true_set = {"yes", "true", "t", "y", "1"}
@@ -338,45 +341,26 @@ def setup_vcm():
     configure_logging()
 
 
-def is_called_from_shell():
-    ppid = os.getppid()  # Get parent process id
-    a = psutil.Process(ppid).name().lower()
-    return "bash" in a or "cmd" in a
-
-
-def create_desktop_cmds():
-    desktop_path = Path.home() / "desktop"
-    notify_path = desktop_path / "notify.cmd"
-    download_path = desktop_path / "download.cmd"
-
-    exe_path = Path.cwd() / "vcm.exe"
-
-    template = f'@echo off\n"{exe_path}" %s'
-
-    with notify_path.open("wt") as file_handler:
-        file_handler.write(template % "notify")
-    with download_path.open("wt") as file_handler:
-        file_handler.write(template % "download")
-
-
-def useless(*args, **kwargs):
-    pass
-
-
 class Printer:
     _print = print
+    _lock = Lock()
 
     @classmethod
     def silence(cls):
-        cls._print = useless
+        cls._print = cls.useless
+
+    @classmethod
+    def useless(cls, *args, **kwargs):
+        pass
 
     @classmethod
     def print(cls, *args, **kwargs):
-        return cls._print(*args, **kwargs)
+        with cls._lock:
+            return cls._print(*args, **kwargs)
 
 
 def check_updates():
-    from vcm import version as current_version
+    from vcm import __version__ as current_version
     from .networking import connection
 
     response = connection.get(
@@ -403,3 +387,59 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+class ErrorCounter:
+    error_map = defaultdict(lambda: 0)
+
+    @classmethod
+    def has_errors(cls) -> bool:
+        return bool(cls.error_map)
+
+    @classmethod
+    def format_exc(cls, exc: Exception) -> str:
+        return re.search(r"(\w+)\'>", str(exc)).group(1)
+
+    @classmethod
+    def record_error(cls, exc: Exception):
+        cls.error_map[exc.__class__] += 1
+
+    @classmethod
+    def report(cls) -> str:
+        message = f"{sum(cls.error_map.values())} errors found: "
+        errors = [f"{cls.format_exc(k)}: {v}" for k, v in cls.error_map.items()]
+        message += ", ".join(errors)
+        return message
+
+
+def save_crash_context(crash_object, object_name, reason=None):
+    from .settings import GeneralSettings
+
+    now = datetime.now()
+    index = 0
+    while True:
+        crash_path = GeneralSettings.root_folder.joinpath(
+            object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
+        )
+        if index:
+            crash_path = crash_path.with_name(
+                crash_path.stem + f".{index}" + crash_path.suffix
+            )
+
+        if not crash_path.exists():
+            break
+
+        index += 1
+
+    crash_object_copy = deepcopy(crash_object)
+
+    if reason:
+        setattr(crash_object_copy, "vcm_crash_reason", reason)
+
+    crash_path.write_bytes(pickle.dumps(crash_object_copy))
+    logger.info("Crashed saved as %s", crash_path.as_posix())
+
+
+def handle_fatal_error_exit(exit_message, exit_code=-1):
+    print(Fore.RED + exit_message + Fore.RESET, file=sys.stderr)
+    sys.exit(exit_code)

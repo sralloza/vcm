@@ -2,16 +2,22 @@
 
 """Custom downloader with retries control."""
 import logging
-from datetime import datetime
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
 
 from .credentials import Credentials
-from .exceptions import DownloaderError, LoginError, LogoutError
+from .exceptions import DownloaderError, LoginError, LogoutError, MoodleError
 from .settings import GeneralSettings
+from .utils import save_crash_context
 
 logger = logging.getLogger(__name__)
+
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, "
+    "like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+)
 
 
 class MetaSingleton(type):
@@ -33,10 +39,10 @@ class MetaSingleton(type):
 class Connection(metaclass=MetaSingleton):
     def __init__(self):
         self._downloader = Downloader()
-        self._logout_response: requests.Response = None
-        self._login_response: requests.Response = None
-        self._sesskey: str = None
-        self._user_url: str = None
+        self._logout_response: Optional[requests.Response] = None
+        self._login_response: Optional[requests.Response] = None
+        self._sesskey: Optional[str] = None
+        self._user_url: Optional[str] = None
         self._login_attempts = 0
 
     @property
@@ -65,41 +71,78 @@ class Connection(metaclass=MetaSingleton):
 
     def logout(self):
         logger.debug("Logging out")
-        self._logout_response = self.post(
-            "https://campusvirtual.uva.es/login/logout.php?sesskey=%s" % self.sesskey,
-            data={"sesskey": self.sesskey},
-        )
+        logout_retries = 5
+
+        while True:
+            self._logout_response = self.post(
+                "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
+                % self.sesskey,
+                data={"sesskey": self.sesskey},
+            )
+            if 500 <= self._logout_response.status_code <= 599:
+                logout_retries -= 1
+
+                logger.warning(
+                    "Server Error during logout [%d], %d retries left",
+                    self._logout_response.status_code,
+                    logout_retries,
+                )
+
+                if logout_retries <= 0:
+                    save_crash_context(
+                        self._logout_response, "logout-error", "Logout retries expired"
+                    )
+                    raise LogoutError("Logout retries expired")
+
+                continue
+            break
 
         if "Usted no se ha identificado" not in self._logout_response.text:
-            raise LogoutError
+            save_crash_context(
+                self._logout_response, "logout-error", "unkown error happened"
+            )
+            raise LogoutError("Unkown error happened")
 
         logger.info("Logged out")
 
     def login(self):
+        login_attempts = 5
         try:
             logger.debug("Logging in")
             self._login()
             logger.info("Logged in")
-        except (KeyError, TypeError, LoginError) as exc:
+        except Exception as exc:
             logger.warning("Needed to call again Connection.login() due to %r", exc)
             self._login_attempts += 1
 
-            if self._login_attempts >= 10:
-                now = datetime.now()
-                GeneralSettings.root_folder.joinpath(
-                    "login.error.%s.html" % now.strftime("%Y.%m.%d-%H.%M.%S")
-                ).write_text(self._login_response.text, encoding="utf-8")
-                raise LoginError("10 login attempts, unkwown error. See logs.") from exc
+            if self._login_attempts >= login_attempts:
+                save_crash_context(
+                    self._login_response, "login-error", "Login retries expired"
+                )
+
+                raise LoginError(
+                    f"{login_attempts} login attempts, unkwown error. See logs."
+                ) from exc
             return self.login()
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
-        if response.status_code == 503 and "maintenance" in response.reason:
-            logger.critical(
-                "Moodle under maintenance (%d - %s)",
-                response.status_code,
-                response.reason,
-            )
+        if response.status_code == 503:
+            if "maintenance" in response.reason:
+                logger.critical(
+                    "Moodle under maintenance (%d - %s)",
+                    response.status_code,
+                    response.reason,
+                )
+            else:
+                logger.critical(
+                    "Moodle error (%d - %s)", response.status_code, response.reason
+                )
+
+                raise MoodleError(
+                    f"Moodle error ({response.status_code} - {response.reason})",
+                )
+
             exit(-1)
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -161,45 +204,25 @@ class Downloader(requests.Session):
             self.logger.setLevel(logging.CRITICAL)
 
         super().__init__()
-        self.headers.update(
-            {
-                "User-Agent": "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
-            }
-        )
+        self.headers.update({"User-Agent": USER_AGENT})
 
-    def get(self, url, **kwargs):
-        self.logger.debug("GET %r", url)
+    def request(self, method, url, **kwargs):
+        self.logger.debug("%s %r", method, url)
         retries = GeneralSettings.retries
 
         while retries > 0:
             try:
-                return super().get(url, **kwargs)
+                return super().request(method, url, **kwargs)
             except requests.exceptions.ConnectionError:
                 retries -= 1
-                self.logger.warning("Connection error in GET, retries=%s", retries)
+                self.logger.warning(
+                    "Connection error in %s, retries=%s", method, retries
+                )
             except requests.exceptions.ReadTimeout:
                 retries -= 1
-                self.logger.warning("Timeout error in GET, retries=%s", retries)
+                self.logger.warning("Timeout error in %s, retries=%s", method, retries)
 
-        self.logger.critical("Download error in GET %r", url)
-        raise DownloaderError("max retries failed.")
-
-    def post(self, url, data=None, json=None, **kwargs):
-        self.logger.debug("POST %r", url)
-        retries = GeneralSettings.retries
-
-        while retries > 0:
-            try:
-                return super().post(url=url, data=data, json=json, **kwargs)
-            except requests.exceptions.ConnectionError:
-                retries -= 1
-                self.logger.warning("Connection error in POST, retries=%s", retries)
-            except requests.exceptions.ReadTimeout:
-                retries -= 1
-                self.logger.warning("Timeout error in POST, retries=%s", retries)
-
-        self.logger.critical("Download error in POST %r", url)
+        self.logger.critical("Download error in %s %r", method, url)
         raise DownloaderError("max retries failed.")
 
 

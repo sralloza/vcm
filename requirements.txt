@@ -8,4 +8,5 @@ psutil
 requests
 toml
 unidecode
+versioneer
 waitress

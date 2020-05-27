@@ -9,7 +9,6 @@ from typing import List
 import flask
 import waitress
 
-
 from ._threading import Killer, ThreadStates, Worker, state_to_color
 from .time_operations import seconds_to_str
 
@@ -104,20 +103,40 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
         return output
 
-    t = Thread(
-        name="vcm-state",
-        target=waitress.serve,
-        daemon=True,
-        args=(app,),
-        kwargs={
-            "port": 80,
-            "host": "0.0.0.0",
-            "_quiet": True,
-            "clear_untrusted_proxy_headers": True,
-        },
-    )
+    t = HttpStatusServer(app)
     t.start()
     return t
+
+
+class HttpStatusServer(Thread):
+    def __init__(self, app):
+        super().__init__()
+        self.name = "http-status-server"
+        self.app = app
+        self.daemon = True
+        self.port = 8080
+        self.logger = getLogger(__name__)
+
+    def real_run(self):
+        """Executes the status http web server using the waitress module."""
+
+        self.logger.info("Starting status server on port %d", self.port)
+        return waitress.serve(
+            self.app,
+            port=self.port,
+            host="0.0.0.0",
+            clear_untrusted_proxy_headers=True,
+            _quiet=True,
+        )
+
+    def run(self):
+        """Main execution of the thread.
+
+        It is sepparated from real_run() to catch some exceptions (port associated)
+        and re-run it. Currently no known exceptions are raised.
+        """
+
+        return self.real_run()
 
 
 def get_thread_state_info():
