@@ -1,6 +1,7 @@
 import argparse
 from enum import Enum
 import logging
+import sys
 
 from vcm import __version__ as version
 from vcm.core.settings import (
@@ -35,7 +36,7 @@ class Command(Enum):
 
 
 def show_version():
-    exit("Version: %s" % version)
+    sys.exit("Version: %s" % version)
 
 
 def parse_args(args=None, parser=False):
@@ -114,7 +115,7 @@ def main(args=None):
 
     if opt.check_updates:
         check_updates()
-        exit()
+        sys.exit()
 
     try:
         opt.command = Command(opt.command)
@@ -133,19 +134,19 @@ def main(args=None):
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
             print(settings_to_string())
-            exit()
+            sys.exit()
 
         if opt.settings_subcommand == "check":
             more_settings_check()
-            exit("Checked")
+            sys.exit("Checked")
 
         if opt.settings_subcommand == "exclude":
             exclude(opt.subject_id)
-            exit()
+            sys.exit()
 
         if opt.settings_subcommand == "include":
             include(opt.subject_id)
-            exit()
+            sys.exit()
 
         if opt.settings_subcommand == "index":
             section_index(opt.subject_id)
@@ -153,7 +154,7 @@ def main(args=None):
                 "Done. Remember removing alias entries for subject with id=%d."
                 % opt.subject_id
             )
-            exit()
+            sys.exit()
 
         if opt.settings_subcommand == "unindex":
             un_section_index(opt.subject_id)
@@ -161,7 +162,7 @@ def main(args=None):
                 "Done. Remember removing alias entries for subject with id=%d."
                 % opt.subject_id
             )
-            exit()
+            sys.exit()
 
         if opt.settings_subcommand == "keys":
             keys = []
@@ -171,7 +172,7 @@ def main(args=None):
 
             for key in keys:
                 print(key)
-            exit()
+            sys.exit()
 
         if opt.key.count(".") != 1:
             return parser.error("Invalid key (must be section.setting)")
@@ -198,7 +199,7 @@ def main(args=None):
             setattr(settings_class, key, opt.value)
         elif opt.settings_subcommand == "show":
             print("%s: %r" % (opt.key, getattr(settings_class, key)))
-        exit()
+        sys.exit()
 
     # Command executed is not 'settings', so check settings
     setup_vcm()
