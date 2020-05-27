@@ -31,6 +31,11 @@ class Command(Enum):
     download = 2
     settings = 3
     discover = 4
+    version = 5
+
+
+def show_version():
+    exit("Version: %s" % version)
 
 
 def parse_args(args=None, parser=False):
@@ -92,6 +97,7 @@ def parse_args(args=None, parser=False):
     settings_subparser.add_parser("check")
 
     subparsers.add_parser("discover")
+    subparsers.add_parser("version")
 
     if parser:
         return parser.parse_args(args), parser
@@ -104,7 +110,7 @@ def main(args=None):
     opt, parser = parse_args(args, parser=True)
 
     if opt.version:
-        exit("Version: %s" % version)
+        show_version()
 
     if opt.check_updates:
         check_updates()
@@ -117,6 +123,9 @@ def main(args=None):
             opt.command = Command[opt.command]
         except KeyError:
             return parser.error("Invalid use: use download or notify")
+
+    if opt.command == Command.version:
+        show_version()
 
     if opt.command == Command.download and opt.quiet:
         Printer.silence()
