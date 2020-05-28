@@ -1,9 +1,18 @@
 import sys
 from unittest import mock
+import pytest
+
+
+@pytest.fixture
+def reset_vcm_import():
+    vcm_import = sys.modules["vcm"]
+    del sys.modules["vcm"]
+    yield
+    sys.modules["vcm"] = vcm_import
 
 
 @mock.patch("vcm._version.get_versions")
-def test_get_version(get_versions_m):
+def test_get_version(get_versions_m, reset_vcm_import):
     get_versions_m.return_value = {
         "version": "5.1.2",
         "full-revisionid": "<commit-id>",
@@ -12,7 +21,6 @@ def test_get_version(get_versions_m):
         "date": "<date>",
     }
 
-    del sys.modules["vcm"]
     import vcm
 
     version = vcm.__version__
