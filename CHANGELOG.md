@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * New way of showing version: `vcm version` (`vcm --version` still works).
 
+### Fixed
+* Thread stops if receives SystemExit ([#91](https://github.com/sralloza/vcm/issues/91))
+
 
 ## [3.2.2] - 2020.05.27
 ### Added
