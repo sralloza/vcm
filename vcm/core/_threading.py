@@ -11,6 +11,7 @@ from webbrowser import get as getwebbrowser
 from colorama import Fore
 
 from .modules import Modules
+from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 from .utils import ErrorCounter, Printer, getch
 
@@ -261,7 +262,8 @@ class Killer(Worker):
                 chrome_path = (
                     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
                 )
-                getwebbrowser(chrome_path).open_new("localhost")
+                args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+                getwebbrowser(chrome_path).open_new(args)
 
 
 def start_workers(queue, nthreads=20, no_killer=False):
