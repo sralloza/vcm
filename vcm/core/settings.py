@@ -226,9 +226,8 @@ class _GeneralSettings(BaseSettings):
         return self["exclude-subjects-ids"]
 
     @property
-    def exclude_urls(self) -> List[str]:
-        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-        return [template % x for x in self.exclude_subjects_ids]
+    def http_status_port(self) -> int:
+        return self["http-status-port"]
 
     # DEPENDANT SETTINGS
 
@@ -243,6 +242,11 @@ class _GeneralSettings(BaseSettings):
     @property
     def database_path(self) -> Path:
         return self.root_folder / "links.db"
+
+    @property
+    def exclude_urls(self) -> List[str]:
+        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+        return [template % x for x in self.exclude_subjects_ids]
 
 
 class _DownloadSettings(BaseSettings):
