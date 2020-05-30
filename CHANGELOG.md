@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Thread stops if receives SystemExit ([#91](https://github.com/sralloza/vcm/issues/91))
+* In case of error during login, pickle data will only be stored if the login response exists.
+* In case of error during logout, pickle data will only be stored if the logout error was not generated because of a server error (HTTP 500) ([#90](https://github.com/sralloza/vcm/issues/90))
+* During login, 400 responses are considereded as failed.
 
 
 ## [3.2.2] - 2020.05.27
