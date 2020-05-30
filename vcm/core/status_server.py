@@ -10,6 +10,7 @@ import flask
 import waitress
 
 from ._threading import Killer, ThreadStates, Worker, state_to_color
+from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 
 logger = getLogger(__name__)
@@ -114,7 +115,7 @@ class HttpStatusServer(Thread):
         self.name = "http-status-server"
         self.app = app
         self.daemon = True
-        self.port = 8080
+        self.port = GeneralSettings.http_status_port
         self.logger = getLogger(__name__)
 
     def real_run(self):

@@ -39,6 +39,7 @@ defaults = {
         "retries": 10,
         "max-logs": 5,
         "exclude-subjects-ids": [],
+        "http-status-port": 8080,
     },
     "download": {
         "forum-subfolders": True,
@@ -56,6 +57,7 @@ types = {
         "retries": int,
         "max-logs": int,
         "exclude-subjects-ids": list,
+        "http-status-port": int
     },
     "download": {
         "forum-subfolders": bool,
@@ -74,6 +76,7 @@ constructors = {
         "retries": int,
         "max-logs": int,
         "exclude-subjects-ids": list,
+        "http-status-port": int
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -91,6 +94,7 @@ setters = {
         "timeout": int,
         "retries": int,
         "max-logs": int,
+        "http-status-port": int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {
