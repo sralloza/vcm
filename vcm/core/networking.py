@@ -89,9 +89,6 @@ class Connection(metaclass=MetaSingleton):
                 )
 
                 if logout_retries <= 0:
-                    save_crash_context(
-                        self._logout_response, "logout-error", "Logout retries expired"
-                    )
                     raise LogoutError("Logout retries expired")
 
                 continue
