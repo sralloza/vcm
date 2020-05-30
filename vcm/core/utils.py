@@ -434,7 +434,13 @@ def save_crash_context(crash_object, object_name, reason=None):
     crash_object_copy = deepcopy(crash_object)
 
     if reason:
-        setattr(crash_object_copy, "vcm_crash_reason", reason)
+        try:
+            setattr(crash_object_copy, "vcm_crash_reason", reason)
+        except AttributeError:
+            crash_object_copy = {
+                "real_object": crash_object_copy,
+                "vcm_crash_reason": reason,
+            }
 
     crash_path.write_bytes(pickle.dumps(crash_object_copy))
     logger.info("Crashed saved as %s", crash_path.as_posix())
