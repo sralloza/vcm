@@ -113,9 +113,10 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= login_attempts:
-                save_crash_context(
-                    self._login_response, "login-error", "Login retries expired"
-                )
+                if self._login_response:
+                    save_crash_context(
+                        self._login_response, "login-error", "Login retries expired"
+                    )
 
                 raise LoginError(
                     f"{login_attempts} login attempts, unkwown error. See logs."
