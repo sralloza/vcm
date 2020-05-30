@@ -125,23 +125,23 @@ class Connection(metaclass=MetaSingleton):
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
-        if response.status_code == 503:
+
+        if not response.ok:
             if "maintenance" in response.reason:
                 logger.critical(
                     "Moodle under maintenance (%d - %s)",
                     response.status_code,
                     response.reason,
                 )
-            else:
-                logger.critical(
-                    "Moodle error (%d - %s)", response.status_code, response.reason
-                )
+                return exit(-1)
 
-                raise MoodleError(
-                    f"Moodle error ({response.status_code} - {response.reason})",
-                )
+            logger.critical(
+                "Moodle error (%d - %s)", response.status_code, response.reason
+            )
 
-            exit(-1)
+            raise MoodleError(
+                f"Moodle error ({response.status_code} - {response.reason})",
+            )
 
         soup = BeautifulSoup(response.text, "html.parser")
 
