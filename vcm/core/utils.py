@@ -219,7 +219,8 @@ def exception_exit(exception, to_stderr=True, red=True):
         if not issubclass(exception, Exception):
             raise_exception = True
     except TypeError:
-        if not isinstance(exception, Exception):
+        # Check for SytemExit (inherints from BaseException, not Exception)
+        if not isinstance(exception, BaseException):
             raise_exception = True
 
     if raise_exception:
