@@ -251,7 +251,8 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 
 
 @decorator
-def timing(func, name=None, level=logging.INFO, *args, **kwargs):
+def timing(func, name=None, level=None, *args, **kwargs):
+    level = level or logging.INFO
     name = name or func.__name__
     t0 = time.time()
     result = None
