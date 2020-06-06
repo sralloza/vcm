@@ -10,7 +10,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from threading import Lock, current_thread
 from traceback import format_exc
-from typing import Union
+from typing import TypeVar, Union
 
 from colorama import Fore
 from colorama import init as start_colorama
@@ -19,6 +19,7 @@ from packaging import version
 
 from .time_operations import seconds_to_str
 
+ExceptionClass = TypeVar("ExceptionClass")
 logger = logging.getLogger(__name__)
 start_colorama()
 
@@ -199,7 +200,9 @@ def secure_filename(filename, spaces=True):
 
 
 class Patterns:
-    FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?')
+    FILENAME_PATTERN = re.compile(
+        r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
+    )
 
 
 def exception_exit(exception, to_stderr=True, red=True):
@@ -402,7 +405,7 @@ class ErrorCounter:
         return bool(cls.error_map)
 
     @classmethod
-    def format_exc(cls, exc: Exception) -> str:
+    def format_exc(cls, exc: ExceptionClass) -> str:
         return re.search(r"(\w+)\'>", str(exc)).group(1)
 
     @classmethod
