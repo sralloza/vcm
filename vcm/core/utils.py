@@ -157,7 +157,7 @@ class getch(metaclass=MetaGetch):
                 return msvcrt.getch()
 
 
-def secure_filename(filename, parse_spaces=True):
+def secure_filename(filename, spaces=True):
     if isinstance(filename, str):
         from unicodedata import normalize
 
@@ -182,12 +182,7 @@ def secure_filename(filename, parse_spaces=True):
         "NUL",
     )
 
-    if parse_spaces:
-        temp_str = "_".join(filename.split())
-    else:
-        temp_str = " ".join(filename.split())
-        _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_. -]")
-
+    temp_str = "_".join(filename.split())
     filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
 
     if (
@@ -196,6 +191,9 @@ def secure_filename(filename, parse_spaces=True):
         and filename.split(".")[0].upper() in _windows_device_files
     ):
         filename = "_" + filename
+
+    if spaces:
+        return " ".join(filename.split("_"))
 
     return filename
 
