@@ -108,20 +108,20 @@ defaults = {
 
 checkers = {
     "general": {
-        "root-folder": str,
-        "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
-        "timeout": int,
-        "retries": int,
-        "max-logs": int,
-        "exclude-subjects-ids": list,
-        "http-status-port": int
+        "root-folder": Checkers.str,
+        "logging-level": Checkers.logging,
+        "timeout": Checkers.int,
+        "retries": Checkers.int,
+        "max-logs": Checkers.int,
+        "exclude-subjects-ids": Checkers.list,
+        "http-status-port": Checkers.int
     },
     "download": {
         "forum-subfolders": Checkers.bool,
         "section-indexing": Checkers.list,
         "secure-section-filename": Checkers.bool,
     },
-    "notify": {"email": str},
+    "notify": {"email": Checkers.str},
 }
 
 # Transforms TOML → saved
