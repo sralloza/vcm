@@ -272,7 +272,7 @@ def timing(func, name=None, level=None, *args, **kwargs):
             return result
 
 
-_true_set = {"yes", "true", "t", "y", "1"}
+_true_set = {"yes", "true", "t", "y", "1", "sí", "si", "s"}
 _false_set = {"no", "false", "f", "n", "0"}
 
 
