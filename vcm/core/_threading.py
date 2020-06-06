@@ -11,6 +11,7 @@ from webbrowser import get as getwebbrowser
 from colorama import Fore
 
 from .modules import Modules
+from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 from .utils import ErrorCounter, Printer, getch
 
@@ -184,6 +185,11 @@ class Worker(Thread):
                     self.current_object.download()
                 except Exception as exc:
                     print_fatal_error(exc, self.current_object)
+                except BaseException as exc:
+                    if not isinstance(exc, SystemExit):
+                        raise
+                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
                     "Worker %r completed work of Link %r",
@@ -198,6 +204,11 @@ class Worker(Thread):
                     self.current_object.find_and_download_links()
                 except Exception as exc:
                     print_fatal_error(exc, self.current_object)
+                except BaseException as exc:
+                    if not isinstance(exc, SystemExit):
+                        raise
+                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
                     "Worker %r completed work of Subject %r",
@@ -251,7 +262,8 @@ class Killer(Worker):
                 chrome_path = (
                     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
                 )
-                getwebbrowser(chrome_path).open_new("localhost")
+                args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+                getwebbrowser(chrome_path).open_new(args)
 
 
 def start_workers(queue, nthreads=20, no_killer=False):
@@ -285,9 +297,10 @@ def start_workers(queue, nthreads=20, no_killer=False):
     return thread_list
 
 
-def print_fatal_error(exception, current_object):
+def print_fatal_error(exception, current_object, log_exception=True):
     ErrorCounter.record_error(exception)
-    logger.exception(
+    if log_exception:
+        logger.exception(
         "%s in %r(url=%r) (%r)",
         type(exception).__name__,
         type(current_object),

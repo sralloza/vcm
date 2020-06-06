@@ -3,9 +3,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## [3.2.3] - 2020.05.30
 ### Added
 * New way of showing version: `vcm version` (`vcm --version` still works).
+
+### Fixed
+* Thread stops if receives `SystemExit` ([#91](https://github.com/sralloza/vcm/issues/91))
+* In case of error during login, `pickle` data will only be stored if the login response exists.
+* In case of error during logout, `pickle` data will only be stored if the logout error was not generated because of a `server error` (HTTP 500) ([#90](https://github.com/sralloza/vcm/issues/90))
+* During login, 400 responses are considereded as failed.
 
 
 ## [3.2.2] - 2020.05.27
@@ -132,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix notifier error.
 
 
-[unreleased]: https://github.com/sralloza/vcm/compare/v3.2.2...HEAD
+[unreleased]: https://github.com/sralloza/vcm/compare/v3.2.3...HEAD
+[3.2.3]: https://github.com/sralloza/vcm/compare/v3.2.2...v3.2.3
 [3.2.2]: https://github.com/sralloza/vcm/compare/v3.2.1...v3.2.2
 [3.2.1]: https://github.com/sralloza/vcm/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/sralloza/vcm/compare/v3.1.3...v3.2.0

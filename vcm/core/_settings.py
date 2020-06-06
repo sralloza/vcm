@@ -96,6 +96,7 @@ defaults = {
         "retries": 10,
         "max-logs": 5,
         "exclude-subjects-ids": [],
+        "http-status-port": 8080,
     },
     "download": {
         "forum-subfolders": True,
@@ -107,12 +108,13 @@ defaults = {
 
 checkers = {
     "general": {
-        "root-folder": Checkers.str,
-        "logging-level": Checkers.logging,
-        "timeout": Checkers.int,
-        "retries": Checkers.int,
-        "max-logs": Checkers.int,
-        "exclude-subjects-ids": Checkers.list,
+        "root-folder": str,
+        "logging-level": ("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
+        "timeout": int,
+        "retries": int,
+        "max-logs": int,
+        "exclude-subjects-ids": list,
+        "http-status-port": int
     },
     "download": {
         "forum-subfolders": Checkers.bool,
@@ -131,6 +133,7 @@ constructors = {
         "retries": int,
         "max-logs": int,
         "exclude-subjects-ids": list,
+        "http-status-port": int
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -143,11 +146,12 @@ constructors = {
 # Transforms str → TOML
 setters = {
     "general": {
-        "root-folder": Setters.str,
-        "logging-level": Setters.str,
-        "timeout": Setters.int,
-        "retries": Setters.int,
-        "max-logs": Setters.int,
+        "root-folder": str,
+        "logging-level": str,
+        "timeout": int,
+        "retries": int,
+        "max-logs": int,
+        "http-status-port": int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
     },
     "download": {

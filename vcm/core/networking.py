@@ -73,9 +73,6 @@ class Connection(metaclass=MetaSingleton):
                 )
 
                 if logout_retries <= 0:
-                    save_crash_context(
-                        self._logout_response, "logout-error", "Logout retries expired"
-                    )
                     raise LogoutError("Logout retries expired")
 
                 continue
@@ -100,9 +97,10 @@ class Connection(metaclass=MetaSingleton):
             self._login_attempts += 1
 
             if self._login_attempts >= login_attempts:
-                save_crash_context(
-                    self._login_response, "login-error", "Login retries expired"
-                )
+                if self._login_response:
+                    save_crash_context(
+                        self._login_response, "login-error", "Login retries expired"
+                    )
 
                 raise LoginError(
                     f"{login_attempts} login attempts, unkwown error. See logs."
@@ -111,23 +109,23 @@ class Connection(metaclass=MetaSingleton):
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
-        if response.status_code == 503:
+
+        if not response.ok:
             if "maintenance" in response.reason:
                 logger.critical(
                     "Moodle under maintenance (%d - %s)",
                     response.status_code,
                     response.reason,
                 )
-            else:
-                logger.critical(
-                    "Moodle error (%d - %s)", response.status_code, response.reason
-                )
+                return exit(-1)
 
-                raise MoodleError(
-                    f"Moodle error ({response.status_code} - {response.reason})",
-                )
+            logger.critical(
+                "Moodle error (%d - %s)", response.status_code, response.reason
+            )
 
-            exit(-1)
+            raise MoodleError(
+                f"Moodle error ({response.status_code} - {response.reason})",
+            )
 
         soup = BeautifulSoup(response.text, "html.parser")
 
