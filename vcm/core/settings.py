@@ -218,6 +218,14 @@ class _GeneralSettings(BaseSettings):
         return self["retries"]
 
     @property
+    def login_retries(self) -> int:
+        return self["login-retries"]
+
+    @property
+    def logout_retries(self) -> int:
+        return self["logout-retries"]
+
+    @property
     def max_logs(self) -> int:
         return self["max-logs"]
 
