@@ -110,6 +110,7 @@ class Connection(metaclass=MetaSingleton):
                 logger.debug("Logging in (%d retries left)", login_retries)
                 self._login()
                 logger.info("Logged in")
+                return
             except Exception as exc:
                 logger.warning("Needed to call again Connection.login() due to %r", exc)
                 login_retries -= 1
