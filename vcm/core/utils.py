@@ -405,19 +405,16 @@ class ErrorCounter:
         return bool(cls.error_map)
 
     @classmethod
-    def format_exc(cls, exc: ExceptionClass) -> str:
-        return re.search(r"(\w+)\'>", str(exc)).group(1)
-
-    @classmethod
     def record_error(cls, exc: Exception):
         cls.error_map[exc.__class__] += 1
 
     @classmethod
     def report(cls) -> str:
-        message = f"{sum(cls.error_map.values())} errors found: "
-        errors = [f"{cls.format_exc(k)}: {v}" for k, v in cls.error_map.items()]
-        message += ", ".join(errors)
-        return message
+        message = f"{sum(cls.error_map.values())} errors found "
+        errors = list(cls.error_map.items())
+        errors.sort(key=lambda x: x[1], reverse=True)
+        errors_str = ", ".join([f"{k.__name__}: {v}" for k, v in errors if v])
+        return message + f"({errors_str})"
 
 
 def save_crash_context(crash_object, object_name, reason=None):
