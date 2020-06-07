@@ -70,8 +70,8 @@ class Connection(metaclass=MetaSingleton):
         return self._downloader.delete(url, **kwargs)
 
     def logout(self):
-        logger.debug("Logging out")
-        logout_retries = 5
+        logout_retries = GeneralSettings.logout_retries
+        logger.debug("Logging out (%d retries)", logout_retries)
 
         while True:
             self._logout_response = self.post(
