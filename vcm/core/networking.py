@@ -103,25 +103,26 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logged out")
 
     def login(self):
-        login_attempts = 5
-        try:
-            logger.debug("Logging in")
-            self._login()
-            logger.info("Logged in")
-        except Exception as exc:
-            logger.warning("Needed to call again Connection.login() due to %r", exc)
-            self._login_attempts += 1
+        login_retries = GeneralSettings.login_retries
 
-            if self._login_attempts >= login_attempts:
-                if self._login_response:
-                    save_crash_context(
-                        self._login_response, "login-error", "Login retries expired"
-                    )
+        while True:
+            try:
+                logger.debug("Logging in (%d retries left)", login_retries)
+                self._login()
+                logger.info("Logged in")
+            except Exception as exc:
+                logger.warning("Needed to call again Connection.login() due to %r", exc)
+                login_retries -= 1
 
-                raise LoginError(
-                    f"{login_attempts} login attempts, unkwown error. See logs."
-                ) from exc
-            return self.login()
+                if login_retries <= 0:
+                    if self._login_response:
+                        save_crash_context(
+                            self._login_response, "login-error", "Login retries expired"
+                        )
+
+                    raise LoginError(
+                        f"{GeneralSettings.login_retries} login attempts, unkwown error. See logs."
+                    ) from exc
 
     def _login(self):
         response = self.get("https://campusvirtual.uva.es/login/index.php")
