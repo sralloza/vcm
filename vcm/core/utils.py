@@ -1,14 +1,16 @@
+"""Utils module."""
+
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-import time
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime
-from logging.handlers import RotatingFileHandler
 from threading import Lock, current_thread
+import time
 from traceback import format_exc
 from typing import TypeVar, Union
 
@@ -186,15 +188,15 @@ def secure_filename(filename, spaces=True):
     temp_str = "_".join(filename.split())
     filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
 
+    if spaces:
+        filename = " ".join(filename.split("_"))
+
     if (
         os.name == "nt"
         and filename
         and filename.split(".")[0].upper() in _windows_device_files
     ):
         filename = "_" + filename
-
-    if spaces:
-        return " ".join(filename.split("_"))
 
     return filename
 
