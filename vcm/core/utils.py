@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 start_colorama()
 
 
+# TODO: remove class in future versions
 class MetaGetch(type):
     _instances = {}
 
@@ -34,6 +35,7 @@ class MetaGetch(type):
         cls.__new__ = cls._getch
 
 
+# TODO: remove class in future versions
 class Key:
     def __init__(self, key1, key2=None, is_int=None):
         if not isinstance(key1, (bytes, int)):
@@ -101,6 +103,7 @@ class Key:
         return type(self)(key1=key1, key2=key2, is_int=False)
 
 
+# TODO: remove class in future versions
 class getch(metaclass=MetaGetch):
     key1: Union[bytes, int]
     key2: Union[bytes, int, None]
@@ -202,6 +205,8 @@ def secure_filename(filename, spaces=True):
 
 
 class Patterns:
+    """Stores useful regex patterns for this application."""
+
     FILENAME_PATTERN = re.compile(
         r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
     )
@@ -211,11 +216,16 @@ def exception_exit(exception, to_stderr=True, red=True):
     """Exists the progam showing an exception.
 
     Args:
-        exception: Exception to show. Must hinherit `Exception`
+        exception: Exception to show. Must be an instance,
+            not a class. Must hinherit `Exception`.
+        to_stderr (bool, optional): if True, it will print the error to
+            stderr instead of stdout. Defaults to True.
+        red (bool, optional): if True, the error will be printed in red.
+            Defaults to True.
 
     Raises:
         TypeError: if exception is not a subclass of Exception.
-
+        TypeError: if exception is not an instance of a raisable Exception.
     """
 
     raise_exception = False
@@ -247,7 +257,19 @@ def exception_exit(exception, to_stderr=True, red=True):
 
 
 @decorator
-def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
+def safe_exit(func, to_stderr=True, red=True, *args, **kwargs):
+    """Catches any exception raised and logs it. After logging it,
+    `exception_exit` handles the rest.
+
+    Args:
+        func (function): function to decorate. Usually given using
+            the `@safe_exit` decorator.
+        to_stderr (bool, optional): If True, the exception will be printed
+            in stderr instead of stdout. Defaults to True.
+        red (bool, optional): If True, the exception will be printed in
+            red color instead of the default. Defaults to True.
+    """
+
     try:
         return func(*args, **kwargs)
     except Exception as exc:
@@ -263,6 +285,7 @@ def timing(func, name=None, level=None, *args, **kwargs):
     result = None
 
     logger.log(level, "Starting execution of %s", name)
+
     try:
         result = func(*args, **kwargs)
     finally:
@@ -282,6 +305,18 @@ _false_set = {"no", "false", "f", "n", "0"}
 
 
 def str2bool(value):
+    """Returns the boolean as a lowercase string, like json.
+
+    Args:
+        value (bool): boolen input.
+
+    Raises:
+        TypeError: if the value is neither a string nor a bool.
+        ValueError: if the string is invalid.
+
+    Returns:
+        str: lowercase string.
+    """
     if value in (True, False):
         return value
 
@@ -291,8 +326,9 @@ def str2bool(value):
             return True
         if value in _false_set:
             return False
+        raise ValueError("Invalid bool string: %r" % value)
 
-    raise ValueError("Invalid bool string: %r" % value)
+    raise TypeError("Invalid value type: %r (must be string)" % type(value).__name__)
 
 
 def configure_logging():
@@ -400,10 +436,19 @@ class MetaSingleton(type):
 
 
 class ErrorCounter:
+    """Counts the exception class raised and the number of times
+    each exception class was raised."""
+
     error_map = defaultdict(lambda: 0)
 
     @classmethod
     def has_errors(cls) -> bool:
+        """Checks if some errors were registered.
+
+        Returns:
+            bool: True if there is any error, False otherwise.
+        """
+
         return bool(cls.error_map)
 
     @classmethod
@@ -420,6 +465,19 @@ class ErrorCounter:
 
 
 def save_crash_context(crash_object, object_name, reason=None):
+    """Saves the `crash_object` using pickle.
+
+    The filename is formed using `object_name` and the current datetime. If
+    the initial filename exists, the name will be incremented (file.log,
+    file.1.log, etc.). If reason is passed, it will be appended to `crash_object`
+    as an attribute named vcm_crash_reason.
+
+    Args:
+        crash_object (object): object to save.
+        object_name (str): name of the object to use as base of the filename.
+        reason (str, optional): reason of the crash. Defaults to None.
+    """
+
     from .settings import GeneralSettings
 
     now = datetime.now()
@@ -454,5 +512,12 @@ def save_crash_context(crash_object, object_name, reason=None):
 
 
 def handle_fatal_error_exit(exit_message, exit_code=-1):
+    """Prints `exit_message` to stderr in light red and exits.
+
+    Args:
+        exit_message (str): exit message to print in red.
+        exit_code (int, optional): exit code. Defaults to -1.
+    """
+
     print(Fore.RED + exit_message + Fore.RESET, file=sys.stderr)
     sys.exit(exit_code)
