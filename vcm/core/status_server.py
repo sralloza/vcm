@@ -9,8 +9,8 @@ from typing import List
 import flask
 import waitress
 
-from ._threading import Killer, ThreadStates, Worker, state_to_color
 from .settings import GeneralSettings
+from .tasks import Killer, ThreadStates, Worker, state_to_color
 from .time_operations import seconds_to_str
 
 logger = getLogger(__name__)

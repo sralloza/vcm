@@ -3,10 +3,10 @@ import logging
 from queue import Queue
 from typing import List, Union
 
-from vcm.core._threading import start_workers
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.status_server import runserver
+from vcm.core.tasks import start_workers
 from vcm.core.utils import Printer, timing
 from vcm.downloader import find_subjects
 from vcm.notifier.report import send_report

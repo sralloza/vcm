@@ -33,18 +33,9 @@ class ThreadStates(Enum):
 
     @property
     def alias(self):
-        return _state_to_alias[self]
+        return self.name.split("_")[0]
 
 
-_state_to_alias = {
-    ThreadStates.idle: "idle",
-    ThreadStates.working_0: "working",
-    ThreadStates.working_1: "working",
-    ThreadStates.working_2: "working",
-    ThreadStates.working_3: "working",
-    ThreadStates.killed: "killed",
-    ThreadStates.online: "online",
-}
 
 
 class Colors(Enum):

@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """Custom downloader with retries control."""
+
 import logging
 from typing import Optional
 
