@@ -519,5 +519,5 @@ def handle_fatal_error_exit(exit_message, exit_code=-1):
         exit_code (int, optional): exit code. Defaults to -1.
     """
 
-    print(Fore.RED + exit_message + Fore.RESET, file=sys.stderr)
+    print(Fore.RED + str(exit_message) + Fore.RESET, file=sys.stderr)
     sys.exit(exit_code)
