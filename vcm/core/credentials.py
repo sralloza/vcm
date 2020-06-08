@@ -52,7 +52,7 @@ class _Credentials:
     VirtualCampus: VirtualCampusCredentials = None
     Email: EmailCredentials = None
 
-    def __init__(self, _auto=False):
+    def __init__(self):
         self.load()
 
     @classmethod
