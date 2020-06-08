@@ -108,7 +108,7 @@ class _Credentials:
         )
 
         _Credentials.Email = EmailCredentials(
-            "email-username@domain.es", "email-password", "smtp.domain.es", 587
+            "email-username@domain.es", "email-password", "smtp.gmail.com", 587
         )
 
         cls.save()
