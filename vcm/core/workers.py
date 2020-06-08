@@ -71,8 +71,8 @@ class Worker(Thread):
         self.current_object = None
 
         self._state = ThreadStates.idle
-        self._last_state_update = time()
-        self._update_state()
+        self.last_state_update = time()
+        self.update_state()
 
         from vcm.downloader.subject import Subject
         from vcm.downloader.link import BaseLink
@@ -86,11 +86,11 @@ class Worker(Thread):
         return self._state
 
     def update_state(self):
-        if time() - self._last_state_update > 1:
-            self._update_state()
-            self._last_state_update = time()
+        if time() - self.last_state_update > 1:
+            self.update_state()
+            self.last_state_update = time()
 
-    def _update_state(self):
+    def update_state(self):
         if self.timestamp is None:
             if not self.active:
                 self._state = ThreadStates.killed
