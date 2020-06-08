@@ -10,8 +10,8 @@ import flask
 import waitress
 
 from .settings import GeneralSettings
-from .tasks import Killer, ThreadStates, Worker, state_to_color
 from .time_operations import seconds_to_str
+from .workers import Killer, ThreadStates, Worker, state_to_color
 
 logger = getLogger(__name__)
 
