@@ -120,6 +120,7 @@ class TestSecureFilename:
         real = secure_filename(input_str, spaces=True)
         assert real == expected
 
+    @mock.patch("os.name", "nt")
     def test_windows_special_names(self):
         assert secure_filename("aux", spaces=True) == "_aux"
         assert secure_filename("aux", spaces=False) == "_aux"
