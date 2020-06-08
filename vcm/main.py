@@ -1,10 +1,11 @@
 import argparse
 from enum import Enum
 import logging
-import sys
+from webbrowser import get as get_webbrowser
 
-from vcm import __version__ as version
-from vcm.core.settings import (
+from . import __version__ as version
+from .core.settings import (
+    GeneralSettings,
     NotifySettings,
     SETTINGS_CLASSES,
     exclude,
@@ -14,15 +15,15 @@ from vcm.core.settings import (
     settings_to_string,
     un_section_index,
 )
-from vcm.core.utils import (
+from .core.utils import (
     Printer,
     check_updates,
     more_settings_check,
     safe_exit,
     setup_vcm,
 )
-from vcm.downloader import download
-from vcm.notifier import notify
+from .downloader import download
+from . notifier import notify
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class Command(Enum):
 
 
 def show_version():
-    sys.exit("Version: %s" % version)
+    print("Version: %s" % version)
 
 
 def parse_args(args=None, return_parser=False):
@@ -124,14 +125,17 @@ def parse_args(args=None, return_parser=False):
 
 @safe_exit
 def main(args=None):
+    """Main function."""
+
     opt, parser = parse_args(args, return_parser=True)
 
     if opt.version:
         show_version()
+        return
 
     if opt.check_updates:
         check_updates()
-        sys.exit()
+        return
 
     try:
         opt.command = Command(opt.command)
@@ -139,10 +143,16 @@ def main(args=None):
         try:
             opt.command = Command[opt.command]
         except KeyError:
-            return parser.error("Invalid use: use download or notify")
+            commands = list(Command)
+            commands.sort(key=lambda x: x.name)
+            commands = ", ".join([x.to_str() for x in commands])
+            return parser.error(
+                "Invalid command (%r). Valid commands: %s" % (opt.command, commands)
+            )
 
     if opt.command == Command.version:
         show_version()
+        return
 
     if opt.command == Command.download and opt.quiet:
         Printer.silence()
@@ -150,19 +160,20 @@ def main(args=None):
     if opt.command == Command.settings:
         if opt.settings_subcommand == "list":
             print(settings_to_string())
-            sys.exit()
+            return
 
         if opt.settings_subcommand == "check":
             more_settings_check()
-            sys.exit("Checked")
+            print("Checked")
+            return
 
         if opt.settings_subcommand == "exclude":
             exclude(opt.subject_id)
-            sys.exit()
+            return
 
         if opt.settings_subcommand == "include":
             include(opt.subject_id)
-            sys.exit()
+            return
 
         if opt.settings_subcommand == "index":
             section_index(opt.subject_id)
@@ -170,7 +181,7 @@ def main(args=None):
                 "Done. Remember removing alias entries for subject with id=%d."
                 % opt.subject_id
             )
-            sys.exit()
+            return
 
         if opt.settings_subcommand == "unindex":
             un_section_index(opt.subject_id)
@@ -178,7 +189,7 @@ def main(args=None):
                 "Done. Remember removing alias entries for subject with id=%d."
                 % opt.subject_id
             )
-            sys.exit()
+            return
 
         if opt.settings_subcommand == "keys":
             keys = []
@@ -188,7 +199,7 @@ def main(args=None):
 
             for key in keys:
                 print(key)
-            sys.exit()
+            return
 
         if opt.key.count(".") != 1:
             return parser.error("Invalid key (must be section.setting)")
@@ -215,7 +226,7 @@ def main(args=None):
             setattr(settings_class, key, opt.value)
         elif opt.settings_subcommand == "show":
             print("%s: %r" % (opt.key, getattr(settings_class, key)))
-        sys.exit()
+        return
 
     # Command executed is not 'settings', so check settings
     setup_vcm()
@@ -226,14 +237,14 @@ def main(args=None):
         return download(
             nthreads=1, no_killer=True, status_server=False, discover_only=True
         )
-    elif opt.command == Command.download:
+    if opt.command == Command.download:
         if opt.debug:
-            import webbrowser
-
+            Printer.print("Opening state server")
             chrome_path = (
                 "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
             )
-            webbrowser.get(chrome_path).open_new("localhost")
+            args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+            get_webbrowser(chrome_path).open_new(args)
 
         return download(
             nthreads=opt.nthreads,
@@ -241,12 +252,10 @@ def main(args=None):
             status_server=not opt.no_status_server,
         )
 
-    elif opt.command == Command.notify:
+    if opt.command == Command.notify:
         return notify(
             send_to=NotifySettings.email,
             use_icons=not opt.no_icons,
             nthreads=opt.nthreads,
             status_server=not opt.no_status_server,
         )
-    else:
-        return parser.error("Invalid command: %r" % opt.command)
