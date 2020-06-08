@@ -8,19 +8,6 @@ from .settings import GeneralSettings
 from .utils import Printer
 
 
-class Counters:
-    updated = 0
-    new = 0
-
-    @classmethod
-    def count_updated(cls):
-        cls.updated += 1
-
-    @classmethod
-    def count_new(cls):
-        cls.new += 1
-
-
 class Results:
     """Class to manage information."""
 
@@ -32,7 +19,6 @@ class Results:
     @staticmethod
     def print_updated(filepath):
         """Prints an updated message (yellow) thread-safely."""
-        Counters.count_updated()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = "[%s] File updated: %s" % (timestamp, filepath)
         with Results.print_lock:
@@ -43,7 +29,6 @@ class Results:
     @staticmethod
     def print_new(filepath):
         """Prints an new message (green) thread-safely."""
-        Counters.count_new()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = "[%s] New file: %s" % (timestamp, filepath)
         with Results.print_lock:
@@ -60,5 +45,5 @@ class Results:
 
         """
         with Results.file_lock:
-            with Results.result_path.open("at", encoding="utf-8") as f:
-                f.write(message + "\n")
+            with Results.result_path.open("at", encoding="utf-8") as file_handler:
+                file_handler.write(message + "\n")
