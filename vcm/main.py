@@ -34,12 +34,28 @@ class Command(Enum):
     discover = 4
     version = 5
 
+    def to_str(self):
+        return self.name
+
 
 def show_version():
     sys.exit("Version: %s" % version)
 
 
-def parse_args(args=None, parser=False):
+def parse_args(args=None, return_parser=False):
+    """Parses command line args.
+
+    Args:
+        args (List[str], optional): list of argument to parse instead of
+            sys.argv[1:]. Defaults to None.
+        return_parser (bool, optional): if True, it will return the
+            args and the parser, in that order. Defaults to False.
+
+    Returns:
+        Namespace: if `return_parser` is False.
+        Tuple[Namespace, ArgumentParser]: if `return_parser` is True.
+    """
+
     parser = argparse.ArgumentParser(prog="vcm")
     parser.add_argument(
         "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
@@ -100,7 +116,7 @@ def parse_args(args=None, parser=False):
     subparsers.add_parser("discover")
     subparsers.add_parser("version")
 
-    if parser:
+    if return_parser:
         return parser.parse_args(args), parser
 
     return parser.parse_args(args)
@@ -108,7 +124,7 @@ def parse_args(args=None, parser=False):
 
 @safe_exit
 def main(args=None):
-    opt, parser = parse_args(args, parser=True)
+    opt, parser = parse_args(args, return_parser=True)
 
     if opt.version:
         show_version()
