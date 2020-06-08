@@ -1,13 +1,14 @@
-import sys
 from pathlib import Path
 from unittest import mock
 
 import pytest
-from colorama.ansi import Fore
 from toml import TomlDecodeError
 
-from vcm.core.credentials import (EmailCredentials, VirtualCampusCredentials,
-                                  _Credentials)
+from vcm.core.credentials import (
+    EmailCredentials,
+    VirtualCampusCredentials,
+    _Credentials,
+)
 
 
 class TestEmailCredentials:
@@ -84,6 +85,17 @@ class TestHiddenCredentials:
         )
         assert isinstance(_Credentials.Email, (EmailCredentials, NoneType))
 
+    @mock.patch("vcm.core.credentials.handle_fatal_error_exit")
+    @mock.patch("vcm.core.credentials._Credentials.make_example")
+    def test_make_default(self, cme_m, hfee_m):
+        hfee_m.side_effect = SystemExit(-1)
+
+        with pytest.raises(SystemExit, match="-1"):
+            _Credentials.make_default("<reason>")
+
+        cme_m.assert_called_once_with()
+        hfee_m.assert_called_once_with("<reason>")
+
     class TestReadCredentials:
         @pytest.fixture(autouse=True)
         def mocks(self):
@@ -93,8 +105,13 @@ class TestHiddenCredentials:
             self.hfee_m.side_effect = SystemExit(-1)
             self.load_m = mock.patch("toml.load").start()
             self.path_m = mock.MagicMock()
+            self.path_m.exists.return_value = True
             self.path_m.__repr__ = lambda x: repr("<credentials-path>")
             mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
+            self.mdf_m = mock.patch(
+                "vcm.core.credentials._Credentials.make_default"
+            ).start()
+            self.mdf_m.side_effect = SystemExit(-1)
 
             yield
 
@@ -108,6 +125,14 @@ class TestHiddenCredentials:
             self.load_m.assert_called_once_with(pointer)
 
             assert result == self.load_m.return_value
+
+        def test_no_credentials_file_found(self):
+            self.path_m.exists.return_value = False
+
+            with pytest.raises(SystemExit, match="-1"):
+                _Credentials.read_credentials()
+
+            self.mdf_m.assert_called()
 
         def test_error(self):
             self.load_m.side_effect = TomlDecodeError("a", "b", 1)
