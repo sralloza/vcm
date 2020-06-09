@@ -10,7 +10,6 @@ from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from .modules import Modules
 from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 from .utils import ErrorCounter, Printer, getch
@@ -65,7 +64,6 @@ class Worker(Thread):
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.called_from = Modules.current()
         self.queue: Queue = queue
         self.timestamp = None
         self.current_object = None
@@ -277,8 +275,7 @@ def start_workers(queue, nthreads=20, no_killer=False):
         killer.start()
         thread_list.append(killer)
     else:
-        if Modules.current() == Modules.download:
-            Printer.print("Killer not started")
+        Printer.print("Killer not started")
 
     for i in range(nthreads):
         thread = Worker(queue, name=f"W-{i + 1:02d}", daemon=True)
