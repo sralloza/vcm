@@ -39,6 +39,17 @@ class TestModules:
         with pytest.raises(ValueError, match=r"'\w+' is not a valid Modules"):
             Modules.set_current("something")
 
+    @mock.patch("vcm.core.modules.Modules.current")
+    def test_should_print(self, curr_mod_m):
+        curr_mod_m.return_value = Modules.undefined
+        assert Modules.should_print() is True
+        curr_mod_m.return_value = Modules.download
+        assert Modules.should_print() is True
+        curr_mod_m.return_value = Modules.notify
+        assert Modules.should_print() is False
+        curr_mod_m.return_value = Modules.settings
+        assert Modules.should_print() is True
+
 
 class TestHiddenStatic:
     def test_attributes(self):
