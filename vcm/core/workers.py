@@ -71,7 +71,7 @@ class Worker(Thread):
         self.current_object = None
 
         self._state = ThreadStates.idle
-        self.last_state_update = time()
+        self.last_state_update = 0
         self.update_state()
 
         from vcm.downloader.subject import Subject
@@ -86,11 +86,12 @@ class Worker(Thread):
         return self._state
 
     def update_state(self):
+        # Update state at less than one Herz
         if time() - self.last_state_update > 1:
-            self.update_state()
+            self._update_state()
             self.last_state_update = time()
 
-    def update_state(self):
+    def _update_state(self):
         if self.timestamp is None:
             if not self.active:
                 self._state = ThreadStates.killed
