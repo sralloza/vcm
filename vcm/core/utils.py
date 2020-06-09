@@ -1,16 +1,16 @@
 """Utils module."""
 
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-from threading import Lock, current_thread
 import time
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from threading import Lock, current_thread
 from traceback import format_exc
 from typing import TypeVar, Union
 
@@ -18,6 +18,8 @@ from colorama import Fore
 from colorama import init as start_colorama
 from decorator import decorator
 from packaging import version
+
+from vcm.core.modules import Modules
 
 from .time_operations import seconds_to_str
 
@@ -399,6 +401,9 @@ class Printer:
 
     @classmethod
     def print(cls, *args, **kwargs):
+        if not Modules.should_print():
+            return
+
         with cls._lock:
             return cls._print(*args, **kwargs)
 

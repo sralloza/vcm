@@ -559,13 +559,19 @@ class TestPrinter:
         assert captured.err == ""
         assert captured.out == ""
 
-    def test_print(self, capsys):
+    @pytest.mark.parametrize("should_print", [False, True])
+    @mock.patch("vcm.core.utils.Modules.should_print")
+    def test_print(self, sp_m, should_print, capsys):
+        sp_m.return_value = should_print
         assert Printer._print == print
         Printer.print("hello")
 
         captured = capsys.readouterr()
         assert captured.err == ""
-        assert captured.out == "hello\n"
+        if should_print:
+            assert captured.out == "hello\n"
+        else:
+            assert captured.out == ""
 
     def test_useless(self, capsys):
         Printer.useless("a", 1, float=0.23, complex=1 + 2j)
