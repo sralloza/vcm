@@ -294,7 +294,7 @@ def print_fatal_error(exception, current_object, log_exception=True):
         logger.exception(
         "%s in %r(url=%r) (%r)",
         type(exception).__name__,
-        type(current_object),
+        type(current_object).__name__,
         current_object.url,
         exception,
     )
