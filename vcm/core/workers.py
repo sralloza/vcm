@@ -1,4 +1,5 @@
 """Multithreading workers for the VCM."""
+import sys
 from enum import Enum, auto
 from logging import getLogger
 from queue import Empty as EmptyQueue
@@ -79,9 +80,12 @@ class Worker(Thread):
         self.BaseLink = BaseLink
 
     @property
-    def state(self):
-        self.update_state()
+    def state(self) -> ThreadStates:
+        # self.update_state()
         return self._state
+
+    def set_state(self, state):
+        self._state = state
 
     def update_state(self):
         # Update state at less than one Herz
@@ -91,51 +95,39 @@ class Worker(Thread):
 
     def _update_state(self):
         if self.timestamp is None:
-            if not self.active:
-                self._state = ThreadStates.killed
-                return
-
-            if isinstance(self, Killer):
-                self._state = ThreadStates.online
-                return
-
-            if self.current_object is None:
-                self._state = ThreadStates.idle
-                return
+            return
 
         exec_time = time() - self.timestamp
 
         if exec_time < 30:
-            state = ThreadStates.working_0
+            self.set_state(ThreadStates.working_0)
         elif 30 <= exec_time < 60:
-            state = ThreadStates.working_1
+            self.set_state(ThreadStates.working_1)
         elif 60 <= exec_time < 90:
-            state = ThreadStates.working_2
+            self.set_state(ThreadStates.working_2)
         else:
-            state = ThreadStates.working_3
-
-        self._state = state
-        return
+            self.set_state(ThreadStates.working_3)
 
     @property
     def active(self):
         return running.is_set()
 
     def to_log(self, integer=False):
+        self._update_state()
         state = self.state
         color = state_to_color[state]
-        status = f'<font color="{color.name}">{self.name}: {state.alias} - '
+        status = f'<font color="{color.name}"><b>{self.name}: {state.alias}</b> - '
 
         if state == ThreadStates.working_3:
             timestamp = -float("inf") if not self.timestamp else self.timestamp
             status += f"[{seconds_to_str(time() - timestamp, integer=integer)}] "
 
         if isinstance(self.current_object, self.BaseLink):
-            status += f"{self.current_object.subject.name} → {self.current_object.name}"
+            status += f"{self.current_object.subject.name} → <i>{self.current_object.name}</i>"
         elif isinstance(self.current_object, self.Subject):
-            status += f"{self.current_object.name}"
+            status += f'</font><font color="#aa00ff">{self.current_object.name}</font>'
         elif isinstance(self.current_object, str):
-            status += self.current_object
+            status += f'</font><font color="##ff00ff">{self.current_object}</font>'
         else:
             status += "None"
 
@@ -144,8 +136,6 @@ class Worker(Thread):
         return status
 
     def kill(self):
-        logger.info("Thread killed")
-
         while True:
             try:
                 self.queue.get(False)
@@ -154,7 +144,10 @@ class Worker(Thread):
                 break
 
         self.timestamp = None
+        self.set_state(ThreadStates.killed)
+        logger.info("Thread killed")
         running.clear()
+        sys.exit()
 
     def run(self):
         """Runs the thread"""
@@ -209,7 +202,11 @@ class Worker(Thread):
             else:
                 raise ValueError("Unknown object in queue: %r" % self.current_object)
 
-            logger.info("%d unfinished tasks", self.queue.unfinished_tasks)
+            logger.info(
+                "%d unfinished tasks (continue=%s)",
+                self.queue.unfinished_tasks,
+                self.active,
+            )
             self.current_object = None
             self.timestamp = None
 
@@ -217,13 +214,13 @@ class Worker(Thread):
 
 
 class Killer(Worker):
-    def __init__(self, queue, *args, **kwargs):
-        super().__init__(queue, name="Killer", *args, **kwargs)
+    def __init__(self, queue):
+        super().__init__(queue, name="Killer", state=ThreadStates.online)
         self.queue = queue
-        self.status = ThreadStates.online
+        # self.set_state(ThreadStates.online)
 
     def to_log(self, integer=False):
-        output = f'<font color="blue">{self.name}: {self.status.name}'
+        output = f'<font color="blue"><b>{self.name}: {self.state.name}</b>'
         return output
 
     def run(self):
@@ -244,8 +241,7 @@ class Killer(Worker):
                         thread.kill()
 
                 logger.info("Killer thread ended his massacre")
-                self.kill()
-                exit(1)
+                return self.kill()
 
             if real in ("w", "o"):
                 Printer.print("Opening state server")
