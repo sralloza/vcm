@@ -62,14 +62,18 @@ state_to_color = {
 class Worker(Thread):
     """Special worker for VCM multithreading."""
 
-    def __init__(self, queue, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, queue, state=None, name=None):
+        super().__init__(name=name, daemon=True)
 
         self.queue: Queue = queue
         self.timestamp = None
         self.current_object = None
 
-        self._state = ThreadStates.idle
+        if state:
+            self.set_state(state)
+        else:
+            self.set_state(ThreadStates.idle)
+
         self.last_state_update = 0
         self.update_state()
 
@@ -267,14 +271,14 @@ def start_workers(queue, nthreads=20, no_killer=False):
     thread_list = []
 
     if no_killer is False:
-        killer = Killer(queue, daemon=True)
+        killer = Killer(queue)
         killer.start()
         thread_list.append(killer)
     else:
         Printer.print("Killer not started")
 
     for i in range(nthreads):
-        thread = Worker(queue, name=f"W-{i + 1:02d}", daemon=True)
+        thread = Worker(queue, name=f"W-{i + 1:02d}")
         logger.debug("Started worker named %r", thread.name)
         thread.start()
         thread_list.append(thread)
