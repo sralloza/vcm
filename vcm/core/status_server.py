@@ -58,7 +58,10 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             thread_status = "Threads:<br>"
 
             colors, working, idle = get_thread_state_info()
-            for thread in threadlist:
+            for thread in enumerate_threads():
+                if not isinstance(thread, Worker):
+                    continue
+
                 temp_status = thread.to_log(integer=True)
                 thread_status += f"\t-{temp_status}<br>"
 
