@@ -4,6 +4,7 @@ from queue import Queue
 from threading import Thread
 from threading import enumerate as enumerate_threads
 from time import time
+from traceback import format_exc
 from typing import List
 
 import flask
@@ -28,6 +29,12 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     @app.errorhandler(404)
     def back_to_index(error):
         return flask.redirect(flask.url_for("index"))
+
+    @app.errorhandler(500)
+    def server_error(error):
+        err = format_exc()
+        err = err.replace("\n", "<br>").replace(" ", "&nbsp;" * 2)
+        return flask.Response("server error: " + err, mimetype="text/html"), 500
 
     @app.route("/")
     def index():
