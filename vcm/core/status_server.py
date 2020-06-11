@@ -1,5 +1,6 @@
 from collections import defaultdict
 from logging import getLogger
+from pathlib import Path
 from queue import Queue
 from threading import Thread
 from threading import enumerate as enumerate_threads
@@ -22,7 +23,6 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     from vcm.downloader.link import BaseLink
 
     t0 = time()
-    logger.info("STARTED STATUS SERVER")
 
     app = flask.Flask(__name__)
 
@@ -36,30 +36,15 @@ def runserver(queue: Queue, threadlist: List[Worker]):
         err = err.replace("\n", "<br>").replace(" ", "&nbsp;" * 2)
         return flask.Response("server error: " + err, mimetype="text/html"), 500
 
+    @app.route("/backend.js")
+    def backend_js():
+        data = Path(__file__).with_name("http-status-server.js").read_bytes()
+        return flask.Response(data, mimetype="application/javascript")
+
     @app.route("/")
     def index():
-        return """<p id="content">Here will be content</p>
-
-    <script>
-        var clock = document.getElementById("content");
-        var alerted = false;
-
-        var interval = setInterval(() => {
-            fetch("/feed")
-            .then(response => {
-                    response.text().then(t => {clock.innerHTML = t})
-                }).catch(function(){
-                    document.title = "Ejecución terminada";
-                    clearInterval(interval);
-                    if (alerted == false) {
-                        alerted = true;
-                        //alert("VCM ha terminado la ejecución");
-                        }
-                    }
-                );
-            }, 1000);
-    </script>
-    """
+        a = '<script src="/backend.js"></script>'
+        return a + '<p id="content">Here will be content</p>'
 
     @app.route("/feed")
     def info_feed():
