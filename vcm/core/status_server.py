@@ -13,7 +13,7 @@ import waitress
 
 from .settings import GeneralSettings
 from .time_operations import seconds_to_str
-from .workers import Killer, ThreadStates, Worker, state_to_color
+from .workers import Killer, ThreadStates, Worker, running, state_to_color
 
 logger = getLogger(__name__)
 
@@ -50,13 +50,16 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     def info_feed():
         def feed():
             status = "<title>VCM STATUS</title>"
-            status += f"Execution time: {seconds_to_str(time() - t0, integer=True)}<br>"
+            execution_time = seconds_to_str(time() - t0, integer=False)
+            status += f"Execution time: {execution_time}<br>"
 
             status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
-            status += f"tasks</a>: {queue.unfinished_tasks}<br>"
-            status += f"Items left: {queue.qsize()}<br><br>"
-            thread_status = "Threads:<br>"
+            status += f"tasks</a>: {queue.unfinished_tasks}"
 
+            if not running.is_set():
+                status += '<font color="red"> [Shutting down]</font>'
+            status += f"<br>Items left: {queue.qsize()}<br><br>"
+            thread_status = "Threads (%d):" % count_threads()
             colors, working, idle = get_thread_state_info()
             for thread in enumerate_threads():
                 if not isinstance(thread, Worker):
