@@ -11,6 +11,8 @@ from typing import List
 import flask
 import waitress
 
+from vcm.core.utils import ErrorCounter
+
 from .settings import GeneralSettings
 from .time_operations import seconds_to_str
 from .workers import Killer, ThreadStates, Worker, running, state_to_color
@@ -60,6 +62,13 @@ def runserver(queue: Queue, threadlist: List[Worker]):
                 status += '<font color="red"> [Shutting down]</font>'
             status += f"<br>Items left: {queue.qsize()}<br><br>"
             thread_status = "Threads (%d):" % count_threads()
+
+            if ErrorCounter.has_errors():
+                report = f'<font color="red">\t<b>[{ErrorCounter.report()}]</b></font>'
+                thread_status += report
+
+            thread_status += "<br>"
+
             colors, working, idle = get_thread_state_info()
             for thread in enumerate_threads():
                 if not isinstance(thread, Worker):
@@ -71,20 +80,18 @@ def runserver(queue: Queue, threadlist: List[Worker]):
             colors = list(colors.items())
             colors.sort(key=lambda x: x[-1], reverse=True)
 
-            status += f"Threads working: {working}<br>"
-            status += f"Threads idle: {idle}<br><br>"
+            # status += f"Threads working: {working}<br>"
+            # status += f"Threads idle: {idle}<br><br>"
             status += f"Codes:<br>"
-            status += (
-                "<br>".join(
-                    [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]
-                )
-                + "<br><br>"
+            status += "<br>".join(
+                [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]
             )
+            status += "<br><br>"
             status += thread_status
 
-            yield status
+            return status
 
-        return flask.Response(feed(), mimetype="text")
+        return flask.Response(feed(), mimetype="text/html")
 
     @app.route("/queue")
     def view_queue():
@@ -139,10 +146,7 @@ class HttpStatusServer(Thread):
 
 
 def get_thread_state_info():
-    def helper():
-        return 0
-
-    colors = defaultdict(helper, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
+    colors = defaultdict(lambda: 0, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
     working = 0
     idle = 0
 
@@ -158,8 +162,16 @@ def get_thread_state_info():
         if state == ThreadStates.idle:
             idle += 1
 
-        if state.value == "working":
+        if state.alias == "working":
             working += 1
 
     colors.pop("blue", None)
     return dict(colors), working, idle
+
+
+def count_threads() -> int:
+    nthreads = 0
+    for thread in enumerate_threads():
+        if isinstance(thread, Worker):
+            nthreads += 1
+    return nthreads
