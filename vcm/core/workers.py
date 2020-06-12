@@ -213,6 +213,7 @@ class Worker(Thread):
             )
             self.current_object = None
             self.timestamp = None
+            self.set_state(ThreadStates.idle)
 
         return self.kill()
 
