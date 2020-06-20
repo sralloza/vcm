@@ -1,19 +1,17 @@
 """Multithreading workers for the VCM."""
-import sys
 from enum import Enum, auto
 from logging import getLogger
 from queue import Empty as EmptyQueue
 from queue import Queue
+import sys
 from threading import Event, Thread
 from threading import enumerate as enumerate_threads
 from time import time
-from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from .settings import GeneralSettings
 from .time_operations import seconds_to_str
-from .utils import ErrorCounter, Printer, getch
+from .utils import ErrorCounter, Printer, getch, open_http_status_server
 
 logger = getLogger(__name__)
 
@@ -34,8 +32,6 @@ class ThreadStates(Enum):
     @property
     def alias(self):
         return self.name.split("_")[0]
-
-
 
 
 class Colors(Enum):
@@ -175,7 +171,9 @@ class Worker(Thread):
                 except BaseException as exc:
                     if not isinstance(exc, SystemExit):
                         raise
-                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    logger.warning(
+                        "Catched SystemExit exception (%s), ignoring it", exc
+                    )
                     print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
@@ -194,7 +192,9 @@ class Worker(Thread):
                 except BaseException as exc:
                     if not isinstance(exc, SystemExit):
                         raise
-                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    logger.warning(
+                        "Catched SystemExit exception (%s), ignoring it", exc
+                    )
                     print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
@@ -249,12 +249,7 @@ class Killer(Worker):
                 return self.kill()
 
             if real in ("w", "o"):
-                Printer.print("Opening state server")
-                chrome_path = (
-                    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
-                )
-                args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
-                getwebbrowser(chrome_path).open_new(args)
+                open_http_status_server()
 
 
 def start_workers(queue, nthreads=20, no_killer=False):
@@ -291,12 +286,12 @@ def print_fatal_error(exception, current_object, log_exception=True):
     ErrorCounter.record_error(exception)
     if log_exception:
         logger.exception(
-        "%s in %r(url=%r) (%r)",
-        type(exception).__name__,
-        type(current_object).__name__,
-        current_object.url,
-        exception,
-    )
+            "%s in %r(url=%r) (%r)",
+            type(exception).__name__,
+            type(current_object).__name__,
+            current_object.url,
+            exception,
+        )
 
     Printer.print(
         "%sERROR: %s in url %s (%r)%s"

@@ -1,7 +1,6 @@
 import argparse
 from enum import Enum
 import logging
-from webbrowser import get as get_webbrowser
 
 from . import __version__ as version
 from .core.settings import (
@@ -19,6 +18,7 @@ from .core.utils import (
     Printer,
     check_updates,
     more_settings_check,
+    open_http_status_server,
     safe_exit,
     setup_vcm,
 )
@@ -239,12 +239,7 @@ def main(args=None):
         )
     if opt.command == Command.download:
         if opt.debug:
-            Printer.print("Opening state server")
-            chrome_path = (
-                "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
-            )
-            args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
-            get_webbrowser(chrome_path).open_new(args)
+            open_http_status_server()
 
         return download(
             nthreads=opt.nthreads,

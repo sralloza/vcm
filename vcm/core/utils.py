@@ -1,18 +1,19 @@
 """Utils module."""
 
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-import time
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime
-from logging.handlers import RotatingFileHandler
 from threading import Lock, current_thread
+import time
 from traceback import format_exc
 from typing import TypeVar, Union
+from webbrowser import get as get_webbrowser
 
 from colorama import Fore
 from colorama import init as start_colorama
@@ -526,3 +527,16 @@ def handle_fatal_error_exit(exit_message, exit_code=-1):
 
     print(Fore.RED + str(exit_message) + Fore.RESET, file=sys.stderr)
     sys.exit(exit_code)
+
+
+def open_http_status_server():
+    """Opens the web status server (by default is localhost:8080) in a new
+    chrome windows.
+    """
+
+    from .settings import GeneralSettings
+
+    Printer.print("Opening state server")
+    chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
+    args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+    get_webbrowser(chrome_path).open_new(args)
