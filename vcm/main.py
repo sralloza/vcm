@@ -1,4 +1,4 @@
-import argparse
+from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
 
@@ -23,9 +23,10 @@ from .core.utils import (
     setup_vcm,
 )
 from .downloader import download
-from . notifier import notify
+from .notifier import notify
 
 logger = logging.getLogger(__name__)
+parser: ArgumentParser
 
 
 class Command(Enum):
@@ -43,21 +44,19 @@ def show_version():
     print("Version: %s" % version)
 
 
-def parse_args(args=None, return_parser=False):
+def parse_args(args=None):
     """Parses command line args.
 
     Args:
         args (List[str], optional): list of argument to parse instead of
             sys.argv[1:]. Defaults to None.
-        return_parser (bool, optional): if True, it will return the
-            args and the parser, in that order. Defaults to False.
 
     Returns:
-        Namespace: if `return_parser` is False.
-        Tuple[Namespace, ArgumentParser]: if `return_parser` is True.
+        Namespace: namespace containing the arguments parsed.
     """
 
-    parser = argparse.ArgumentParser(prog="vcm")
+    global parser
+    parser = ArgumentParser(prog="vcm")
     parser.add_argument(
         "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
     )
@@ -117,9 +116,6 @@ def parse_args(args=None, return_parser=False):
     subparsers.add_parser("discover")
     subparsers.add_parser("version")
 
-    if return_parser:
-        return parser.parse_args(args), parser
-
     return parser.parse_args(args)
 
 
@@ -127,7 +123,7 @@ def parse_args(args=None, return_parser=False):
 def main(args=None):
     """Main function."""
 
-    opt, parser = parse_args(args, return_parser=True)
+    opt = parse_args(args)
 
     if opt.version:
         show_version()
