@@ -156,107 +156,28 @@ def main(args=None):
         check_updates()
         return
 
-    try:
-        opt.command = Command(opt.command)
-    except ValueError:
-        try:
-            opt.command = Command[opt.command]
-        except KeyError:
-            commands = list(Command)
-            commands.sort(key=lambda x: x.name)
-            commands = ", ".join([x.to_str() for x in commands])
-            return parser.error(
-                "Invalid command (%r). Valid commands: %s" % (opt.command, commands)
-            )
+    command = get_command(opt.command)
 
-    if opt.command == Command.version:
+    if command == Command.version:
         show_version()
         return
 
-    if opt.command == Command.download and opt.quiet:
+    if command == Command.download and opt.quiet:
         Printer.silence()
 
-    if opt.command == Command.settings:
-        if opt.settings_subcommand == "list":
-            print(settings_to_string())
-            return
-
-        if opt.settings_subcommand == "check":
-            more_settings_check()
-            print("Checked")
-            return
-
-        if opt.settings_subcommand == "exclude":
-            exclude(opt.subject_id)
-            return
-
-        if opt.settings_subcommand == "include":
-            include(opt.subject_id)
-            return
-
-        if opt.settings_subcommand == "index":
-            section_index(opt.subject_id)
-            Printer.print(
-                "Done. Remember removing alias entries for subject with id=%d."
-                % opt.subject_id
-            )
-            return
-
-        if opt.settings_subcommand == "unindex":
-            un_section_index(opt.subject_id)
-            Printer.print(
-                "Done. Remember removing alias entries for subject with id=%d."
-                % opt.subject_id
-            )
-            return
-
-        if opt.settings_subcommand == "keys":
-            keys = []
-            for setting_class in SETTINGS_CLASSES:
-                for key in settings_name_to_class[setting_class].keys():
-                    keys.append(" - " + setting_class + "." + key)
-
-            for key in keys:
-                print(key)
-            return
-
-        if opt.key.count(".") != 1:
-            return parser.error("Invalid key (must be section.setting)")
-
-        # Now command can be show or set, both need to split the key
-        cls, key = opt.key.split(".")
-
-        try:
-            settings_class = settings_name_to_class[cls]
-        except KeyError:
-            return parser.error(
-                "Invalid setting class: %r (valids are %r)" % (cls, SETTINGS_CLASSES)
-            )
-
-        if key not in settings_class:
-            message = "%r is not a valid %s setting (valids are %r)" % (
-                key,
-                cls,
-                list(settings_class.keys()),
-            )
-            parser.error(message)
-
-        if opt.settings_subcommand == "set":
-            setattr(settings_class, key, opt.value)
-        elif opt.settings_subcommand == "show":
-            print("%s: %r" % (opt.key, getattr(settings_class, key)))
-        return
+    if command == Command.settings:
+        return settings_subcommand(opt)
 
     # Command executed is not 'settings', so check settings
     setup_vcm()
     logger.info("vcm version: %s", version)
 
-    if opt.command == Command.discover:
+    if command == Command.discover:
         Printer.silence()
         return download(
             nthreads=1, no_killer=True, status_server=False, discover_only=True
         )
-    if opt.command == Command.download:
+    if command == Command.download:
         if opt.debug:
             open_http_status_server()
 
@@ -266,7 +187,7 @@ def main(args=None):
             status_server=not opt.no_status_server,
         )
 
-    if opt.command == Command.notify:
+    if command == Command.notify:
         return notify(
             send_to=NotifySettings.email,
             use_icons=not opt.no_icons,
