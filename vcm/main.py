@@ -308,3 +308,17 @@ class SettingsSubcommand:
 
         for key in keys:
             print(key)
+
+
+def settings_subcommand(opt: Namespace):
+    try:
+        return SettingsSubcommand.execute(opt)
+    except AttributeError:
+        pass
+
+    settings_class, key = parse_settings_key(opt)
+
+    if opt.settings_subcommand == "set":
+        setattr(settings_class, key, opt.value)
+    elif opt.settings_subcommand == "show":
+        print("%s: %r" % (opt.key, getattr(settings_class, key)))
