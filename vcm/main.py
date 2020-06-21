@@ -5,7 +5,7 @@ from typing import NoReturn, Tuple
 
 from . import __version__ as version
 from .core.settings import (
-    GeneralSettings,
+    BaseSettings,
     NotifySettings,
     SETTINGS_CLASSES,
     exclude,
@@ -308,6 +308,30 @@ class SettingsSubcommand:
 
         for key in keys:
             print(key)
+
+
+def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
+    if opt.key.count(".") != 1:
+        return parser_error("Invalid key (must be section.setting)")
+
+    # Now command can be show or set, both need to split the key
+    cls, key = opt.key.split(".")
+
+    try:
+        settings_class = settings_name_to_class[cls]
+    except KeyError:
+        return parser_error(
+            "Invalid setting class: %r (valids are %r)" % (cls, SETTINGS_CLASSES)
+        )
+
+    if key not in settings_class:
+        message = "%r is not a valid %s setting (valids are %r)" % (
+            key,
+            cls,
+            list(settings_class.keys()),
+        )
+        parser_error(message)
+    return settings_class, key
 
 
 def settings_subcommand(opt: Namespace):
