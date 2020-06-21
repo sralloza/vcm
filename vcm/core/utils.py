@@ -363,10 +363,9 @@ def check_updates():
     from vcm import __version__ as current_version
     from .networking import connection
 
-    response = connection.get(
-        "https://raw.githubusercontent.com/sralloza/vcm/master/vcm/VERSION"
-    )
-    newer_version = version.parse(response.text.strip())
+    url = "https://api.github.com/repos/sralloza/vcm/tags"
+    response = connection.get(url)
+    newer_version = version.parse(response.json()[0]["name"])
     current_version = version.parse(current_version)
 
     if newer_version > current_version:
