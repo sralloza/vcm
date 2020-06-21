@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
+from typing import NoReturn, Tuple
 
 from . import __version__ as version
 from .core.settings import (
@@ -42,6 +43,11 @@ class Command(Enum):
 
 def show_version():
     print("Version: %s" % version)
+
+
+def parser_error(msg) -> NoReturn:
+    global parser
+    parser.error(msg)
 
 
 def parse_args(args=None):
