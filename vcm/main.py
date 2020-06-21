@@ -256,3 +256,55 @@ def main(args=None):
             nthreads=opt.nthreads,
             status_server=not opt.no_status_server,
         )
+
+
+class SettingsSubcommand:
+    opt = None
+
+    @classmethod
+    def execute(cls, opt):
+        cls.opt = opt
+        return getattr(cls, opt.settings_subcommand)()
+
+    @classmethod
+    def list(cls):
+        print(settings_to_string())
+
+    @classmethod
+    def check(cls):
+        more_settings_check()
+        print("Checked")
+
+    @classmethod
+    def exclude(cls):
+        exclude(cls.opt.subject_id)
+
+    @classmethod
+    def include(cls):
+        include(cls.opt.subject_id)
+
+    @classmethod
+    def index(cls):
+        section_index(cls.opt.subject_id)
+        Printer.print(
+            "Done. Remember removing alias entries for subject with id=%d."
+            % cls.opt.subject_id
+        )
+
+    @classmethod
+    def un_index(cls):
+        un_section_index(cls.opt.subject_id)
+        Printer.print(
+            "Done. Remember removing alias entries for subject with id=%d."
+            % cls.opt.subject_id
+        )
+
+    @classmethod
+    def keys(cls):
+        keys = []
+        for setting_class in SETTINGS_CLASSES:
+            for key in settings_name_to_class[setting_class].keys():
+                keys.append(" - " + setting_class + "." + key)
+
+        for key in keys:
+            print(key)
