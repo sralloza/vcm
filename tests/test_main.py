@@ -36,17 +36,6 @@ class TestCommand:
 
 
 class TestParseArgs:
-    @pytest.mark.parametrize("return_parser", [True, False])
-    def test_return_parser_arg(self, return_parser):
-        opt = modified_parse_args("", return_parser=return_parser)
-
-        if return_parser:
-            assert isinstance(opt, tuple)
-            assert len(opt) == 2
-            assert isinstance(opt[0], Namespace)
-            assert isinstance(opt[1], ArgumentParser)
-        else:
-            assert isinstance(opt, Namespace)
 
     class TestPositionalArguments:
         def test_no_args(self):
