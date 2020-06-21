@@ -1,3 +1,5 @@
+"""Main module, controls the execution."""
+
 from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
@@ -26,28 +28,21 @@ from .core.utils import (
 from .downloader import download
 from .notifier import notify
 
-logger = logging.getLogger(__name__)
-parser: ArgumentParser
+parser: ArgumentParser  # pylint: disable=C0103
 
 
 class Command(Enum):
+    """Represents valid CLI commands."""
+
     notify = 1
     download = 2
     settings = 3
     discover = 4
     version = 5
 
-    def to_str(self):
+    def to_str(self) -> str:
+        """Returns the name of the command."""
         return self.name
-
-
-def show_version():
-    print("Version: %s" % version)
-
-
-def parser_error(msg) -> NoReturn:
-    global parser
-    parser.error(msg)
 
 
 def parse_args(args=None):
@@ -61,7 +56,7 @@ def parse_args(args=None):
         Namespace: namespace containing the arguments parsed.
     """
 
-    global parser
+    global parser  # pylint: disable=W0603,C0103
     parser = ArgumentParser(prog="vcm")
     parser.add_argument(
         "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
@@ -125,7 +120,26 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 
-def get_command(command):
+def parser_error(msg) -> NoReturn:
+    """Raises an error using ArgumentParser.error.
+
+    Args:
+        msg (str): error message.
+    """
+
+    global parser  # pylint: disable=W0603,C0103
+    parser.error(msg)
+
+
+def get_command(command) -> Command:
+    """Returns the instance of Command class.
+
+    Args:
+        command (str): command as a string.
+
+    Returns:
+        Command: Command as an enumeration.
+    """
 
     try:
         real_command = Command(command)
@@ -142,87 +156,94 @@ def get_command(command):
     return real_command
 
 
-@safe_exit
-def main(args=None):
-    """Main function."""
+def show_version():
+    """Prints the current version."""
+    print("Version: %s" % version)
 
-    opt = parse_args(args)
 
-    if opt.version:
-        show_version()
-        return
+def execute_discover(opt):  # pylint: disable=W0613
+    """Executes command `discover`.
 
-    if opt.check_updates:
-        check_updates()
-        return
+    Args:
+        opt (Namespace): namespace returned by parser.
+    """
 
-    command = get_command(opt.command)
+    Printer.silence()
+    return download(nthreads=1, no_killer=True, status_server=False, discover_only=True)
 
-    if command == Command.version:
-        show_version()
-        return
 
-    if command == Command.download and opt.quiet:
-        Printer.silence()
+def execute_download(opt):
+    """Executes command `download`.
 
-    if command == Command.settings:
-        return settings_subcommand(opt)
+    Args:
+        opt (Namespace): namespace returned by parser.
+    """
 
-    # Command executed is not 'settings', so check settings
-    setup_vcm()
-    logger.info("vcm version: %s", version)
+    if opt.debug:
+        open_http_status_server()
 
-    if command == Command.discover:
-        Printer.silence()
-        return download(
-            nthreads=1, no_killer=True, status_server=False, discover_only=True
-        )
-    if command == Command.download:
-        if opt.debug:
-            open_http_status_server()
+    return download(
+        nthreads=opt.nthreads,
+        no_killer=opt.no_killer,
+        status_server=not opt.no_status_server,
+    )
 
-        return download(
-            nthreads=opt.nthreads,
-            no_killer=opt.no_killer,
-            status_server=not opt.no_status_server,
-        )
 
-    if command == Command.notify:
-        return notify(
-            send_to=NotifySettings.email,
-            use_icons=not opt.no_icons,
-            nthreads=opt.nthreads,
-            status_server=not opt.no_status_server,
-        )
+def execute_notify(opt):
+    """Executes command `notify`.
+
+    Args:
+        opt (Namespace): namespace returned by parser.
+    """
+
+    return notify(
+        send_to=NotifySettings.email,
+        use_icons=not opt.no_icons,
+        nthreads=opt.nthreads,
+        status_server=not opt.no_status_server,
+    )
 
 
 class SettingsSubcommand:
+    """Wrapper for settings subcommands."""
+
     opt = None
 
     @classmethod
     def execute(cls, opt):
+        """Executes a settings subcommand that doesn't alter settings.
+
+        Args:
+            opt (Namespace): namespace returned by parser.
+        """
+
         cls.opt = opt
         return getattr(cls, opt.settings_subcommand)()
 
     @classmethod
     def list(cls):
+        """Print settings keys and values."""
         print(settings_to_string())
 
     @classmethod
     def check(cls):
+        """Forces checks of settings."""
         more_settings_check()
         print("Checked")
 
     @classmethod
     def exclude(cls):
+        """Excludes a subject from parsing given its id."""
         exclude(cls.opt.subject_id)
 
     @classmethod
     def include(cls):
+        """Includes a subject in parsing given its id."""
         include(cls.opt.subject_id)
 
     @classmethod
     def index(cls):
+        """Makes a subject use section indexing given its id."""
         section_index(cls.opt.subject_id)
         Printer.print(
             "Done. Remember removing alias entries for subject with id=%d."
@@ -231,6 +252,7 @@ class SettingsSubcommand:
 
     @classmethod
     def un_index(cls):
+        """Makes a subject not use section indexing given its id."""
         un_section_index(cls.opt.subject_id)
         Printer.print(
             "Done. Remember removing alias entries for subject with id=%d."
@@ -239,6 +261,7 @@ class SettingsSubcommand:
 
     @classmethod
     def keys(cls):
+        """Prints the settings keys."""
         keys = []
         for setting_class in SETTINGS_CLASSES:
             for key in settings_name_to_class[setting_class].keys():
@@ -249,6 +272,15 @@ class SettingsSubcommand:
 
 
 def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
+    """Validates a settings key and splits it into the settings class and the key itself.
+
+    Args:
+        opt (Namespace): namespace returned by parser.
+
+    Returns:
+        Tuple[BaseSettings, str]: settings class and key.
+    """
+
     if opt.key.count(".") != 1:
         return parser_error("Invalid key (must be section.setting)")
 
@@ -272,7 +304,13 @@ def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
     return settings_class, key
 
 
-def settings_subcommand(opt: Namespace):
+def execute_settings(opt: Namespace):
+    """Executes command `settings`.
+
+    Args:
+        opt (Namespace): namespace returned by parser.
+    """
+
     try:
         return SettingsSubcommand.execute(opt)
     except AttributeError:
@@ -284,3 +322,39 @@ def settings_subcommand(opt: Namespace):
         setattr(settings_class, key, opt.value)
     elif opt.settings_subcommand == "show":
         print("%s: %r" % (opt.key, getattr(settings_class, key)))
+
+
+@safe_exit
+def main(args=None):
+    """Main function."""
+
+    logger = logging.getLogger(__name__)
+    opt = parse_args(args)
+
+    # Keyword arguments that make program exit
+    if opt.version:
+        return show_version()
+
+    if opt.check_updates:
+        return check_updates()
+
+    # Commands
+    command = get_command(opt.command)
+
+    if command == Command.download and opt.quiet:
+        Printer.silence()
+
+    # Command executed is not 'settings', so check settings
+    setup_vcm()
+    logger.info("vcm version: %s", version)
+
+    return instructions[command.to_str()](opt)
+
+
+instructions = {
+    "version": show_version,
+    "settings": execute_settings,
+    "discover": execute_discover,
+    "download": execute_download,
+    "notify": execute_notify,
+}
