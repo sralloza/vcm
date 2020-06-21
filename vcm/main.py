@@ -125,6 +125,23 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 
+def get_command(command):
+
+    try:
+        real_command = Command(command)
+    except ValueError:
+        try:
+            real_command = Command[command]
+        except KeyError:
+            commands = list(Command)
+            commands.sort(key=lambda x: x.name)
+            commands = ", ".join([x.to_str() for x in commands])
+            parser_error(
+                "Invalid command (%r). Valid commands: %s" % (command, commands)
+            )
+    return real_command
+
+
 @safe_exit
 def main(args=None):
     """Main function."""
