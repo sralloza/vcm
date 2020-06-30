@@ -67,9 +67,7 @@ def seconds_to_str(seconds, abbreviated=False, integer=None, language="en"):
     output = join_parts(language.join, day_part, hour_part, minute_part, second_part)
 
     if not output:
-        return gen_part(
-            0, language.second, language.s, abbreviated, force_output=True
-        )
+        return gen_part(0, language.second, language.s, abbreviated, force_output=True)
     return output
 
 
