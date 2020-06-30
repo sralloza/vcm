@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def save_vcm_context():
     vcm = sys.modules["vcm"]
     yield
@@ -11,7 +11,7 @@ def save_vcm_context():
 
 
 @mock.patch("vcm._version.get_versions")
-def test_get_version(get_versions_m, save_vcm_context):
+def test_get_version(get_versions_m):
     get_versions_m.return_value = {
         "version": "5.1.2",
         "full-revisionid": "<commit-id>",
