@@ -1,4 +1,3 @@
-
 # Testing data for seconds_to_str
 # {(days, hours, minutes, seconds) : {(abbr, lang): result_expected}}
 

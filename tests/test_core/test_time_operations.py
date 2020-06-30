@@ -48,45 +48,52 @@ def test_languages():
             assert isinstance(value[lang_key], Language)
 
 
-@mock.patch("vcm.core.time_operations.split_seconds")
-@mock.patch("vcm.core.time_operations.gen_part")
-@mock.patch("vcm.core.time_operations.join_parts")
 class TestSecondsToStr:
-    def test_type_error(self, jp_m, gp_m, ss_m):
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        self.ss_m = mock.patch("vcm.core.time_operations.split_seconds").start()
+        self.gp_m = mock.patch("vcm.core.time_operations.gen_part").start()
+        self.jp_m = mock.patch("vcm.core.time_operations.join_parts").start()
+
+        yield
+
+        mock.patch.stopall()
+
+    def test_type_error(self):
         with pytest.raises(
             TypeError, match="seconds must be float or int, not complex"
         ):
             seconds_to_str(2 + 5j)
 
-        jp_m.assert_not_called()
-        gp_m.assert_not_called()
-        ss_m.assert_not_called()
+        self.jp_m.assert_not_called()
+        self.gp_m.assert_not_called()
+        self.ss_m.assert_not_called()
 
-    def test_invalid_language_error(self, jp_m, gp_m, ss_m):
+    def test_invalid_language_error(self):
         expected_match = "'<invalid-language>' is not a valid language"
         with pytest.raises(InvalidLanguageError, match=expected_match):
             seconds_to_str(2, language="<invalid-language>")
 
-        jp_m.assert_not_called()
-        gp_m.assert_not_called()
-        ss_m.assert_not_called()
+        self.jp_m.assert_not_called()
+        self.gp_m.assert_not_called()
+        self.ss_m.assert_not_called()
 
     @pytest.mark.parametrize("inf", [float("inf"), float("-inf")])
     @pytest.mark.parametrize("lang", ALPHABET["default"].keys())
-    def test_infinite_seconds(self, jp_m, gp_m, ss_m, inf, lang):
+    def test_infinite_seconds(self, inf, lang):
         result = seconds_to_str(inf, language=lang)
         assert result == "infinite " + ALPHABET["default"][lang][0] + "s"
 
     @pytest.mark.parametrize("is_empty", [True, False])
     @mock.patch("vcm.core.time_operations.LANGUAGES")
-    def test_ok(self, langs_m, jp_m, gp_m, ss_m, is_empty):
-        ss_m.return_value = (10, 20, 30, 40)
+    def test_ok(self, langs_m, is_empty):
+        self.ss_m.return_value = (10, 20, 30, 40)
         lang = mock.MagicMock()
         langs_m.__getitem__.return_value.__getitem__.return_value = lang
         lang.t = "h"
 
         if is_empty:
-            jp_m.return_value = None
+            self.jp_m.return_value = None
 
         parts = [
             mock.MagicMock(),
@@ -95,24 +102,24 @@ class TestSecondsToStr:
             mock.MagicMock(),
             mock.MagicMock(),
         ]
-        gp_m.side_effect = parts
+        self.gp_m.side_effect = parts
 
         seconds_to_str(2)
         langs_m.__getitem__.assert_called_once()
         langs_m.__getitem__.return_value.__getitem__.assert_called_once()
 
-        ss_m.assert_called_once()
-        gp_m.assert_any_call(10, lang.day, lang.s, False)
-        gp_m.assert_any_call(20, lang.hour, lang.s, False)
-        gp_m.assert_any_call(30, lang.minute, lang.s, False)
-        gp_m.assert_any_call(40, lang.second, lang.s, False)
-        jp_m.assert_called_once_with(lang.join, *parts[:-1])
+        self.ss_m.assert_called_once()
+        self.gp_m.assert_any_call(10, lang.day, lang.s, False)
+        self.gp_m.assert_any_call(20, lang.hour, lang.s, False)
+        self.gp_m.assert_any_call(30, lang.minute, lang.s, False)
+        self.gp_m.assert_any_call(40, lang.second, lang.s, False)
+        self.jp_m.assert_called_once_with(lang.join, *parts[:-1])
 
         if is_empty:
-            gp_m.assert_any_call(0, lang.second, lang.s, False, force_output=True)
-            assert gp_m.call_count == 5
+            self.gp_m.assert_any_call(0, lang.second, lang.s, False, force_output=True)
+            assert self.gp_m.call_count == 5
         else:
-            assert gp_m.call_count == 4
+            assert self.gp_m.call_count == 4
 
 
 class TestGenPart:
@@ -143,8 +150,9 @@ class TestGenPart:
         assert result == expected
 
 
-class TestJoinParts:
-    test_data = [
+@pytest.mark.parametrize(
+    "output, parts",
+    [
         ("1", list("1")),
         ("1 y 2", list("12")),
         ("1, 2 y 3", list("123")),
@@ -152,12 +160,11 @@ class TestJoinParts:
         ("1 y 2", ["1", None, None, "2"]),
         (None, [None] * 9),
         (None, []),
-    ]
-
-    @pytest.mark.parametrize("output, parts", test_data)
-    def test_join_parts(self, output, parts):
-        result = join_parts("y", *parts)
-        assert result == output
+    ],
+)
+def test_join_parts(output, parts):
+    result = join_parts("y", *parts)
+    assert result == output
 
 
 class TestSplitSeconds:
@@ -223,10 +230,10 @@ class TestSecondsToStringIntegration:
         return request.param
 
     @pytest.mark.parametrize(
-        "lang, ok", [(x, True) for x in ALPHABET["default"]] + [("inv", False)]
+        "lang, is_ok", [(x, True) for x in ALPHABET["default"]] + [("inv", False)]
     )
-    def test_languages(self, lang, ok):
-        if ok:
+    def test_languages(self, lang, is_ok):
+        if is_ok:
             seconds_to_str(0, language=lang)
         else:
             with pytest.raises(InvalidLanguageError, match=r"'\w+' is not a valid"):
