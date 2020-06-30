@@ -118,7 +118,7 @@ checkers = {
         "logout-retries": Checkers.int,
         "max-logs": Checkers.int,
         "exclude-subjects-ids": Checkers.list,
-        "http-status-port": Checkers.int
+        "http-status-port": Checkers.int,
     },
     "download": {
         "forum-subfolders": Checkers.bool,
@@ -139,7 +139,7 @@ constructors = {
         "logout-retries": int,
         "max-logs": int,
         "exclude-subjects-ids": list,
-        "http-status-port": int
+        "http-status-port": int,
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -167,5 +167,5 @@ setters = {
         "section-indexing": section_indexing_setter,
         "secure-section-filename": str2bool,
     },
-    "notify": {"email": str}
+    "notify": {"email": str},
 }
