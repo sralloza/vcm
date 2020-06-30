@@ -20,23 +20,29 @@ class TestCommand:
     def test_inherintance(self):
         assert issubclass(Command, Enum)
 
+    def test_length(self):
+        assert len(Command) == 5
+
     def test_attributes(self):
         assert hasattr(Command, "notify")
         assert hasattr(Command, "download")
         assert hasattr(Command, "settings")
         assert hasattr(Command, "discover")
+        assert hasattr(Command, "version")
 
     def test_types(self):
         assert isinstance(Command.notify.value, int)
         assert isinstance(Command.download.value, int)
         assert isinstance(Command.settings.value, int)
         assert isinstance(Command.discover.value, int)
+        assert isinstance(Command.version.value, int)
 
     def test_to_str(self):
         assert Command.notify.to_str() == Command.notify.name
         assert Command.download.to_str() == Command.download.name
         assert Command.settings.to_str() == Command.settings.name
         assert Command.discover.to_str() == Command.discover.name
+        assert Command.version.to_str() == Command.version.name
 
 
 @mock.patch("sys.argv")
@@ -379,6 +385,9 @@ class TestParseArgs:
 
         assert opt.command == "discover"
 
+    def test_version_command(self):
+        opt = set_args("version")
+        assert opt.command == "version"
 
 class TestMain:
     @pytest.fixture(scope="function", autouse=True)
