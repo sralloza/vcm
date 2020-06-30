@@ -1,15 +1,19 @@
-from argparse import ArgumentParser, Namespace
+import shlex
+from argparse import Namespace
 from enum import Enum
 from unittest import mock
 
 import pytest
 
-from vcm.core.settings import GeneralSettings, SETTINGS_CLASSES, settings_name_to_class
-from vcm.main import Command, main, parse_args
-
-
-def modified_parse_args(string: str, return_parser=False) -> Namespace:
-    return parse_args(string.split(), return_parser)
+from vcm.main import (
+    Command,
+    Parser,
+    execute_discover,
+    execute_download,
+    execute_notify,
+    get_command,
+    show_version,
+)
 
 
 class TestCommand:
@@ -35,58 +39,75 @@ class TestCommand:
         assert Command.discover.to_str() == Command.discover.name
 
 
-class TestParseArgs:
+@mock.patch("sys.argv")
+def set_args(string=None, sys_argv_m=None):
+    real_args = ["test.py"] + shlex.split(string)
+    sys_argv_m.__getitem__.side_effect = lambda s: real_args[s]
+    try:
+        args = Parser.parse_args()
+        return args
+    finally:
+        sys_argv_m.__getitem__.assert_called_once_with(slice(1, None, None))
 
+
+def test_parser():
+    assert Parser
+    assert hasattr(Parser, "init_parser")
+    assert hasattr(Parser, "parse_args")
+    assert hasattr(Parser, "error")
+
+
+class TestParseArgs:
     class TestPositionalArguments:
         def test_no_args(self):
-            opt = modified_parse_args("")
+            opt = set_args("")
             assert opt.no_status_server is False
             assert opt.version is False
             assert opt.check_updates is False
 
         def test_nss(self):
-            opt = modified_parse_args("-nss")
+            opt = set_args("-nss")
             assert opt.no_status_server is True
             assert opt.version is False
             assert opt.check_updates is False
 
         def test_version(self):
-            opt = modified_parse_args("-v")
+            opt = set_args("-v")
             assert opt.version is True
             assert opt.no_status_server is False
             assert opt.check_updates is False
 
-            opt = modified_parse_args("--v")
+            opt = set_args("--v")
             assert opt.version is True
             assert opt.no_status_server is False
             assert opt.check_updates is False
 
-            opt = modified_parse_args("--version")
+            opt = set_args("--version")
             assert opt.version is True
             assert opt.no_status_server is False
             assert opt.check_updates is False
 
         def test_check_updates(self, capsys):
             with pytest.raises(SystemExit):
-                opt = modified_parse_args("-check-updates")
+                opt = set_args("-check-updates")
 
             captured = capsys.readouterr()
             assert "unrecognized arguments: -check-updates" in captured.err
             assert captured.out == ""
 
-            opt = modified_parse_args("--check-updates")
+            opt = set_args("--check-updates")
             assert opt.check_updates is True
             assert opt.no_status_server is False
             assert opt.version is False
 
-            opt = modified_parse_args("--c")
+            opt = set_args("--c")
             assert opt.check_updates is True
             assert opt.no_status_server is False
             assert opt.version is False
 
     class TestDownload:
         def test_no_arguments(self):
-            opt = modified_parse_args("download")
+            opt = set_args("download")
             assert opt.command == "download"
             assert opt.nthreads == 20
             assert opt.no_killer is False
@@ -94,7 +115,7 @@ class TestParseArgs:
             assert opt.quiet is False
 
         def test_nthreads_ok(self):
-            opt = modified_parse_args("download --nthreads 10")
+            opt = set_args("download --nthreads 10")
 
             assert opt.command == "download"
             assert opt.nthreads == 10
@@ -104,14 +125,14 @@ class TestParseArgs:
 
         def test_nthreads_error(self, capsys):
             with pytest.raises(SystemExit):
-                modified_parse_args("download --nthreads <invalid>")
+                set_args("download --nthreads <invalid>")
 
             captured = capsys.readouterr()
             assert "invalid int value: '<invalid>'" in captured.err
             assert captured.out == ""
 
         def test_no_killer(self):
-            opt = modified_parse_args("download --no-killer")
+            opt = set_args("download --no-killer")
 
             assert opt.command == "download"
             assert opt.nthreads == 20
@@ -120,7 +141,7 @@ class TestParseArgs:
             assert opt.quiet is False
 
         def test_debug(self):
-            opt = modified_parse_args("download --debug")
+            opt = set_args("download --debug")
 
             assert opt.command == "download"
             assert opt.nthreads == 20
@@ -128,7 +149,7 @@ class TestParseArgs:
             assert opt.debug is True
             assert opt.quiet is False
 
-            opt = modified_parse_args("download -d")
+            opt = set_args("download -d")
 
             assert opt.command == "download"
             assert opt.nthreads == 20
@@ -137,7 +158,7 @@ class TestParseArgs:
             assert opt.quiet is False
 
         def test_quiet(self):
-            opt = modified_parse_args("download --quiet")
+            opt = set_args("download --quiet")
 
             assert opt.command == "download"
             assert opt.nthreads == 20
@@ -145,7 +166,7 @@ class TestParseArgs:
             assert opt.debug is False
             assert opt.quiet is True
 
-            opt = modified_parse_args("download -q")
+            opt = set_args("download -q")
 
             assert opt.command == "download"
             assert opt.nthreads == 20
@@ -155,14 +176,14 @@ class TestParseArgs:
 
     class TestNotify:
         def test_no_arguments(self):
-            opt = modified_parse_args("notify")
+            opt = set_args("notify")
 
             assert opt.command == "notify"
             assert opt.nthreads == 20
             assert opt.no_icons is False
 
         def test_nthreads_ok(self):
-            opt = modified_parse_args("notify --nthreads 10")
+            opt = set_args("notify --nthreads 10")
 
             assert opt.command == "notify"
             assert opt.nthreads == 10
@@ -170,14 +191,14 @@ class TestParseArgs:
 
         def test_nthreads_error(self, capsys):
             with pytest.raises(SystemExit):
-                modified_parse_args("notify --nthreads <invalid>")
+                set_args("notify --nthreads <invalid>")
 
             captured = capsys.readouterr()
             assert "invalid int value: '<invalid>'" in captured.err
             assert captured.out == ""
 
         def test_no_icons(self):
-            opt = modified_parse_args("notify --no-icons")
+            opt = set_args("notify --no-icons")
 
             assert opt.command == "notify"
             assert opt.nthreads == 20
@@ -186,7 +207,7 @@ class TestParseArgs:
     class TestSettings:
         def test_no_args(self, capsys):
             with pytest.raises(SystemExit):
-                modified_parse_args("settings")
+                set_args("settings")
 
             captured = capsys.readouterr()
             expected = "the following arguments are required: settings_subcommand"
@@ -194,7 +215,7 @@ class TestParseArgs:
             assert captured.out == ""
 
         def test_list(self):
-            opt = modified_parse_args("settings list")
+            opt = set_args("settings list")
 
             assert opt.command == "settings"
             assert opt.settings_subcommand == "list"
@@ -202,7 +223,7 @@ class TestParseArgs:
         class TestSet:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings set")
+                    set_args("settings set")
 
                 captured = capsys.readouterr()
                 expected = "the following arguments are required: key, value"
@@ -211,14 +232,14 @@ class TestParseArgs:
 
             def test_no_value(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings set key")
+                    set_args("settings set key")
 
                 captured = capsys.readouterr()
                 assert "the following arguments are required: value" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings set key value")
+                opt = set_args("settings set key value")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "set"
@@ -228,14 +249,14 @@ class TestParseArgs:
         class TestShow:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings show")
+                    set_args("settings show")
 
                 captured = capsys.readouterr()
                 assert "the following arguments are required: key" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings show key")
+                opt = set_args("settings show key")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "show"
@@ -244,7 +265,7 @@ class TestParseArgs:
         class TestExclude:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings exclude")
+                    set_args("settings exclude")
 
                 captured = capsys.readouterr()
                 expected = "the following arguments are required: subject_id"
@@ -253,14 +274,14 @@ class TestParseArgs:
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings exclude <subject-id>")
+                    set_args("settings exclude <subject-id>")
 
                 captured = capsys.readouterr()
                 assert "invalid int value: '<subject-id>'" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings exclude 654321")
+                opt = set_args("settings exclude 654321")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "exclude"
@@ -269,7 +290,7 @@ class TestParseArgs:
         class TestInclude:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings include")
+                    set_args("settings include")
 
                 captured = capsys.readouterr()
                 expected = "the following arguments are required: subject_id"
@@ -278,14 +299,14 @@ class TestParseArgs:
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings include <subject-id>")
+                    set_args("settings include <subject-id>")
 
                 captured = capsys.readouterr()
                 assert "invalid int value: '<subject-id>'" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings include 654321")
+                opt = set_args("settings include 654321")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "include"
@@ -294,7 +315,7 @@ class TestParseArgs:
         class TestIndex:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings index")
+                    set_args("settings index")
 
                 captured = capsys.readouterr()
                 expected = "the following arguments are required: subject_id"
@@ -303,14 +324,14 @@ class TestParseArgs:
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings index <subject-id>")
+                    set_args("settings index <subject-id>")
 
                 captured = capsys.readouterr()
                 assert "invalid int value: '<subject-id>'" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings index 654321")
+                opt = set_args("settings index 654321")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "index"
@@ -319,7 +340,7 @@ class TestParseArgs:
         class TestUnIndex:
             def test_no_args(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings unindex")
+                    set_args("settings unindex")
 
                 captured = capsys.readouterr()
                 expected = "the following arguments are required: subject_id"
@@ -328,33 +349,33 @@ class TestParseArgs:
 
             def test_type_error(self, capsys):
                 with pytest.raises(SystemExit):
-                    modified_parse_args("settings unindex <subject-id>")
+                    set_args("settings unindex <subject-id>")
 
                 captured = capsys.readouterr()
                 assert "invalid int value: '<subject-id>'" in captured.err
                 assert captured.out == ""
 
             def test_ok(self):
-                opt = modified_parse_args("settings unindex 654321")
+                opt = set_args("settings unindex 654321")
 
                 assert opt.command == "settings"
                 assert opt.settings_subcommand == "unindex"
                 assert opt.subject_id == 654321
 
         def test_keys(self):
-            opt = modified_parse_args("settings keys")
+            opt = set_args("settings keys")
 
             assert opt.command == "settings"
             assert opt.settings_subcommand == "keys"
 
         def test_check(self):
-            opt = modified_parse_args("settings check")
+            opt = set_args("settings check")
 
             assert opt.command == "settings"
             assert opt.settings_subcommand == "check"
 
     def test_discover(self):
-        opt = modified_parse_args("discover")
+        opt = set_args("discover")
 
         assert opt.command == "discover"
 
