@@ -1,3 +1,4 @@
+from ast import literal_eval
 import os
 from pathlib import Path
 
@@ -16,14 +17,15 @@ def get_settings_defaults():
                 copy = True
                 outfile.append("{\n")
                 continue
-            elif line.strip() == "}":
+            if line.strip() == "}":
                 if copy:
                     outfile.append(line)
                 copy = False
                 continue
-            elif copy:
+            if copy:
                 outfile.append(line)
-    return eval("".join(outfile))
+
+    return literal_eval("".join(outfile))
 
 
 # IMPORTED FROM vcm.core._settings
@@ -63,6 +65,8 @@ def pytest_configure():
 @pytest.fixture(scope="session", autouse=True)
 def check_settings():
     from vcm.core._settings import defaults
+
+    assert isinstance(defaults, dict)
 
     yield
     import shutil
