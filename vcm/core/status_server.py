@@ -146,7 +146,7 @@ class HttpStatusServer(Thread):
 
 
 def get_thread_state_info():
-    colors = defaultdict(lambda: 0, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
+    colors = defaultdict(int, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
     working = 0
     idle = 0
 

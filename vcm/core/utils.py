@@ -445,7 +445,7 @@ class ErrorCounter:
     """Counts the exception class raised and the number of times
     each exception class was raised."""
 
-    error_map = defaultdict(lambda: 0)
+    error_map = defaultdict(int)
 
     @classmethod
     def has_errors(cls) -> bool:
