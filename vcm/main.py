@@ -28,8 +28,6 @@ from .core.utils import (
 from .downloader import download
 from .notifier import notify
 
-parser: ArgumentParser  # pylint: disable=C0103
-
 
 class Command(Enum):
     """Represents valid CLI commands."""
@@ -45,90 +43,98 @@ class Command(Enum):
         return self.name
 
 
-def parse_args(args=None):
-    """Parses command line args.
+class Parser:
+    """Wrapper for `argparse.ArgumentParser`."""
 
-    Args:
-        args (List[str], optional): list of argument to parse instead of
-            sys.argv[1:]. Defaults to None.
+    _parser = None
 
-    Returns:
-        Namespace: namespace containing the arguments parsed.
-    """
+    @classmethod
+    def init_parser(cls):
+        """Creates the parser."""
 
-    global parser  # pylint: disable=W0603,C0103
-    parser = ArgumentParser(prog="vcm")
-    parser.add_argument(
-        "-nss", "--no-status-server", action="store_true", help="Disable Status Server"
-    )
-    parser.add_argument(
-        "-v", "--version", action="store_true", dest="version", help="Show version"
-    )
-    parser.add_argument(
-        "--check-updates", action="store_true", help="Check for updates"
-    )
+        cls._parser = ArgumentParser(prog="vcm")
+        cls._parser.add_argument(
+            "-nss",
+            "--no-status-server",
+            action="store_true",
+            help="Disable Status Server",
+        )
+        cls._parser.add_argument(
+            "-v", "--version", action="store_true", dest="version", help="Show version"
+        )
+        cls._parser.add_argument(
+            "--check-updates", action="store_true", help="Check for updates"
+        )
 
-    subparsers = parser.add_subparsers(title="commands", dest="command")
+        subparsers = cls._parser.add_subparsers(title="commands", dest="command")
 
-    downloader_parser = subparsers.add_parser("download")
-    downloader_parser.add_argument("--nthreads", default=20, type=int)
-    downloader_parser.add_argument("--no-killer", action="store_true")
-    downloader_parser.add_argument("-d", "--debug", action="store_true")
-    downloader_parser.add_argument("-q", "--quiet", action="store_true")
+        downloader_parser = subparsers.add_parser("download")
+        downloader_parser.add_argument("--nthreads", default=20, type=int)
+        downloader_parser.add_argument("--no-killer", action="store_true")
+        downloader_parser.add_argument("-d", "--debug", action="store_true")
+        downloader_parser.add_argument("-q", "--quiet", action="store_true")
 
-    notifier_parser = subparsers.add_parser("notify")
-    notifier_parser.add_argument("--nthreads", default=20, type=int)
-    notifier_parser.add_argument("--no-icons", action="store_true")
+        notifier_parser = subparsers.add_parser("notify")
+        notifier_parser.add_argument("--nthreads", default=20, type=int)
+        notifier_parser.add_argument("--no-icons", action="store_true")
 
-    settings_parser = subparsers.add_parser("settings")
-    settings_subparser = settings_parser.add_subparsers(
-        title="settings-subcommand", dest="settings_subcommand"
-    )
-    settings_subparser.required = True
+        settings_parser = subparsers.add_parser("settings")
+        settings_subparser = settings_parser.add_subparsers(
+            title="settings-subcommand", dest="settings_subcommand"
+        )
+        settings_subparser.required = True
 
-    settings_subparser.add_parser("list")
+        settings_subparser.add_parser("list")
 
-    set_sub_subparser = settings_subparser.add_parser("set")
-    set_sub_subparser.add_argument("key", help="settings key (section.key)")
-    set_sub_subparser.add_argument("value", help="new settings value")
+        set_sub_subparser = settings_subparser.add_parser("set")
+        set_sub_subparser.add_argument("key", help="settings key (section.key)")
+        set_sub_subparser.add_argument("value", help="new settings value")
 
-    show_sub_subparser = settings_subparser.add_parser("show")
-    show_sub_subparser.add_argument("key", help="settings key (section.key)")
+        show_sub_subparser = settings_subparser.add_parser("show")
+        show_sub_subparser.add_argument("key", help="settings key (section.key)")
 
-    exclude_sub_subparser = settings_subparser.add_parser("exclude")
-    exclude_sub_subparser.add_argument(
-        "subject_id", help="subject ID to exclude", type=int
-    )
+        exclude_sub_subparser = settings_subparser.add_parser("exclude")
+        exclude_sub_subparser.add_argument(
+            "subject_id", help="subject ID to exclude", type=int
+        )
 
-    include_sub_subparser = settings_subparser.add_parser("include")
-    include_sub_subparser.add_argument(
-        "subject_id", help="subject ID to include", type=int
-    )
+        include_sub_subparser = settings_subparser.add_parser("include")
+        include_sub_subparser.add_argument(
+            "subject_id", help="subject ID to include", type=int
+        )
 
-    section_index_subparser = settings_subparser.add_parser("index")
-    section_index_subparser.add_argument("subject_id", type=int)
+        section_index_subparser = settings_subparser.add_parser("index")
+        section_index_subparser.add_argument("subject_id", type=int)
 
-    un_section_index_subparser = settings_subparser.add_parser("unindex")
-    un_section_index_subparser.add_argument("subject_id", type=int)
+        un_section_index_subparser = settings_subparser.add_parser("unindex")
+        un_section_index_subparser.add_argument("subject_id", type=int)
 
-    settings_subparser.add_parser("keys")
-    settings_subparser.add_parser("check")
+        settings_subparser.add_parser("keys")
+        settings_subparser.add_parser("check")
 
-    subparsers.add_parser("discover")
-    subparsers.add_parser("version")
+        subparsers.add_parser("discover")
+        subparsers.add_parser("version")
 
-    return parser.parse_args(args)
+    @classmethod
+    def parse_args(cls) -> Namespace:
+        """Parses command line args.
 
+        Returns:
+            Namespace: namespace containing the arguments parsed.
+        """
+        if not cls._parser:
+            cls.init_parser()
+        return cls._parser.parse_args()
 
-def parser_error(msg) -> NoReturn:
-    """Raises an error using ArgumentParser.error.
+    @classmethod
+    def error(cls, msg) -> NoReturn:
+        """Raises an error using ArgumentParser.error.
 
-    Args:
-        msg (str): error message.
-    """
+        Args:
+            msg (str): error message.
+        """
 
-    global parser  # pylint: disable=W0603,C0103
-    parser.error(msg)
+        cls._parser.error(msg)
 
 
 def get_command(command) -> Command:
@@ -150,7 +156,7 @@ def get_command(command) -> Command:
             commands = list(Command)
             commands.sort(key=lambda x: x.name)
             commands = ", ".join([x.to_str() for x in commands])
-            parser_error(
+            Parser.error(
                 "Invalid command (%r). Valid commands: %s" % (command, commands)
             )
     return real_command
@@ -282,7 +288,7 @@ def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
     """
 
     if opt.key.count(".") != 1:
-        return parser_error("Invalid key (must be section.setting)")
+        return Parser.error("Invalid key (must be section.setting)")
 
     # Now command can be show or set, both need to split the key
     cls, key = opt.key.split(".")
@@ -290,7 +296,7 @@ def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
     try:
         settings_class = settings_name_to_class[cls]
     except KeyError:
-        return parser_error(
+        return Parser.error(
             "Invalid setting class: %r (valids are %r)" % (cls, SETTINGS_CLASSES)
         )
 
@@ -300,7 +306,7 @@ def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
             cls,
             list(settings_class.keys()),
         )
-        parser_error(message)
+        Parser.error(message)
     return settings_class, key
 
 
@@ -325,11 +331,11 @@ def execute_settings(opt: Namespace):
 
 
 @safe_exit
-def main(args=None):
+def main():
     """Main function."""
 
     logger = logging.getLogger(__name__)
-    opt = parse_args(args)
+    opt = Parser.parse_args()
 
     # Keyword arguments that make program exit
     if opt.version:
