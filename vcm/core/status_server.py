@@ -1,17 +1,21 @@
 from collections import defaultdict
 from logging import getLogger
+from pathlib import Path
 from queue import Queue
 from threading import Thread
 from threading import enumerate as enumerate_threads
 from time import time
+from traceback import format_exc
 from typing import List
 
 import flask
 import waitress
 
-from ._threading import Killer, ThreadStates, Worker, state_to_color
+from vcm.core.utils import ErrorCounter
+
 from .settings import GeneralSettings
 from .time_operations import seconds_to_str
+from .workers import Killer, ThreadStates, Worker, running, state_to_color
 
 logger = getLogger(__name__)
 
@@ -21,7 +25,6 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     from vcm.downloader.link import BaseLink
 
     t0 = time()
-    logger.info("STARTED STATUS SERVER")
 
     app = flask.Flask(__name__)
 
@@ -29,64 +32,66 @@ def runserver(queue: Queue, threadlist: List[Worker]):
     def back_to_index(error):
         return flask.redirect(flask.url_for("index"))
 
+    @app.errorhandler(500)
+    def server_error(error):
+        err = format_exc()
+        err = err.replace("\n", "<br>").replace(" ", "&nbsp;" * 2)
+        return flask.Response("server error: " + err, mimetype="text/html"), 500
+
+    @app.route("/backend.js")
+    def backend_js():
+        data = Path(__file__).with_name("http-status-server.js").read_bytes()
+        return flask.Response(data, mimetype="application/javascript")
+
     @app.route("/")
     def index():
-        return """<p id="content">Here will be content</p>
-
-    <script>
-        var clock = document.getElementById("content");
-        var alerted = false;
-
-        var interval = setInterval(() => {
-            fetch("/feed")
-            .then(response => {
-                    response.text().then(t => {clock.innerHTML = t})
-                }).catch(function(){
-                    document.title = "Ejecución terminada";
-                    clearInterval(interval);
-                    if (alerted == false) {
-                        alerted = true;
-                        //alert("VCM ha terminado la ejecución");
-                        }
-                    }
-                );
-            }, 1000);
-    </script>
-    """
+        a = '<script src="/backend.js"></script>'
+        return a + '<p id="content">Here will be content</p>'
 
     @app.route("/feed")
     def info_feed():
         def feed():
             status = "<title>VCM STATUS</title>"
-            status += f"Execution time: {seconds_to_str(time() - t0, integer=True)}<br>"
+            execution_time = seconds_to_str(time() - t0, integer=False)
+            status += f"Execution time: {execution_time}<br>"
 
             status += 'Unfinished <a href="/queue" target="blank" style="text-decoration:none">'
-            status += f"tasks</a>: {queue.unfinished_tasks}<br>"
-            status += f"Items left: {queue.qsize()}<br><br>"
-            thread_status = "Threads:<br>"
+            status += f"tasks</a>: {queue.unfinished_tasks}"
+
+            if not running.is_set():
+                status += '<font color="red"> [Shutting down]</font>'
+            status += f"<br>Items left: {queue.qsize()}<br><br>"
+            thread_status = "Threads (%d):" % count_threads()
+
+            if ErrorCounter.has_errors():
+                report = f'<font color="red">\t<b>[{ErrorCounter.report()}]</b></font>'
+                thread_status += report
+
+            thread_status += "<br>"
 
             colors, working, idle = get_thread_state_info()
-            for thread in threadlist:
+            for thread in enumerate_threads():
+                if not isinstance(thread, Worker):
+                    continue
+
                 temp_status = thread.to_log(integer=True)
                 thread_status += f"\t-{temp_status}<br>"
 
             colors = list(colors.items())
             colors.sort(key=lambda x: x[-1], reverse=True)
 
-            status += f"Threads working: {working}<br>"
-            status += f"Threads idle: {idle}<br><br>"
+            # status += f"Threads working: {working}<br>"
+            # status += f"Threads idle: {idle}<br><br>"
             status += f"Codes:<br>"
-            status += (
-                "<br>".join(
-                    [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]
-                )
-                + "<br><br>"
+            status += "<br>".join(
+                [f'<font color="{x[0]}">-{x[0]}: {x[1]}</font>' for x in colors]
             )
+            status += "<br><br>"
             status += thread_status
 
-            yield status
+            return status
 
-        return flask.Response(feed(), mimetype="text")
+        return flask.Response(feed(), mimetype="text/html")
 
     @app.route("/queue")
     def view_queue():
@@ -141,10 +146,7 @@ class HttpStatusServer(Thread):
 
 
 def get_thread_state_info():
-    def helper():
-        return 0
-
-    colors = defaultdict(helper, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
+    colors = defaultdict(int, {"green": 0, "orange": 0, "red": 0, "magenta": 0})
     working = 0
     idle = 0
 
@@ -160,8 +162,16 @@ def get_thread_state_info():
         if state == ThreadStates.idle:
             idle += 1
 
-        if state.value == "working":
+        if state.alias == "working":
             working += 1
 
     colors.pop("blue", None)
     return dict(colors), working, idle
+
+
+def count_threads() -> int:
+    nthreads = 0
+    for thread in enumerate_threads():
+        if isinstance(thread, Worker):
+            nthreads += 1
+    return nthreads

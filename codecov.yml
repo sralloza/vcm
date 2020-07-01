@@ -1,0 +1,6 @@
+ignore:
+  - versioneer.py
+  - vcm/_version.py
+
+exclude_lines:
+  - if __name__ == .__main__.

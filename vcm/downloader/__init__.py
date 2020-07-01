@@ -6,12 +6,12 @@ import re
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama
 
-from vcm.core._threading import start_workers
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
 from vcm.core.utils import timing
+from vcm.core.workers import start_workers
 
 from .subject import Subject
 

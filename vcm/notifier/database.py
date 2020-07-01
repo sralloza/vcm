@@ -43,7 +43,8 @@ class DatabaseInterface:
             datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
         ]
         try:
-            self.cursor.execute("INSERT INTO database_links VALUES (NULL,?,?,?,?)", data)
+            query = "INSERT INTO database_links VALUES (NULL,?,?,?,?)"
+            self.cursor.execute(query, data)
             return True
         except sqlite3.IntegrityError:
             return False

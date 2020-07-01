@@ -3,17 +3,15 @@ from enum import Enum, auto
 from logging import getLogger
 from queue import Empty as EmptyQueue
 from queue import Queue
+import sys
 from threading import Event, Thread
 from threading import enumerate as enumerate_threads
 from time import time
-from webbrowser import get as getwebbrowser
 
 from colorama import Fore
 
-from .modules import Modules
-from .settings import GeneralSettings
 from .time_operations import seconds_to_str
-from .utils import ErrorCounter, Printer, getch
+from .utils import ErrorCounter, Printer, getch, open_http_status_server
 
 logger = getLogger(__name__)
 
@@ -33,18 +31,7 @@ class ThreadStates(Enum):
 
     @property
     def alias(self):
-        return _state_to_alias[self]
-
-
-_state_to_alias = {
-    ThreadStates.idle: "idle",
-    ThreadStates.working_0: "working",
-    ThreadStates.working_1: "working",
-    ThreadStates.working_2: "working",
-    ThreadStates.working_3: "working",
-    ThreadStates.killed: "killed",
-    ThreadStates.online: "online",
-}
+        return self.name.split("_")[0]
 
 
 class Colors(Enum):
@@ -71,17 +58,20 @@ state_to_color = {
 class Worker(Thread):
     """Special worker for VCM multithreading."""
 
-    def __init__(self, queue, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, queue, state=None, name=None):
+        super().__init__(name=name, daemon=True)
 
-        self.called_from = Modules.current()
         self.queue: Queue = queue
         self.timestamp = None
         self.current_object = None
 
-        self._state = ThreadStates.idle
-        self._last_state_update = time()
-        self._update_state()
+        if state:
+            self.set_state(state)
+        else:
+            self.set_state(ThreadStates.idle)
+
+        self.last_state_update = 0
+        self.update_state()
 
         from vcm.downloader.subject import Subject
         from vcm.downloader.link import BaseLink
@@ -90,62 +80,54 @@ class Worker(Thread):
         self.BaseLink = BaseLink
 
     @property
-    def state(self):
-        self.update_state()
+    def state(self) -> ThreadStates:
+        # self.update_state()
         return self._state
 
+    def set_state(self, state):
+        self._state = state
+
     def update_state(self):
-        if time() - self._last_state_update > 1:
+        # Update state at less than one Herz
+        if time() - self.last_state_update > 1:
             self._update_state()
-            self._last_state_update = time()
+            self.last_state_update = time()
 
     def _update_state(self):
         if self.timestamp is None:
-            if not self.active:
-                self._state = ThreadStates.killed
-                return
-
-            if isinstance(self, Killer):
-                self._state = ThreadStates.online
-                return
-
-            if self.current_object is None:
-                self._state = ThreadStates.idle
-                return
+            return
 
         exec_time = time() - self.timestamp
 
         if exec_time < 30:
-            state = ThreadStates.working_0
+            self.set_state(ThreadStates.working_0)
         elif 30 <= exec_time < 60:
-            state = ThreadStates.working_1
+            self.set_state(ThreadStates.working_1)
         elif 60 <= exec_time < 90:
-            state = ThreadStates.working_2
+            self.set_state(ThreadStates.working_2)
         else:
-            state = ThreadStates.working_3
-
-        self._state = state
-        return
+            self.set_state(ThreadStates.working_3)
 
     @property
     def active(self):
         return running.is_set()
 
     def to_log(self, integer=False):
+        self._update_state()
         state = self.state
         color = state_to_color[state]
-        status = f'<font color="{color.name}">{self.name}: {state.alias} - '
+        status = f'<font color="{color.name}"><b>{self.name}: {state.alias}</b> - '
 
         if state == ThreadStates.working_3:
             timestamp = -float("inf") if not self.timestamp else self.timestamp
             status += f"[{seconds_to_str(time() - timestamp, integer=integer)}] "
 
         if isinstance(self.current_object, self.BaseLink):
-            status += f"{self.current_object.subject.name} → {self.current_object.name}"
+            status += f"{self.current_object.subject.name} → <i>{self.current_object.name}</i>"
         elif isinstance(self.current_object, self.Subject):
-            status += f"{self.current_object.name}"
+            status += f'</font><font color="#aa00ff">{self.current_object.name}</font>'
         elif isinstance(self.current_object, str):
-            status += self.current_object
+            status += f'</font><font color="##ff00ff">{self.current_object}</font>'
         else:
             status += "None"
 
@@ -154,8 +136,6 @@ class Worker(Thread):
         return status
 
     def kill(self):
-        logger.info("Thread killed")
-
         while True:
             try:
                 self.queue.get(False)
@@ -164,7 +144,10 @@ class Worker(Thread):
                 break
 
         self.timestamp = None
+        self.set_state(ThreadStates.killed)
+        logger.info("Thread killed")
         running.clear()
+        sys.exit()
 
     def run(self):
         """Runs the thread"""
@@ -188,7 +171,9 @@ class Worker(Thread):
                 except BaseException as exc:
                     if not isinstance(exc, SystemExit):
                         raise
-                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    logger.warning(
+                        "Catched SystemExit exception (%s), ignoring it", exc
+                    )
                     print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
@@ -207,7 +192,9 @@ class Worker(Thread):
                 except BaseException as exc:
                     if not isinstance(exc, SystemExit):
                         raise
-                    logger.warning("Catched SystemExit exception (%s), ignoring it", exc)
+                    logger.warning(
+                        "Catched SystemExit exception (%s), ignoring it", exc
+                    )
                     print_fatal_error(exc, self.current_object, log_exception=False)
 
                 logger.info(
@@ -219,21 +206,26 @@ class Worker(Thread):
             else:
                 raise ValueError("Unknown object in queue: %r" % self.current_object)
 
-            logger.info("%d unfinished tasks", self.queue.unfinished_tasks)
+            logger.info(
+                "%d unfinished tasks (continue=%s)",
+                self.queue.unfinished_tasks,
+                self.active,
+            )
             self.current_object = None
             self.timestamp = None
+            self.set_state(ThreadStates.idle)
 
         return self.kill()
 
 
 class Killer(Worker):
-    def __init__(self, queue, *args, **kwargs):
-        super().__init__(queue, name="Killer", *args, **kwargs)
+    def __init__(self, queue):
+        super().__init__(queue, name="Killer", state=ThreadStates.online)
         self.queue = queue
-        self.status = ThreadStates.online
+        # self.set_state(ThreadStates.online)
 
     def to_log(self, integer=False):
-        output = f'<font color="blue">{self.name}: {self.status.name}'
+        output = f'<font color="blue"><b>{self.name}: {self.state.name}</b>'
         return output
 
     def run(self):
@@ -254,16 +246,10 @@ class Killer(Worker):
                         thread.kill()
 
                 logger.info("Killer thread ended his massacre")
-                self.kill()
-                exit(1)
+                return self.kill()
 
             if real in ("w", "o"):
-                Printer.print("Opening state server")
-                chrome_path = (
-                    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
-                )
-                args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
-                getwebbrowser(chrome_path).open_new(args)
+                open_http_status_server()
 
 
 def start_workers(queue, nthreads=20, no_killer=False):
@@ -281,15 +267,14 @@ def start_workers(queue, nthreads=20, no_killer=False):
     thread_list = []
 
     if no_killer is False:
-        killer = Killer(queue, daemon=True)
+        killer = Killer(queue)
         killer.start()
         thread_list.append(killer)
     else:
-        if Modules.current() == Modules.download:
-            Printer.print("Killer not started")
+        Printer.print("Killer not started")
 
     for i in range(nthreads):
-        thread = Worker(queue, name=f"W-{i + 1:02d}", daemon=True)
+        thread = Worker(queue, name=f"W-{i + 1:02d}")
         logger.debug("Started worker named %r", thread.name)
         thread.start()
         thread_list.append(thread)
@@ -301,12 +286,12 @@ def print_fatal_error(exception, current_object, log_exception=True):
     ErrorCounter.record_error(exception)
     if log_exception:
         logger.exception(
-        "%s in %r(url=%r) (%r)",
-        type(exception).__name__,
-        type(current_object),
-        current_object.url,
-        exception,
-    )
+            "%s in %r(url=%r) (%r)",
+            type(exception).__name__,
+            type(current_object).__name__,
+            current_object.url,
+            exception,
+        )
 
     Printer.print(
         "%sERROR: %s in url %s (%r)%s"
