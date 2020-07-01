@@ -581,6 +581,7 @@ class TestPrinter:
         assert captured.out == ""
 
 
+@pytest.mark.skip
 class TestCheckUpdates:
     version_data = (
         ("3.0.1", "3.0.2", True),
