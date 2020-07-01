@@ -210,7 +210,7 @@ def execute_notify(opt):
     )
 
 
-class SettingsSubcommand:
+class NonKeyBasedSettingsSubcommand:
     """Wrapper for settings subcommands."""
 
     opt = None
@@ -269,7 +269,7 @@ class SettingsSubcommand:
     def keys(cls):
         """Prints the settings keys."""
         keys = []
-        for setting_class in SETTINGS_CLASSES:
+        for setting_class in settings_name_to_class:
             for key in settings_name_to_class[setting_class].keys():
                 keys.append(" - " + setting_class + "." + key)
 
@@ -306,7 +306,7 @@ def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
             cls,
             list(settings_class.keys()),
         )
-        Parser.error(message)
+        return Parser.error(message)
     return settings_class, key
 
 
@@ -318,10 +318,12 @@ def execute_settings(opt: Namespace):
     """
 
     try:
-        return SettingsSubcommand.execute(opt)
+        # Try to execute settings command without the key
+        return NonKeyBasedSettingsSubcommand.execute(opt)
     except AttributeError:
         pass
 
+    # Setting command needs the key
     settings_class, key = parse_settings_key(opt)
 
     if opt.settings_subcommand == "set":
