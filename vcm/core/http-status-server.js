@@ -19,5 +19,5 @@ function hello_there() {
     });
 }
 
-let interval = setInterval(hello_there, 200);
+let interval = setInterval(hello_there, updatesInOneSecond);
 // hello_there();
