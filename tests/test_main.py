@@ -443,7 +443,7 @@ def test_execute_discover(silence_m, download_m):
 
     silence_m.assert_called_once_with()
     download_m.assert_called_once_with(
-        nthreads=1, no_killer=True, status_server=False, discover_only=True
+        nthreads=1, killer=False, status_server=False, discover_only=True
     )
 
 
@@ -466,17 +466,17 @@ class TestExecuteDownload:
         return request.param
 
     @pytest.fixture(params=[True, False])
-    def no_killer(self, request):
+    def killer(self, request):
         return request.param
 
     @pytest.fixture(params=[1, 5, 10, 15, 20])
     def nthreads(self, request):
         return request.param
 
-    def test_execute_download(self, debug, no_killer, nthreads, server):
+    def test_execute_download(self, debug, killer, nthreads, server):
         opt = Namespace(
             debug=debug,
-            no_killer=no_killer,
+            no_killer=not killer,
             nthreads=nthreads,
             no_status_server=not server,
         )
@@ -488,7 +488,7 @@ class TestExecuteDownload:
             self.ohss_m.assert_not_called()
 
         self.download_m.assert_called_once_with(
-            nthreads=nthreads, no_killer=no_killer, status_server=server
+            nthreads=nthreads, killer=killer, status_server=server
         )
 
 

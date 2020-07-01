@@ -7,6 +7,7 @@ import sys
 from threading import Event, Thread
 from threading import enumerate as enumerate_threads
 from time import time
+from typing import List
 
 from colorama import Fore
 
@@ -252,21 +253,21 @@ class Killer(Worker):
                 open_http_status_server()
 
 
-def start_workers(queue, nthreads=20, no_killer=False):
+def start_workers(queue, nthreads=20, killer=True) -> List[Worker]:
     """Starts the wokers.
 
     Args:
         queue (Queue): queue to manage the workers's tasks.
         nthreads (int): number of trheads to start.
-        no_killer (bool): if true, killer thread will not be started.
+        killer (bool): if True, killer thread will be started.
 
     Returns:
-
+        List[Worker]: list of started threads.
     """
 
     thread_list = []
 
-    if no_killer is False:
+    if killer is True:
         killer = Killer(queue)
         killer.start()
         thread_list.append(killer)

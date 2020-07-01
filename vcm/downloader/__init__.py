@@ -72,13 +72,13 @@ def find_subjects(queue, discover_only=False):
 
 
 @timing(name="VCM downloader")
-def download(nthreads=20, no_killer=False, status_server=True, discover_only=False):
+def download(nthreads=20, killer=True, status_server=True, discover_only=False):
     """
 
     Args:
         nthreads (int, optional): number of threads to use. Defaults to 20.
-        no_killer (bool, optional): if True, an extra thread will be launched
-            to detect key pressings, shuch as K for kill the app. Defaults to False.
+        killer (bool, optional): if True, an extra thread will be launched
+            to detect key pressings, shuch as K for kill the app. Defaults to True.
         status_server (bool, optional): if true, a http server will be opened
             in port 80 to show the status of each thread. Defaults to True.
         discover_only (bool, optional): if true, it will only discover the subjects,
@@ -87,9 +87,9 @@ def download(nthreads=20, no_killer=False, status_server=True, discover_only=Fal
 
     logger = logging.getLogger(__name__)
     logger.info(
-        "Launching notify(nthreads=%r, no_killer=%s, status_server=%s, discover_only=%s)",
+        "Launching notify(nthreads=%r, killer=%s, status_server=%s, discover_only=%s)",
         nthreads,
-        no_killer,
+        killer,
         status_server,
         discover_only,
     )
@@ -98,7 +98,7 @@ def download(nthreads=20, no_killer=False, status_server=True, discover_only=Fal
     init_colorama()
 
     queue = Queue()
-    threads = start_workers(queue, nthreads, no_killer=no_killer)
+    threads = start_workers(queue, nthreads, killer=killer)
 
     if status_server:
         runserver(queue, threads)
