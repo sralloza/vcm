@@ -256,6 +256,10 @@ class _GeneralSettings(BaseSettings):
     def http_status_port(self) -> int:
         return self["http-status-port"]
 
+    @property
+    def http_status_tickrate(self) -> float:
+        return self["http-status-tickrate"]
+
     # DEPENDANT SETTINGS
 
     @property

@@ -56,8 +56,12 @@ Settings:
 - **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
 - **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
 - **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
+- **login-retries** - Number of attempts to login. Defaults to 5.
+- **logout-retries** - Number of attempts to logout. Defaults to 5.
 - **max-logs** - Max number of log files. Defaults to 5.
 - **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter. You can change its content using the commands `vcm settings exclude <subject_id>` and `vcm settings include <subject_id>`, because it can't be changed using `vcm settings set general.exclude-subjects-ids <value>`.
+- **http-status-port** - TCP port to start the http status server on. Defaults to 8080.
+- **http-status-tickrate** - Number of times to update the http status server per second. Defaults to 5.
 
 ### Download section
 
@@ -83,8 +87,12 @@ root-folder = "/home/user/virtual-campus-data"
 logging-level = "INFO"
 timeout = 30
 retries = 10
+login-retries = 5
+logout-retries = 1
 max-logs = 7
-exclude-urls = [ 89712, ]
+exclude-subjects-ids = [ 89712, ]
+http-status-port = 80
+http-status-tickrate = 5
 
 [download]
 forum-subfolders = true

@@ -45,7 +45,9 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
     @app.route("/")
     def index():
-        a = '<script src="/backend.js"></script>'
+        updates_in_one_second = 1 / GeneralSettings.http_status_tickrate * 1000
+        a = f"<script>const updatesInOneSecond = {updates_in_one_second}</script>\n"
+        a += '<script src="/backend.js"></script>'
         return a + '<p id="content">Here will be content</p>'
 
     @app.route("/feed")
