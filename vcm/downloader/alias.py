@@ -7,7 +7,7 @@ from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
 from vcm.core.settings import GeneralSettings
-from vcm.core.utils import Singleton
+from vcm.core.utils import MetaSingleton
 
 
 def calculate_hash(byte_data):
@@ -46,7 +46,7 @@ class AliasEntry:
         }
 
 
-class Alias(metaclass=Singleton):
+class Alias(metaclass=MetaSingleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
