@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
 import versioneer
@@ -41,10 +41,9 @@ setup(
     author="Diego Alloza",
     entry_points={"console_scripts": ["vcm=vcm.main:main"]},
     include_package_data=True,
-    author_email="admin@sralloza.es",
-    packages=["vcm", "vcm.core", "vcm.notifier", "vcm.downloader"],
+    author_email="vcm@sralloza.es",
+    packages=find_packages(),
     install_requires=requirements,
-    package_data={"vcm": ["VERSION"]},
     tests_require=["pytest", "coverage"],
     cmdclass=cmdclass,
     zip_safe=False,
