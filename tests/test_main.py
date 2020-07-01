@@ -1,17 +1,23 @@
-import shlex
 from argparse import Namespace
 from enum import Enum
+import re
+import shlex
 from unittest import mock
 
 import pytest
 
 from vcm.main import (
     Command,
+    NonKeyBasedSettingsSubcommand,
     Parser,
     execute_discover,
     execute_download,
     execute_notify,
+    execute_settings,
     get_command,
+    instructions,
+    main,
+    parse_settings_key,
     show_version,
 )
 
@@ -389,304 +395,578 @@ class TestParseArgs:
         opt = set_args("version")
         assert opt.command == "version"
 
-class TestMain:
-    @pytest.fixture(scope="function", autouse=True)
+
+def test_parser_error(capsys):
+    with pytest.raises(SystemExit, match="2"):
+        Parser.error("custom error")
+
+    captured = capsys.readouterr()
+    assert "custom error" in captured.err
+    assert captured.out == ""
+
+
+@pytest.mark.parametrize("command", list(Command) + [None, "invalid"])
+@mock.patch("vcm.main.Parser.error")
+def test_get_command(error_m, command):
+    error_m.side_effect = SystemExit
+
+    if command in [None, "invalid"]:
+        with pytest.raises(SystemExit):
+            get_command(command)
+
+        error_m.assert_called_once()
+        assert str(command) in error_m.call_args[0][0]
+        assert "Invalid command" in error_m.call_args[0][0]
+        return
+
+    returned = get_command(command)
+    error_m.assert_not_called()
+    assert isinstance(returned, Command)
+
+
+@mock.patch("vcm.main.version")
+def test_show_version(version_m, capsys):
+    version_m.__str__.return_value = "<version>"
+
+    show_version()
+
+    result = capsys.readouterr()
+    assert result.out == "Version: <version>\n"
+    assert result.err == ""
+
+
+@mock.patch("vcm.main.download")
+@mock.patch("vcm.main.Printer.silence")
+def test_execute_discover(silence_m, download_m):
+    opt = Namespace()  # Compatibility purposes
+    execute_discover(opt)
+
+    silence_m.assert_called_once_with()
+    download_m.assert_called_once_with(
+        nthreads=1, no_killer=True, status_server=False, discover_only=True
+    )
+
+
+class TestExecuteDownload:
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        self.virtual_version = "1.0.1-a2"
-        self.email = "support@example.com"
-        self.set_classes = ["set_class_a", "set_class_b", "set_class_c"]
 
-        self.ns_m = mock.patch("vcm.main.NotifySettings").start()
-        self._parse_args_m = mock.patch("vcm.main.parse_args").start()
-        self.version_m = mock.patch("vcm.main.version", self.virtual_version).start()
-        self.cu_m = mock.patch("vcm.main.check_updates").start()
-        self.printer_m = mock.patch("vcm.main.Printer").start()
-        self.sts_m = mock.patch("vcm.main.settings_to_string").start()
-        self.mrsc_m = mock.patch("vcm.main.more_settings_check").start()
-        self.exclude_m = mock.patch("vcm.main.exclude").start()
-        self.include_m = mock.patch("vcm.main.include").start()
-        self.sect_indx_m = mock.patch("vcm.main.section_index").start()
-        self.un_sect_indx_m = mock.patch("vcm.main.un_section_index").start()
-        self.sntc_m = mock.patch("vcm.main.settings_name_to_class").start()
-        self.sc_m = mock.patch("vcm.main.SETTINGS_CLASSES", self.set_classes).start()
-        self.webbrowser_m_get = mock.patch("vcm.main.get_webbrowser").start()
+        self.ohss_m = mock.patch("vcm.main.open_http_status_server").start()
         self.download_m = mock.patch("vcm.main.download").start()
+        yield
+
+        mock.patch.stopall()
+
+    @pytest.fixture(params=[True, False])
+    def debug(self, request):
+        return request.param
+
+    @pytest.fixture(params=[True, False])
+    def server(self, request):
+        return request.param
+
+    @pytest.fixture(params=[True, False])
+    def no_killer(self, request):
+        return request.param
+
+    @pytest.fixture(params=[1, 5, 10, 15, 20])
+    def nthreads(self, request):
+        return request.param
+
+    def test_execute_download(self, debug, no_killer, nthreads, server):
+        opt = Namespace(
+            debug=debug,
+            no_killer=no_killer,
+            nthreads=nthreads,
+            no_status_server=not server,
+        )
+        execute_download(opt)
+
+        if debug:
+            self.ohss_m.assert_called_once_with()
+        else:
+            self.ohss_m.assert_not_called()
+
+        self.download_m.assert_called_once_with(
+            nthreads=nthreads, no_killer=no_killer, status_server=server
+        )
+
+
+class TestExecuteNotify:
+    @pytest.fixture(autouse=True)
+    def mocks(self):
         self.notify_m = mock.patch("vcm.main.notify").start()
-        self.safe_exit_m = mock.patch("vcm.main.safe_exit").start()
-        self.setattr_m = mock.patch("vcm.main.setattr").start()
-        self.getattr_m = mock.patch("vcm.main.getattr").start()
-
-        self.parse_args_m = mock.MagicMock()
-        self.parser_m = mock.MagicMock()
-
-        self.ns_m.email = self.email
-        self._parse_args_m.return_value = (self.parse_args_m, self.parser_m)
-
-        self.sntc_dict = {
-            "set_class_a": {"a1": "a1.val.orig"},
-            "set_class_b": {"b1": "b1.val.orig", "b2": "b2.val.orig"},
-            "set_class_c": {
-                "c1": "c1.val.orig",
-                "c2": "c2.val.orig",
-                "c3": "c3.val.orig",
-            },
-        }
-        self.sntc_m.__getitem__.side_effect = lambda x: self.sntc_dict[x]
-
-        # parser.error calls sys.exit(), so this helper does the same.
-        def helper(message):
-            import sys
-
-            print(message, file=sys.stderr)
-            sys.exit()
-
-        self.parser_m.error = helper
+        self.not_set_m = mock.patch("vcm.main.NotifySettings").start()
+        self.not_set_m.email = "<email>"
 
         yield
 
         mock.patch.stopall()
 
-    def set_namespace(self, **kwargs):
-        def_kwargs = dict(
-            version=False,
-            check_updates=False,
-            command=None,
-            settings_subcommand=None,
-            subject_id=None,
-            no_status_server=False,
+    @pytest.fixture(params=[True, False])
+    def icons(self, request):
+        return request.param
+
+    @pytest.fixture(params=[1, 10, 50])
+    def nthreads(self, request):
+        return request.param
+
+    @pytest.fixture(params=[True, False])
+    def server(self, request):
+        return request.param
+
+    def test_execute_notify(self, icons, nthreads, server):
+        opt = Namespace(
+            no_icons=not icons, nthreads=nthreads, no_status_server=not server
+        )
+        execute_notify(opt)
+
+        self.notify_m.assert_called_once_with(
+            send_to="<email>", use_icons=icons, nthreads=nthreads, status_server=server
         )
 
-        def_kwargs.update(kwargs)
-        self._parse_args_m.return_value = (Namespace(**def_kwargs), self.parser_m)
 
-    @pytest.mark.parametrize("mode", ("argument", "command"))
-    def test_version(self, capsys, mode):
-        if mode == "argument":
-            self.set_namespace(version=True)
-        else:
-            self.set_namespace(command="version")
+class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-attributes
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        class Base(dict):
+            def __repr__(self):
+                return f"<{self.__class__.__name__}>"
 
-        # with pytest.raises(SystemExit):
-        main()
+        class CustomClass1(Base):
+            pass
 
-        captured = capsys.readouterr()
-        assert self.virtual_version in captured.out
-        assert captured.err == ""
+        class CustomClass2(Base):
+            pass
 
-    def test_check_updates(self):
-        self.set_namespace(check_updates=True)
+        assert repr(Base()) == "<Base>"
+        self.settings_dict = {
+            "cc1": CustomClass1({"m1": "m1"}),
+            "cc2": CustomClass2({"m2": "m2", "m3": "m3"}),
+        }
+        self.sts_m = mock.patch("vcm.main.settings_to_string").start()
+        self.sts_m.return_value = "<settings-to-str>"
+        self.msc_m = mock.patch("vcm.main.more_settings_check").start()
+        self.exclude_m = mock.patch("vcm.main.exclude").start()
+        self.include_m = mock.patch("vcm.main.include").start()
+        self.print_m = mock.patch("vcm.main.Printer.print").start()
+        self.sect_idx_m = mock.patch("vcm.main.section_index").start()
+        self.unsect_idx_m = mock.patch("vcm.main.un_section_index").start()
+        self.set_class_m = mock.patch("vcm.main.SETTINGS_CLASSES").start()
+        mock.patch("vcm.main.settings_name_to_class", self.settings_dict).start()
 
-        main()
+        NonKeyBasedSettingsSubcommand.opt = None
 
-        self.printer_m.silence.not_called()
-        self.cu_m.assert_called_once_with()
+        yield
 
-    def test_settings_list(self):
-        self.set_namespace(command="settings", settings_subcommand="list")
+        mock.patch.stopall()
 
-        main()
+    @mock.patch("vcm.main.getattr")
+    def test_execute(self, getattr_m):
+        opt = mock.MagicMock(settings_subcommand="<set-subcommand>")
+        NonKeyBasedSettingsSubcommand.execute(opt)
+        assert NonKeyBasedSettingsSubcommand.opt == opt
 
-        self.printer_m.silence.not_called()
-        self.sts_m.assert_called_once()
+        getattr_m.assert_called_once_with(
+            NonKeyBasedSettingsSubcommand, "<set-subcommand>"
+        )
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
 
-    def test_invalid_command(self, capsys):
-        self.set_namespace(command="invalid-command")
+    def test_list(self, capsys):
+        NonKeyBasedSettingsSubcommand.list()
 
-        # parser.error calls exit()
+        result = capsys.readouterr()
+        assert result.err == ""
+        assert result.out == "<settings-to-str>\n"
+
+        self.sts_m.assert_called_once_with()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+    def test_check(self, capsys):
+        NonKeyBasedSettingsSubcommand.check()
+
+        result = capsys.readouterr()
+        assert result.err == ""
+        assert result.out == "Checked\n"
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_called_once_with()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+    def test_exclude(self):
+        opt = Namespace(subject_id=9876543210)
+        NonKeyBasedSettingsSubcommand.opt = opt
+        NonKeyBasedSettingsSubcommand.exclude()
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_called_once_with(9876543210)
+        self.include_m.assert_not_called()
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+    def test_include(self):
+        opt = Namespace(subject_id=9876543210)
+        NonKeyBasedSettingsSubcommand.opt = opt
+        NonKeyBasedSettingsSubcommand.include()
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_called_once_with(9876543210)
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+    def test_index(self):
+        opt = Namespace(subject_id=9876543210)
+        NonKeyBasedSettingsSubcommand.opt = opt
+        NonKeyBasedSettingsSubcommand.index()
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_called_once()
+        self.sect_idx_m.assert_called_once_with(9876543210)
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+    def test_un_index(self):
+        opt = Namespace(subject_id=9876543210)
+        NonKeyBasedSettingsSubcommand.opt = opt
+        NonKeyBasedSettingsSubcommand.un_index()
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_called_once()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_called_once_with(9876543210)
+        self.set_class_m.assert_not_called()
+
+    def test_keys(self, capsys):
+        NonKeyBasedSettingsSubcommand.keys()
+
+        result = capsys.readouterr()
+        assert result.err == ""
+        assert result.out == " - cc1.m1\n - cc2.m2\n - cc2.m3\n"
+
+        self.sts_m.assert_not_called()
+        self.msc_m.assert_not_called()
+        self.exclude_m.assert_not_called()
+        self.include_m.assert_not_called()
+        self.print_m.assert_not_called()
+        self.sect_idx_m.assert_not_called()
+        self.unsect_idx_m.assert_not_called()
+        self.set_class_m.assert_not_called()
+
+
+class TestParseSettingsKey:
+    class Base(dict):
+        def __repr__(self):
+            return f"<{self.__class__.__name__}>"
+
+    class CustomClass1(Base):
+        pass
+
+    class CustomClass2(Base):
+        pass
+
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        assert repr(self.Base()) == "<Base>"
+        # cc stands for CustomClass, and m1 stands for method-1
+        self.settings_dict = {
+            "cc1": self.CustomClass1({"m1": "m1"}),
+            "cc2": self.CustomClass2({"m2": "m2", "m3": "m3"}),
+        }
+        mock.patch("vcm.main.settings_name_to_class", self.settings_dict).start()
+        self.error_m = mock.patch("vcm.main.Parser.error").start()
+        self.error_m.side_effect = SystemExit
+
+        yield
+
+        mock.patch.stopall()
+
+    @pytest.mark.parametrize("key", ("cc1.m1", "cc2.m2", "cc2.m3"))
+    def test_ok(self, key):
+        opt = Namespace(key=key)
+        cls, parsed_key = parse_settings_key(opt)
+        assert cls == self.settings_dict[key.split(".")[0]]
+        assert parsed_key == key.split(".")[-1]
+
+        self.error_m.assert_not_called()
+
+    @pytest.mark.parametrize("key", ("a.b.c.d.", "aaaa", "aa-bb"))
+    def test_invalid_key_1(self, key):
+        opt = Namespace(key=key)
         with pytest.raises(SystemExit):
-            main()
+            parse_settings_key(opt)
 
-        captured = capsys.readouterr()
-        assert "Invalid command ('invalid-command'). Valid commands: " in captured.err
-        assert captured.out == ""
+        self.error_m.assert_called_once_with("Invalid key (must be section.setting)")
 
-    def test_settings_check(self):
-        self.set_namespace(command="settings", settings_subcommand="check")
-
-        main()
-
-        self.printer_m.silence.not_called()
-        self.mrsc_m.assert_called_once()
-
-    def test_settings_exclude(self):
-        self.set_namespace(
-            command="settings", settings_subcommand="exclude", subject_id=23
-        )
-
-        main()
-
-        self.printer_m.silence.not_called()
-        self.exclude_m.assert_called_once_with(23)
-
-    def test_settings_include(self):
-        self.set_namespace(
-            command="settings", settings_subcommand="include", subject_id=23
-        )
-
-        main()
-
-        self.printer_m.silence.not_called()
-        self.include_m.assert_called_once_with(23)
-
-    def test_settings_index(self):
-        self.set_namespace(
-            command="settings", settings_subcommand="index", subject_id=23
-        )
-
-        main()
-
-        self.printer_m.silence.not_called()
-        self.sect_indx_m.assert_called_once_with(23)
-
-        self.printer_m.print.assert_called_once()
-
-    def test_settings_unindex(self):
-        self.set_namespace(
-            command="settings", settings_subcommand="unindex", subject_id=23
-        )
-
-        main()
-
-        self.printer_m.silence.not_called()
-        self.un_sect_indx_m.assert_called_once_with(23)
-
-        self.printer_m.print.assert_called_once()
-
-    def test_settings_keys(self, capsys):
-        self.set_namespace(command="settings", settings_subcommand="keys")
-
-        main()
-
-        captured = capsys.readouterr()
-        assert captured.err == ""
-
-        for settings_class, settings_values in self.sntc_dict.items():
-            for key in settings_values.keys():
-                string = "- %s.%s" % (settings_class, key)
-                assert string in captured.out
-
-    def test_settings_invalid_key_format_error(self, capsys):
-        self.set_namespace(
-            command="settings", settings_subcommand="set", key="invalid.key.for.real"
-        )
-
+    @pytest.mark.parametrize("key", ("cc103.asdf", "invalid.34", "mec.a"))
+    def test_invalid_key_2(self, key):
+        opt = Namespace(key=key)
         with pytest.raises(SystemExit):
-            main()
+            parse_settings_key(opt)
 
-        captured = capsys.readouterr()
-        assert "Invalid key (must be section.setting)" in captured.err
-        assert captured.out == ""
+        self.error_m.assert_called_once()
+        assert "Invalid setting class: " in self.error_m.call_args[0][0]
 
-    def test_settings_invalid_class_error(self, capsys):
-        self.set_namespace(
-            command="settings", settings_subcommand="set", key="invalid.key"
-        )
-
+    @pytest.mark.parametrize("key", ("cc1.m2", "cc1.m3", "cc2.m1", "cc2.m4"))
+    def test_invalid_key_3(self, key):
+        opt = Namespace(key=key)
         with pytest.raises(SystemExit):
-            main()
+            parse_settings_key(opt)
 
-        captured = capsys.readouterr()
-        assert "Invalid setting class: 'invalid'" in captured.err
-        assert captured.out == ""
+        self.error_m.assert_called_once()
+        assert re.search(r"is not a valid \w+ setting", self.error_m.call_args[0][0])
 
-    def test_settings_invalid_key_error(self, capsys):
-        self.set_namespace(
-            command="settings", setings_subcommand="set", key="set_class_b.invalid_key"
+
+class TestExecuteSettings:
+    key_based_commands = ["set", "show"]
+    rest = ["list", "check", "exclude", "include", "index", "un_index", "keys"]
+
+    class DummyClass:  # pylint: disable=too-few-public-methods
+        pass
+
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        self.execute_m = mock.patch(
+            "vcm.main.NonKeyBasedSettingsSubcommand.execute"
+        ).start()
+        self.psk_m = mock.patch("vcm.main.parse_settings_key").start()
+        self.psk_m.return_value = (self.DummyClass, "parsed_key")
+
+        self.getattr_m = mock.patch("vcm.main.getattr").start()
+        self.getattr_m.return_value = "requested-value"
+        self.setattr_m = mock.patch("vcm.main.setattr").start()
+
+        yield
+
+        mock.patch.stopall()
+
+    @pytest.mark.parametrize("command", key_based_commands)
+    def test_key_based_settings(self, command, capsys):
+        self.execute_m.side_effect = AttributeError
+
+        opt = Namespace(
+            settings_subcommand=command, value="value", key="DummyClass.key"
         )
+        execute_settings(opt)
 
-        with pytest.raises(SystemExit):
-            main()
+        result = capsys.readouterr()
+        assert result.err == ""
 
-        captured = capsys.readouterr()
-        assert (
-            "'invalid_key' is not a valid set_class_b setting (valids are"
-            in captured.err
+        self.execute_m.assert_called_once_with(opt)
+        self.psk_m.assert_called_once_with(opt)
+
+        if command == "set":
+            self.getattr_m.assert_not_called()
+            self.setattr_m.assert_called_once_with(
+                self.DummyClass, "parsed_key", "value"
+            )
+            assert result.out == ""
+        if command == "show":
+            self.getattr_m.assert_called_once_with(self.DummyClass, "parsed_key")
+            self.setattr_m.assert_not_called()
+            assert result.out == "DummyClass.key: 'requested-value'\n"
+
+    @pytest.mark.parametrize("command", rest)
+    def test_not_key_based_settings(self, command, capsys):
+        opt = Namespace(
+            settings_subcommand=command, value="value", key="DummyClass.key"
         )
-        assert captured.out == ""
+        executed_result = execute_settings(opt)
+        assert executed_result == self.execute_m.return_value
 
-    def test_settings_set(self):
-        self.set_namespace(
-            command="settings",
-            settings_subcommand="set",
-            key="set_class_b.b2",
-            value="b2.value",
-        )
+        result = capsys.readouterr()
+        assert result.err == ""
+        assert result.out == ""
 
-        main()
+        self.execute_m.assert_called_once_with(opt)
+        self.psk_m.assert_not_called()
+        self.getattr_m.assert_not_called()
+        self.setattr_m.assert_not_called()
 
-        set_class = self.sntc_dict["set_class_b"]
-        self.setattr_m.assert_called_once_with(set_class, "b2", "b2.value")
 
-    def test_settings_show(self, capsys):
-        def helper(cls, key):
-            return cls[key]
+class TestMain:
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        mock.patch("vcm.main.version", "<version>").start()
+        self.parse_args_m = mock.patch("vcm.main.Parser.parse_args").start()
+        self.show_ver_m = mock.patch("vcm.main.show_version").start()
+        self.check_up_m = mock.patch("vcm.main.check_updates").start()
+        self.get_com_m = mock.patch("vcm.main.get_command").start()
+        self.silence_m = mock.patch("vcm.main.Printer.silence").start()
+        self.setup_m = mock.patch("vcm.main.setup_vcm").start()
+        self.instructions_m = mock.patch("vcm.main.instructions").start()
 
-        self.set_namespace(
-            command="settings", settings_subcommand="show", key="set_class_b.b2"
-        )
-        self.getattr_m.side_effect = helper
+        yield
 
-        main()
+        mock.patch.stopall()
 
-        set_class = self.sntc_dict["set_class_b"]
-        message = "set_class_b.b2: '%s'" % set_class["b2"]
-        self.getattr_m.assert_called_once_with(set_class, "b2")
+    def set_args(self, **kwargs):
+        real_args = {
+            "version": False,
+            "check_updates": False,
+            "command": None,
+            "quiet": False,
+            "extra_kwarg1": 1,
+            "extra_kwarg2": 2,
+            "extra_kwarg3": 3,
+        }
 
-        captured = capsys.readouterr()
-        assert message in captured.out
-        assert captured.err == ""
+        real_args.update(kwargs)
 
-    def test_discover(self):
-        self.set_namespace(command="discover")
+        self.parse_args_m.return_value = Namespace(**real_args)
 
-        # with pytest.raises(SystemExit):
-        main()
+    def test_version_argument(self, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(version=True)
 
-        self.printer_m.silence.assert_called_once()
-        self.download_m.assert_called_once_with(
-            nthreads=1, no_killer=True, status_server=False, discover_only=True
-        )
+        result = main()
+        assert result == self.show_ver_m.return_value
+
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_called_once_with()
+        self.check_up_m.assert_not_called()
+        self.get_com_m.assert_not_called()
+        self.silence_m.assert_not_called()
+        self.setup_m.assert_not_called()
+
+        assert len(caplog.records) == 0
+
+    def test_check_updates(self, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(check_updates=True)
+
+        result = main()
+        assert result == self.check_up_m.return_value
+
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_not_called()
+        self.check_up_m.assert_called_once_with()
+        self.get_com_m.assert_not_called()
+        self.silence_m.assert_not_called()
+        self.setup_m.assert_not_called()
+
+        assert len(caplog.records) == 0
 
     @pytest.mark.parametrize("quiet", [True, False])
-    @pytest.mark.parametrize("debug", [True, False])
-    def test_download(self, quiet, debug):
-        self.set_namespace(
-            command="download",
-            no_status_server=True,
-            nthreads=15,
-            no_killer=True,
-            debug=debug,
-            quiet=quiet,
-        )
+    def test_download(self, quiet, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(quiet=quiet, command="download")
+        self.get_com_m.return_value = Command.download
 
-        main()
+        result = main()
+        assert result == self.instructions_m.__getitem__.return_value.return_value
 
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_not_called()
+        self.check_up_m.assert_not_called()
+        self.get_com_m.assert_called_once_with("download")
         if quiet:
-            self.printer_m.silence.assert_called_once()
+            self.silence_m.assert_called_once_with()
         else:
-            self.printer_m.silence.assert_not_called()
+            self.silence_m.assert_not_called()
+        self.setup_m.assert_called_once_with()
 
-        if debug:
-            self.webbrowser_m_get.assert_called()
-            self.webbrowser_m_get.return_value.open_new.assert_called_once_with(
-                f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
-            )
-        else:
-            self.webbrowser_m_get.assert_not_called()
-            self.webbrowser_m_get.return_value.open_new.assert_not_called()
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.message == "vcm version: <version>"
+        assert record.levelname == "INFO"
 
-        self.download_m.assert_called_once_with(
-            nthreads=15, no_killer=True, status_server=False,
-        )
+    def test_notify(self, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(command="notify")
+        self.get_com_m.return_value = Command.notify
 
-    def test_notify(self):
-        self.set_namespace(
-            command="notify", no_icons=True, nthreads=23, no_status_server=True
-        )
+        result = main()
+        assert result == self.instructions_m.__getitem__.return_value.return_value
 
-        main()
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_not_called()
+        self.check_up_m.assert_not_called()
+        self.get_com_m.assert_called_once_with("notify")
+        self.silence_m.assert_not_called()
+        self.setup_m.assert_called_once_with()
 
-        self.printer_m.silence.assert_not_called()
-        self.notify_m.assert_called_once_with(
-            use_icons=False, nthreads=23, status_server=False, send_to=self.email
-        )
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.message == "vcm version: <version>"
+        assert record.levelname == "INFO"
+
+    def test_discover(self, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(command="discover")
+        self.get_com_m.return_value = Command.discover
+
+        result = main()
+        assert result == self.instructions_m.__getitem__.return_value.return_value
+
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_not_called()
+        self.check_up_m.assert_not_called()
+        self.get_com_m.assert_called_once_with("discover")
+        self.silence_m.assert_not_called()
+        self.setup_m.assert_called_once_with()
+
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert record.message == "vcm version: <version>"
+        assert record.levelname == "INFO"
+
+    def test_settings(self, caplog):
+        caplog.set_level(10, "vcm.main")
+        self.set_args(command="settings")
+        self.get_com_m.return_value = Command.settings
+
+        result = main()
+        assert result == self.instructions_m.__getitem__.return_value.return_value
+
+        self.parse_args_m.assert_called_once_with()
+        self.show_ver_m.assert_not_called()
+        self.check_up_m.assert_not_called()
+        self.get_com_m.assert_called_once_with("settings")
+        self.silence_m.assert_not_called()
+        self.setup_m.assert_not_called()
+
+        assert len(caplog.records) == 0
+
+
+def test_instructions_dict():
+    assert isinstance(instructions, dict)
+
+    for key, value in instructions.items():
+        assert isinstance(key, str)
+        assert callable(value)
+
+    for command in Command:
+        assert command.name in instructions
+
+    assert len(Command) == len(instructions)
