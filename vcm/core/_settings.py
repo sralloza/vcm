@@ -73,6 +73,11 @@ class Checkers:
     def float(item):
         return isinstance(item, float)
 
+    @staticmethod
+    def number_non_zero(item):
+        cond1 = Checkers.float(item) or Checkers.int(item)
+        return cond1 and item != 0
+
 
 class Setters:
     @staticmethod
@@ -99,6 +104,7 @@ defaults = {
         "max-logs": 5,
         "exclude-subjects-ids": [],
         "http-status-port": 8080,
+        "http-status-tickrate": 5,
     },
     "download": {
         "forum-subfolders": True,
@@ -119,6 +125,7 @@ checkers = {
         "max-logs": Checkers.int,
         "exclude-subjects-ids": Checkers.list,
         "http-status-port": Checkers.int,
+        "http-status-tickrate": Checkers.number_non_zero,
     },
     "download": {
         "forum-subfolders": Checkers.bool,
@@ -140,6 +147,7 @@ constructors = {
         "max-logs": int,
         "exclude-subjects-ids": list,
         "http-status-port": int,
+        "http-status-tickrate": float,
     },
     "download": {
         "forum-subfolders": str2bool,
@@ -159,8 +167,9 @@ setters = {
         "login-retries": int,
         "logout-retries": int,
         "max-logs": int,
-        "http-status-port": int,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
+        "http-status-port": int,
+        "http-status-tickrate": float,
     },
     "download": {
         "forum-subfolders": str2bool,
