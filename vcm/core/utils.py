@@ -1,28 +1,35 @@
+"""Utils module."""
+
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
 import sys
-import time
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime
-from logging.handlers import RotatingFileHandler
 from threading import Lock, current_thread
+import time
 from traceback import format_exc
-from typing import Union
+from typing import TypeVar, Union
+from webbrowser import get as get_webbrowser
 
 from colorama import Fore
 from colorama import init as start_colorama
 from decorator import decorator
 from packaging import version
 
+from vcm.core.modules import Modules
+
 from .time_operations import seconds_to_str
 
+ExceptionClass = TypeVar("ExceptionClass")
 logger = logging.getLogger(__name__)
 start_colorama()
 
 
+# TODO: remove class in future versions
 class MetaGetch(type):
     _instances = {}
 
@@ -31,6 +38,7 @@ class MetaGetch(type):
         cls.__new__ = cls._getch
 
 
+# TODO: remove class in future versions
 class Key:
     def __init__(self, key1, key2=None, is_int=None):
         if not isinstance(key1, (bytes, int)):
@@ -98,6 +106,7 @@ class Key:
         return type(self)(key1=key1, key2=key2, is_int=False)
 
 
+# TODO: remove class in future versions
 class getch(metaclass=MetaGetch):
     key1: Union[bytes, int]
     key2: Union[bytes, int, None]
@@ -157,7 +166,7 @@ class getch(metaclass=MetaGetch):
                 return msvcrt.getch()
 
 
-def secure_filename(filename, parse_spaces=True):
+def secure_filename(filename, spaces=True):
     if isinstance(filename, str):
         from unicodedata import normalize
 
@@ -182,13 +191,11 @@ def secure_filename(filename, parse_spaces=True):
         "NUL",
     )
 
-    if parse_spaces:
-        temp_str = "_".join(filename.split())
-    else:
-        temp_str = " ".join(filename.split())
-        _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_. -]")
-
+    temp_str = "_".join(filename.split())
     filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
+
+    if spaces:
+        filename = " ".join(filename.split("_"))
 
     if (
         os.name == "nt"
@@ -201,18 +208,27 @@ def secure_filename(filename, parse_spaces=True):
 
 
 class Patterns:
-    FILENAME_PATTERN = re.compile(r'filename="?([\w\s\-!$?%^&()_+~=`{\}\[\].;\',]+)"?')
+    """Stores useful regex patterns for this application."""
+
+    FILENAME_PATTERN = re.compile(
+        r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
+    )
 
 
 def exception_exit(exception, to_stderr=True, red=True):
     """Exists the progam showing an exception.
 
     Args:
-        exception: Exception to show. Must hinherit `Exception`
+        exception: Exception to show. Must be an instance,
+            not a class. Must hinherit `Exception`.
+        to_stderr (bool, optional): if True, it will print the error to
+            stderr instead of stdout. Defaults to True.
+        red (bool, optional): if True, the error will be printed in red.
+            Defaults to True.
 
     Raises:
         TypeError: if exception is not a subclass of Exception.
-
+        TypeError: if exception is not an instance of a raisable Exception.
     """
 
     raise_exception = False
@@ -221,7 +237,8 @@ def exception_exit(exception, to_stderr=True, red=True):
         if not issubclass(exception, Exception):
             raise_exception = True
     except TypeError:
-        if not isinstance(exception, Exception):
+        # Check for SytemExit (inherints from BaseException, not Exception)
+        if not isinstance(exception, BaseException):
             raise_exception = True
 
     if raise_exception:
@@ -236,15 +253,26 @@ def exception_exit(exception, to_stderr=True, red=True):
     if red:
         message = Fore.LIGHTRED_EX + message + Fore.RESET
 
-    if to_stderr:
-        return exit(message)
+    file = sys.stderr if to_stderr else sys.stdout
+    print(message, file=file)
 
-    print(message)
     return exit(-1)
 
 
 @decorator
-def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
+def safe_exit(func, to_stderr=True, red=True, *args, **kwargs):
+    """Catches any exception raised and logs it. After logging it,
+    `exception_exit` handles the rest.
+
+    Args:
+        func (function): function to decorate. Usually given using
+            the `@safe_exit` decorator.
+        to_stderr (bool, optional): If True, the exception will be printed
+            in stderr instead of stdout. Defaults to True.
+        red (bool, optional): If True, the exception will be printed in
+            red color instead of the default. Defaults to True.
+    """
+
     try:
         return func(*args, **kwargs)
     except Exception as exc:
@@ -253,12 +281,14 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
 
 
 @decorator
-def timing(func, name=None, level=logging.INFO, *args, **kwargs):
+def timing(func, name=None, level=None, *args, **kwargs):
+    level = level or logging.INFO
     name = name or func.__name__
     t0 = time.time()
     result = None
 
     logger.log(level, "Starting execution of %s", name)
+
     try:
         result = func(*args, **kwargs)
     finally:
@@ -273,11 +303,23 @@ def timing(func, name=None, level=logging.INFO, *args, **kwargs):
             return result
 
 
-_true_set = {"yes", "true", "t", "y", "1"}
+_true_set = {"yes", "true", "t", "y", "1", "sí", "si", "s"}
 _false_set = {"no", "false", "f", "n", "0"}
 
 
 def str2bool(value):
+    """Returns the boolean as a lowercase string, like json.
+
+    Args:
+        value (bool): boolen input.
+
+    Raises:
+        TypeError: if the value is neither a string nor a bool.
+        ValueError: if the string is invalid.
+
+    Returns:
+        str: lowercase string.
+    """
     if value in (True, False):
         return value
 
@@ -287,8 +329,9 @@ def str2bool(value):
             return True
         if value in _false_set:
             return False
+        raise ValueError("Invalid bool string: %r" % value)
 
-    raise ValueError("Invalid bool string: %r" % value)
+    raise TypeError("Invalid value type: %r (must be string)" % type(value).__name__)
 
 
 def configure_logging():
@@ -346,6 +389,10 @@ class Printer:
     _lock = Lock()
 
     @classmethod
+    def reset(cls):
+        cls._print = print
+
+    @classmethod
     def silence(cls):
         cls._print = cls.useless
 
@@ -355,6 +402,9 @@ class Printer:
 
     @classmethod
     def print(cls, *args, **kwargs):
+        if not Modules.should_print():
+            return
+
         with cls._lock:
             return cls._print(*args, **kwargs)
 
@@ -380,25 +430,32 @@ def check_updates():
     return False
 
 
-class Singleton(type):
+class MetaSingleton(type):
+    """Metaclass to always make class return the same instance."""
+
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(MetaSingleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
 class ErrorCounter:
-    error_map = defaultdict(lambda: 0)
+    """Counts the exception class raised and the number of times
+    each exception class was raised."""
+
+    error_map = defaultdict(int)
 
     @classmethod
     def has_errors(cls) -> bool:
-        return bool(cls.error_map)
+        """Checks if some errors were registered.
 
-    @classmethod
-    def format_exc(cls, exc: Exception) -> str:
-        return re.search(r"(\w+)\'>", str(exc)).group(1)
+        Returns:
+            bool: True if there is any error, False otherwise.
+        """
+
+        return bool(cls.error_map)
 
     @classmethod
     def record_error(cls, exc: Exception):
@@ -406,13 +463,27 @@ class ErrorCounter:
 
     @classmethod
     def report(cls) -> str:
-        message = f"{sum(cls.error_map.values())} errors found: "
-        errors = [f"{cls.format_exc(k)}: {v}" for k, v in cls.error_map.items()]
-        message += ", ".join(errors)
-        return message
+        message = f"{sum(cls.error_map.values())} errors found "
+        errors = list(cls.error_map.items())
+        errors.sort(key=lambda x: x[1], reverse=True)
+        errors_str = ", ".join([f"{k.__name__}: {v}" for k, v in errors if v])
+        return message + f"({errors_str})"
 
 
 def save_crash_context(crash_object, object_name, reason=None):
+    """Saves the `crash_object` using pickle.
+
+    The filename is formed using `object_name` and the current datetime. If
+    the initial filename exists, the name will be incremented (file.log,
+    file.1.log, etc.). If reason is passed, it will be appended to `crash_object`
+    as an attribute named vcm_crash_reason.
+
+    Args:
+        crash_object (object): object to save.
+        object_name (str): name of the object to use as base of the filename.
+        reason (str, optional): reason of the crash. Defaults to None.
+    """
+
     from .settings import GeneralSettings
 
     now = datetime.now()
@@ -447,5 +518,25 @@ def save_crash_context(crash_object, object_name, reason=None):
 
 
 def handle_fatal_error_exit(exit_message, exit_code=-1):
-    print(Fore.RED + exit_message + Fore.RESET, file=sys.stderr)
+    """Prints `exit_message` to stderr in light red and exits.
+
+    Args:
+        exit_message (str): exit message to print in red.
+        exit_code (int, optional): exit code. Defaults to -1.
+    """
+
+    print(Fore.RED + str(exit_message) + Fore.RESET, file=sys.stderr)
     sys.exit(exit_code)
+
+
+def open_http_status_server():
+    """Opens the web status server (by default is localhost:8080) in a new
+    chrome windows.
+    """
+
+    from .settings import GeneralSettings
+
+    Printer.print("Opening state server")
+    chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
+    args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+    get_webbrowser(chrome_path).open_new(args)

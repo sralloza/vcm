@@ -1,17 +1,17 @@
-import os
 from copy import deepcopy
+import os
 from pathlib import Path
 from typing import List
 
 import toml
 
-from ._settings import constructors, defaults, setters, types
+from ._settings import checkers, constructors, defaults, setters
 from .exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
-    InvalidSettingsFileError,
     NotExcludedError,
     NotIndexedError,
+    InvalidSettingsFileError,
 )
 from .utils import handle_fatal_error_exit
 
@@ -106,8 +106,12 @@ def include(subject_id: int):
 
 
 class _CoreSettings(dict):
-    settings_path: Path = Path.home() / "vcm-settings.toml"
-    credentials_path: Path = Path.home() / "vcm-credentials.toml"
+    if os.environ.get("TESTING", False):
+        settings_path: Path = Path.home() / "test-vcm-settings.toml"
+        credentials_path: Path = Path.home() / "test-vcm-credentials.toml"
+    else:
+        settings_path: Path = Path.home() / "vcm-settings.toml"
+        credentials_path: Path = Path.home() / "vcm-credentials.toml"
 
     def __init__(self):
         super().__init__(
@@ -147,7 +151,7 @@ class MetaSettings(type):
             try:
                 attrs["def_dict"] = deepcopy(defaults)[lookup_name]
                 attrs["def_dict"].update(mcs.real_dict[lookup_name])
-                attrs["types_dict"] = types[lookup_name]
+                attrs["checkers_dict"] = checkers[lookup_name]
                 attrs["constructors"] = constructors[lookup_name]
                 attrs["setters"] = setters[lookup_name]
             except KeyError as exc:
@@ -181,19 +185,34 @@ class BaseSettings(dict, metaclass=MetaSettings):
     def __setitem__(self, key, value, force=False):
         # TODO: add support to check types like List[int]
         key = self._parse_key(key)
-        expected_type = self.types_dict[key]
-        if isinstance(expected_type, tuple):
-            if value not in expected_type:
-                raise TypeError("%r must be one of %r" % (key, expected_type))
-        try:
-            value = self.setters[key](value, force=force)
-        except TypeError as exc:
-            if "'force'" not in exc.args[0]:
-                raise
-            value = self.setters[key](value)
 
+        # FIXME: think what to do with the check type call
+        # self.check_value_type(key, value)
+        try:
+            # FIXME: figure out what did force do
+            value = self.setters[key](value, force=force)
+        except Exception as exc:
+            if "'force'" not in exc.args[0]:
+                checker = self.checkers_dict[key]
+                raise TypeError(
+                    "Invalid value for %s.%s: %r [Checkers.%s]"
+                    % (self.__class__.__name__.strip("_"), key, value, checker.__name__)
+                )
+            value = self.setters[key](value)
         super().__setitem__(key, value)
         save_settings()
+
+    def check_value_type(self, key, value):
+        # TODO: add support to check types like List[int]
+
+        checker = self.checkers_dict[key]
+        result = checker(value)
+        if not result:
+            raise TypeError(
+                "Invalid value for %s.%s: %r [Checkers.%s]"
+                % (self.__class__.__name__.strip("_"), key, value, checker.__name__)
+            )
+        return True
 
     @staticmethod
     def _parse_key(key: str):
@@ -294,3 +313,28 @@ settings_name_to_class = {
     "download": DownloadSettings,
     "notify": NotifySettings,
 }
+
+
+def check_settings_type():
+    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
+    for settings_class in settings_name_to_class.values():
+        for setting in settings_class:
+            checker = settings_class.checkers_dict[setting]
+            result = checker(settings_class[setting])
+
+            if not result:
+                del os.environ["VCM_DISABLE_CONSTRUCTS"]
+                raise TypeError(
+                    "Invalid value for %s.%s: %r [Checkers.%s]"
+                    % (
+                        settings_class.__class__.__name__.strip("_"),
+                        setting,
+                        settings_class[setting],
+                        checker.__name__,
+                    )
+                )
+
+    del os.environ["VCM_DISABLE_CONSTRUCTS"]
+
+
+check_settings_type()

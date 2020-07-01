@@ -52,7 +52,7 @@ class _Credentials:
     VirtualCampus: VirtualCampusCredentials = None
     Email: EmailCredentials = None
 
-    def __init__(self, _auto=False):
+    def __init__(self):
         self.load()
 
     @classmethod
@@ -97,7 +97,7 @@ class _Credentials:
             "Email": _Credentials.Email.to_json(),
         }
 
-        with _Credentials._path.open("wt") as file_handler:
+        with _Credentials._path.open("wt", encoding="utf-8") as file_handler:
             toml.dump(data, file_handler)
 
     @classmethod
@@ -108,7 +108,7 @@ class _Credentials:
         )
 
         _Credentials.Email = EmailCredentials(
-            "email-username@domain.es", "email-password", "smtp.domain.es", 587
+            "email-username@domain.es", "email-password", "smtp.gmail.com", 587
         )
 
         cls.save()
