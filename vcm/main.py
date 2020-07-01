@@ -328,7 +328,7 @@ def execute_settings(opt: Namespace):
 
     if opt.settings_subcommand == "set":
         setattr(settings_class, key, opt.value)
-    elif opt.settings_subcommand == "show":
+    if opt.settings_subcommand == "show":
         print("%s: %r" % (opt.key, getattr(settings_class, key)))
 
 
@@ -352,9 +352,10 @@ def main():
     if command == Command.download and opt.quiet:
         Printer.silence()
 
-    # Command executed is not 'settings', so check settings
-    setup_vcm()
-    logger.info("vcm version: %s", version)
+    if command != Command.settings:
+        # Command executed is not 'settings', so check settings
+        setup_vcm()
+        logger.info("vcm version: %s", version)
 
     return instructions[command.to_str()](opt)
 
