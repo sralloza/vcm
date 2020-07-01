@@ -1,8 +1,8 @@
 <h2 align="center">Virtual Campus Manager</h2>
 
 <p align="center">
-<a href="https://github.com/sralloza/vcm/actions"><img alt="build" src="https://github.com/sralloza/vcm/workflows/Python application/badge.svg?branch=test-coverage"></a>
-<a href="https://codecov.io/gh/sralloza/vcm/branch/test-coverage"><img alt="coverage" src="https://codecov.io/github/sralloza/vcm/coverage.svg?branch=test-coverage"></a>
+<a href="https://github.com/sralloza/vcm/actions"><img alt="build" src="https://github.com/sralloza/vcm/workflows/Python application/badge.svg"></a>
+<a href="https://codecov.io/gh/sralloza/vcm/branch/test-coverage"><img alt="coverage" src="https://codecov.io/github/sralloza/vcm/coverage.svg"></a>
 <a href="https://github.com/sralloza/vcm/blob/master/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
 </p>
 
