@@ -175,7 +175,7 @@ def execute_discover(opt):  # pylint: disable=W0613
     """
 
     Printer.silence()
-    return download(nthreads=1, no_killer=True, status_server=False, discover_only=True)
+    return download(nthreads=1, killer=False, status_server=False, discover_only=True)
 
 
 def execute_download(opt):
@@ -190,7 +190,7 @@ def execute_download(opt):
 
     return download(
         nthreads=opt.nthreads,
-        no_killer=opt.no_killer,
+        killer=not opt.no_killer,
         status_server=not opt.no_status_server,
     )
 
