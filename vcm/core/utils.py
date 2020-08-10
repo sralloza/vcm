@@ -14,15 +14,19 @@ from threading import Lock, current_thread
 from time import time
 from traceback import format_exc
 from typing import TypeVar, Union
+from warnings import warn
 from webbrowser import get as get_webbrowser
 
 from colorama import Fore
 from colorama import init as start_colorama
 from packaging import version
-from werkzeug.utils import secure_filename as _secure_filename
+from werkzeug.utils import (
+    _windows_device_files as WIN_DEVS,
+    secure_filename as _secure_filename,
+)
 
-from vcm.core.modules import Modules
-
+from .exceptions import FilenameWarning
+from .modules import Modules
 from .time_operations import seconds_to_str
 
 ExceptionClass = TypeVar("ExceptionClass")
@@ -167,48 +171,28 @@ class getch(metaclass=MetaGetch):
                 return msvcrt.getch()
 
 
-def secure_filename(filename, spaces=True):
-    if isinstance(filename, str):
-        from unicodedata import normalize
+def secure_filename(input_filename: str, spaces=True) -> str:
+    """Ensures that `input_filename` is a valid filename.
 
-        filename = normalize("NFKD", filename).encode("ascii", "ignore")
-        filename = filename.decode("ascii")
-    for sep in os.path.sep, os.path.altsep:
-        if sep:
-            filename = filename.replace(sep, " ")
+    Args:
+        filenainput_filenameme (str): filename to parse.
+        spaces (bool, optional): if False, all spaces are replaced with
+            underscores. Defaults to True.
 
-    _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
-    _windows_device_files = (
-        "CON",
-        "AUX",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "PRN",
-        "NUL",
-    )
+    Returns:
+        str: filename parsed.
+    """
 
-    temp_str = "_".join(filename.split())
-    filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
-
-    if spaces:
-        filename = " ".join(filename.split("_"))
-
-    if (
-        os.name == "nt"
-        and filename
-        and filename.split(".")[0].upper() in _windows_device_files
-    ):
-        filename = "_" + filename
-
-    filename = _secure_filename(filename)
+    filename = _secure_filename(input_filename)
     if not spaces:
         return filename
-    return filename.replace("_", " ")
+
+    spaced_filename = filename.replace("_", " ").strip()
+    if spaced_filename.split(".")[0].upper() in WIN_DEVS:
+        warn("Couldn't allow spaces parsing ", FilenameWarning)
+        return _secure_filename(filename)
+
+    return spaced_filename
 
 
 class Patterns:

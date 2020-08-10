@@ -1,13 +1,15 @@
 from collections import defaultdict
+from copy import deepcopy
 import logging
 import os
-from copy import Error, deepcopy
 from unittest import mock
-from requests.exceptions import ConnectionError, ProxyError
-import pytest
+
 from colorama.ansi import Fore
+import pytest
+from requests.exceptions import ConnectionError, ProxyError
 
 import vcm
+from vcm.core.exceptions import FilenameWarning
 from vcm.core.utils import (
     ErrorCounter,
     Key,
@@ -122,13 +124,16 @@ class TestSecureFilename:
 
     @mock.patch("os.name", "nt")
     def test_windows_special_names(self):
-        assert secure_filename("aux", spaces=True) == "_aux"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("aux", spaces=True) == "_aux"
         assert secure_filename("aux", spaces=False) == "_aux"
 
-        assert secure_filename("con", spaces=True) == "_con"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("con", spaces=True) == "_con"
         assert secure_filename("con", spaces=False) == "_con"
 
-        assert secure_filename("com2", spaces=True) == "_com2"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("com2", spaces=True) == "_com2"
         assert secure_filename("com2", spaces=False) == "_com2"
 
 
