@@ -245,22 +245,25 @@ def exception_exit(exception, to_stderr=True, red=True):
         if not isinstance(exception, BaseException):
             raise_exception = True
 
+    if isinstance(exception, SystemExit):
+        return
+
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
-    message = "%s: %s" % (
-        exception.__class__.__name__,
-        ", ".join((str(x) for x in exception.args)),
-    )
+    exc_str = ", ".join((str(x) for x in exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, exc_str)
     message += "\n" + format_exc()
 
     if red:
         message = Fore.LIGHTRED_EX + message + Fore.RESET
 
-    file = sys.stderr if to_stderr else sys.stdout
-    print(message, file=file)
+    if to_stderr:
+        print(message, file=sys.stderr)
+        sys.exit(-1)
 
-    return exit(-1)
+    print(message)
+    sys.exit(-1)
 
 
 def safe_exit(_func=None, *, to_stderr=True, red=True):
