@@ -386,14 +386,16 @@ def configure_logging():
 
 
 def more_settings_check():
-    from ._settings import defaults
-    from .settings import GeneralSettings, NotifySettings
+    from vcm.core._settings import defaults
+    from vcm.core.settings import GeneralSettings, NotifySettings
 
     os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
     if GeneralSettings.root_folder == defaults["general"]["root-folder"]:
+        del os.environ["VCM_DISABLE_CONSTRUCTS"]
         raise Exception("Must set 'general.root-folder'")
 
     if NotifySettings.email == defaults["notify"]["email"]:
+        del os.environ["VCM_DISABLE_CONSTRUCTS"]
         raise Exception("Must set 'notify.email'")
 
     del os.environ["VCM_DISABLE_CONSTRUCTS"]
@@ -469,6 +471,12 @@ class MetaSingleton(type):
         cls._instance = None
 
     def __call__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
+
+        # Uncomment line to check possible singleton errors
+        # logger.info("Requested Connection (id=%d)", id(cls._instance))
+        return cls._instance
 
 
 class ErrorCounter:
@@ -565,13 +573,7 @@ def open_http_status_server():
     """
 
     from .settings import GeneralSettings
-        if cls._instance is None:
-            cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
-
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
     args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
     get_webbrowser(chrome_path).open_new(args)
-        # Uncomment line to check possible singleton errors
-        # logger.info("Requested Connection (id=%d)", id(cls._instance))
-        return cls._instance
