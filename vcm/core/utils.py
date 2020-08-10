@@ -1,10 +1,11 @@
+from functools import wraps
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import re
 import sys
-from time import time
-from logging.handlers import RotatingFileHandler
 from threading import current_thread
+from time import time
 from traceback import format_exc
 from typing import Union
 
@@ -251,29 +252,39 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
         return exception_exit(exc, to_stderr=to_stderr, red=red)
 
 
-@decorator
-def timing(func, name=None, level=None, *args, **kwargs):
-    name = name or func.__name__
-    level = level or logging.INFO
-    t0 = time()
-    raise_exc = False
-    exception = None
+def timing(_func=None, *, name=None, level=None):
+    if _func and not callable(_func):
+        raise ValueError("Use keyword arguments in the timing decorator")
 
-    try:
-        result = func(*args, **kwargs)
-    except SystemExit as exc:
-        raise_exc = True
-        exception = exc
-    except Exception as exc:
-        raise_exc = True
-        exception = exc
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            _name = name or func.__name__
+            _level = level or logging.INFO
+            t0 = time()
+            exception = None
+            result = None
 
-    delta_t = time() - t0
-    logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
+            try:
+                result = func(*args, **kwargs)
+            except SystemExit as exc:
+                exception = exc
+            except Exception as exc:
+                exception = exc
 
-    if raise_exc:
-        raise exception
-    return result
+            eta = seconds_to_str(time() - t0)  # elapsed time
+            logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
+
+            if exception:
+                raise exception
+            return result
+
+        return inner_wrapper
+
+    if _func is None:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
 
 def str2bool(value):
