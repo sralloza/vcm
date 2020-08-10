@@ -399,7 +399,6 @@ def more_settings_check():
     del os.environ["VCM_DISABLE_CONSTRUCTS"]
 
     # Setup
-
     os.makedirs(GeneralSettings.root_folder, exist_ok=True)
     os.makedirs(GeneralSettings.logs_folder, exist_ok=True)
 
@@ -465,12 +464,11 @@ def check_updates():
 class MetaSingleton(type):
     """Metaclass to always make class return the same instance."""
 
-    _instances = {}
+    def __init__(cls, name, bases, attrs):
+        super(MetaSingleton, cls).__init__(name, bases, attrs)
+        cls._instance = None
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(MetaSingleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 class ErrorCounter:
@@ -567,8 +565,13 @@ def open_http_status_server():
     """
 
     from .settings import GeneralSettings
+        if cls._instance is None:
+            cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
 
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
     args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
     get_webbrowser(chrome_path).open_new(args)
+        # Uncomment line to check possible singleton errors
+        # logger.info("Requested Connection (id=%d)", id(cls._instance))
+        return cls._instance
