@@ -19,6 +19,7 @@ from webbrowser import get as get_webbrowser
 from colorama import Fore
 from colorama import init as start_colorama
 from packaging import version
+from werkzeug.utils import secure_filename as _secure_filename
 
 from vcm.core.modules import Modules
 
@@ -204,7 +205,10 @@ def secure_filename(filename, spaces=True):
     ):
         filename = "_" + filename
 
-    return filename
+    filename = _secure_filename(filename)
+    if not spaces:
+        return filename
+    return filename.replace("_", " ")
 
 
 class Patterns:
