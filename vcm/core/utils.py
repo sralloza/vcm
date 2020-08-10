@@ -11,7 +11,6 @@ from typing import Union
 
 from colorama import Fore
 from colorama import init as start_colorama
-from decorator import decorator
 from packaging import version
 from werkzeug.utils import secure_filename as _secure_filename
 
@@ -230,8 +229,7 @@ def exception_exit(exception, to_stderr=False, red=True):
     sys.exit(-1)
 
 
-@decorator
-def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
+def safe_exit(_func=None, *, to_stderr=True, red=True):
     """Catches any exception and prints the traceback. Designed to work
     as a decorator.
 
@@ -239,17 +237,30 @@ def safe_exit(func, to_stderr=False, red=True, *args, **kwargs):
         It doens't catch SystemExit exceptions.
 
     Args:
-        func (function): function to control.
+        _func (function): function to control.
         to_stderr (bool, optional): If true, the traceback will be printed
             in sys.stderr, otherwise it will be printed in sys.stdout.
-            Defaults to False.
+            Defaults to True.
         red (bool, optional): If true, the traceback will be printed in red.
             Defaults to True.
     """
-    try:
-        return func(*args, **kwargs)
-    except Exception as exc:
-        return exception_exit(exc, to_stderr=to_stderr, red=red)
+    if _func and not callable(_func):
+        raise ValueError("Use keyword arguments in the timing decorator")
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                return exception_exit(exc, to_stderr=to_stderr, red=red)
+
+        return inner_wrapper
+
+    if _func is None:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
 
 def timing(_func=None, *, name=None, level=None):
