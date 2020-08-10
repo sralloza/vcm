@@ -316,20 +316,20 @@ def timing(_func=None, *, name=None, level=None):
             eta = seconds_to_str(time() - t0)  # elapsed time
             logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
-_true_set = {"yes", "true", "t", "y", "1", "sí", "si", "s"}
-_false_set = {"no", "false", "f", "n", "0"}
             if exception:
                 raise exception
             return result
 
         return inner_wrapper
 
-def str2bool(value):
-    """Returns the boolean as a lowercase string, like json.
     if _func is None:
         return outer_wrapper
     else:
         return outer_wrapper(_func)
+
+
+def str2bool(value):
+    """Returns the boolean as a lowercase string, like json.
 
     Args:
         value (bool): boolen input.
@@ -341,6 +341,10 @@ def str2bool(value):
     Returns:
         str: lowercase string.
     """
+
+    _true_set = {"yes", "true", "t", "y", "1", "s", "si", "sí"}
+    _false_set = {"no", "false", "f", "n", "0"}
+
     if value in (True, False):
         return value
 
