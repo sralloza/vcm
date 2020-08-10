@@ -300,7 +300,7 @@ def safe_exit(_func=None, *, to_stderr=True, red=True):
         return outer_wrapper(_func)
 
 
-def timing(_func=None, *, name=None, level=None):
+def timing(_func=None, *, name=None, level=None, report=True):
     if _func and not callable(_func):
         raise ValueError("Use keyword arguments in the timing decorator")
 
@@ -319,7 +319,11 @@ def timing(_func=None, *, name=None, level=None):
                 exception = exc
             except Exception as exc:
                 exception = exc
+            finally:
+                if report and ErrorCounter.has_errors():
+                    logger.warning(ErrorCounter.report())
 
+            logger.log(_level, "Starting execution of %r", _name)
             eta = seconds_to_str(time() - t0)  # elapsed time
             logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
