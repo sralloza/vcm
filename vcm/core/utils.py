@@ -418,6 +418,10 @@ class Printer:
         cls._print = print
 
     @classmethod
+    def reset(cls):
+        cls._print = print
+
+    @classmethod
     def silence(cls):
         cls._print = cls.useless
 
@@ -432,6 +436,10 @@ class Printer:
 
         with cls._lock:
             return cls._print(*args, **kwargs)
+
+    @classmethod
+    def useless(cls, *args, **kwargs):
+        pass
 
 
 def check_updates():
