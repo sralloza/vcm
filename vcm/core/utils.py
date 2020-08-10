@@ -3,6 +3,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
+from functools import wraps
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -10,14 +11,13 @@ import pickle
 import re
 import sys
 from threading import Lock, current_thread
-import time
+from time import time
 from traceback import format_exc
 from typing import TypeVar, Union
 from webbrowser import get as get_webbrowser
 
 from colorama import Fore
 from colorama import init as start_colorama
-from decorator import decorator
 from packaging import version
 
 from vcm.core.modules import Modules
@@ -259,56 +259,77 @@ def exception_exit(exception, to_stderr=True, red=True):
     return exit(-1)
 
 
-@decorator
-def safe_exit(func, to_stderr=True, red=True, *args, **kwargs):
-    """Catches any exception raised and logs it. After logging it,
-    `exception_exit` handles the rest.
+def safe_exit(_func=None, *, to_stderr=True, red=True):
+    """Catches any exception and prints the traceback. Designed to work
+    as a decorator.
+
+    Notes:
+        It doens't catch SystemExit exceptions.
 
     Args:
-        func (function): function to decorate. Usually given using
-            the `@safe_exit` decorator.
-        to_stderr (bool, optional): If True, the exception will be printed
-            in stderr instead of stdout. Defaults to True.
-        red (bool, optional): If True, the exception will be printed in
-            red color instead of the default. Defaults to True.
+        _func (function): function to control.
+        to_stderr (bool, optional): If true, the traceback will be printed
+            in sys.stderr, otherwise it will be printed in sys.stdout.
+            Defaults to True.
+        red (bool, optional): If true, the traceback will be printed in red.
+            Defaults to True.
     """
+    if _func and not callable(_func):
+        raise ValueError("Use keyword arguments in the timing decorator")
 
-    try:
-        return func(*args, **kwargs)
-    except Exception as exc:
-        logger.exception("Exception catched:")
-        return exception_exit(exc, to_stderr=to_stderr, red=red)
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                return exception_exit(exc, to_stderr=to_stderr, red=red)
+
+        return inner_wrapper
+
+    if _func is None:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
 
-@decorator
-def timing(func, name=None, level=None, *args, **kwargs):
-    level = level or logging.INFO
-    name = name or func.__name__
-    t0 = time.time()
-    result = None
+def timing(_func=None, *, name=None, level=None):
+    if _func and not callable(_func):
+        raise ValueError("Use keyword arguments in the timing decorator")
 
-    logger.log(level, "Starting execution of %s", name)
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            _name = name or func.__name__
+            _level = level or logging.INFO
+            t0 = time()
+            exception = None
+            result = None
 
-    try:
-        result = func(*args, **kwargs)
-    finally:
-        if ErrorCounter.has_errors():
-            logger.warning(ErrorCounter.report())
+            try:
+                result = func(*args, **kwargs)
+            except SystemExit as exc:
+                exception = exc
+            except Exception as exc:
+                exception = exc
 
-        delta_t = time.time() - t0
-        logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
-
-        is_exception = sys.exc_info()[0] is not None
-        if not is_exception:
-            return result
-
+            eta = seconds_to_str(time() - t0)  # elapsed time
+            logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
 _true_set = {"yes", "true", "t", "y", "1", "sí", "si", "s"}
 _false_set = {"no", "false", "f", "n", "0"}
+            if exception:
+                raise exception
+            return result
 
+        return inner_wrapper
 
 def str2bool(value):
     """Returns the boolean as a lowercase string, like json.
+    if _func is None:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
     Args:
         value (bool): boolen input.
