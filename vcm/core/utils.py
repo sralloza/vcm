@@ -229,8 +229,6 @@ def exception_exit(exception, to_stderr=True, red=True):
         if not isinstance(exception, BaseException):
             raise_exception = True
 
-    if isinstance(exception, SystemExit):
-        return
 
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
@@ -297,6 +295,7 @@ def timing(_func=None, *, name=None, level=None, report=True):
             exception = None
             result = None
 
+            logger.log(_level, "Starting execution of %r", _name)
             try:
                 result = func(*args, **kwargs)
             except SystemExit as exc:
@@ -307,7 +306,6 @@ def timing(_func=None, *, name=None, level=None, report=True):
                 if report and ErrorCounter.has_errors():
                     logger.warning(ErrorCounter.report())
 
-            logger.log(_level, "Starting execution of %r", _name)
             eta = seconds_to_str(time() - t0)  # elapsed time
             logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
@@ -568,6 +566,7 @@ def open_http_status_server():
     """
 
     from .settings import GeneralSettings
+
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
     args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'

@@ -163,16 +163,16 @@ class TestPatterns:
 class TestExceptionExit:
 
     exceptions = (
-        (ValueError, "Invalid path", True),
-        (TypeError, ("Invalid type", "Expected int"), True),
-        (ImportError, "Module not found: math", True),
-        (SystemExit, "exit program", False),
+        (ValueError, "Invalid path"),
+        (TypeError, ("Invalid type", "Expected int")),
+        (ImportError, "Module not found: math"),
+        (SystemExit, "exit program"),
     )
 
     @pytest.mark.parametrize("red", [True, False])
     @pytest.mark.parametrize("to_stderr", [True, False])
-    @pytest.mark.parametrize("exception, args, should_exit", exceptions)
-    def test_ok(self, exception, args, should_exit, to_stderr, red, capsys):
+    @pytest.mark.parametrize("exception, args", exceptions)
+    def test_ok(self, exception, args, to_stderr, red, capsys):
         if not isinstance(args, str):
             message = ", ".join(args)
         else:
@@ -292,10 +292,10 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+        log_str = "%r executed in %s [%s]" % (log_name, sts_m.return_value, 25)
 
         expected_log_tuples = [
-            ("vcm.core.utils", log_level, f"Starting execution of {log_name}"),
+            ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
             ("vcm.core.utils", 30, "<error-report>"),
             ("vcm.core.utils", log_level, log_str),
         ]
@@ -331,10 +331,10 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+        log_str = "%r executed in %s [%s]" % (log_name, sts_m.return_value, None)
 
         expected_log_tuples = [
-            ("vcm.core.utils", log_level, f"Starting execution of {log_name}"),
+            ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
             ("vcm.core.utils", 30, "<error-report>"),
             ("vcm.core.utils", log_level, log_str),
         ]
