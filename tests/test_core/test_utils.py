@@ -154,9 +154,24 @@ class TestPatterns:
         else:
             assert match is None
 
+    email_data = (
+        ("asdf@adsf.asdf", True),
+        ("adsf++-dsafads-fsaf@adsfsdalkfj.clkdsjflksjdf", True),
+        (".@gmail.com", False),
+        ("kidding", False)
+    )
+
+    @pytest.mark.parametrize("input_str, expected", email_data)
+    def test_email(self, input_str, expected):
+        match = Patterns.EMAIL.search(input_str)
+
+        if expected:
+            assert match.group(0) == input_str
+        else:
+            assert match is None
+
 
 class TestExceptionExit:
-
     exceptions = (
         (ValueError, "Invalid path", True),
         (TypeError, ("Invalid type", "Expected int"), True),
