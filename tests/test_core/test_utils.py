@@ -161,7 +161,6 @@ class TestPatterns:
 
 
 class TestExceptionExit:
-
     exceptions = (
         (ValueError, "Invalid path"),
         (TypeError, ("Invalid type", "Expected int")),
@@ -231,7 +230,7 @@ class TestSafeExit:
         return request.param
 
     @mock.patch("vcm.core.utils.exception_exit")
-    def test_safe_exit(self, ee_m, red, to_stderr, exception):
+    def test_decorate_called(self, ee_m, red, to_stderr, exception):
         exc = exception()
         is_system_exit = isinstance(exc, SystemExit)
 
@@ -244,9 +243,37 @@ class TestSafeExit:
                 custom_function()
         else:
             custom_function()
-
             ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
 
+    @mock.patch("vcm.core.utils.exception_exit")
+    def test_decorate_not_called(self, ee_m, exception):
+        exc = exception()
+        is_system_exit = isinstance(exc, SystemExit)
+
+        # Defaults: to_stder=True, red=True
+        @safe_exit
+        def custom_function():
+            raise exc
+
+        if is_system_exit:
+            with pytest.raises(SystemExit):
+                custom_function()
+        else:
+            custom_function()
+            ee_m.assert_called_with(exc, to_stderr=True, red=True)
+
+
+    @mock.patch("vcm.core.utils.exception_exit")
+    def test_decorate_called_mixed_args(self, ee_m, to_stderr, red):
+        msg = "Use keyword arguments in the safe_exit decorator"
+        with pytest.raises(ValueError, match=msg):
+            @safe_exit(to_stderr, red=red)
+            def custom_function():
+                pass
+
+        ee_m.assert_not_called()
+        with pytest.raises(UnboundLocalError):
+            custom_function()
 
 class TestTiming:
     @pytest.fixture
@@ -271,7 +298,18 @@ class TestTiming:
     def errors(self, request):
         return request.param
 
-    def test_ok(self, mocks, caplog, name, level, errors):
+    @pytest.fixture(params=["good", "bad"])
+    def how(self, request):
+        return request.param
+
+    def test_ok(self, mocks, caplog, name, level, errors, how):
+        if how == "bad":
+            msg = "Use keyword arguments in the timing decorator"
+            with pytest.raises(ValueError, match=msg):
+                @timing(name, level=level)
+                def custom_function(arg1="arg1"):
+                    return arg1
+            return
         @timing(name=name, level=level)
         def custom_function(arg1="arg1"):
             return arg1
@@ -733,12 +771,12 @@ class TestErrorCounter:
 
     def test_report(self):
         dict1 = {TypeError: 2, ProxyError: 3, ValueError: 1}
-        ErrorCounter.error_map = defaultdict(lambda: 0, dict1)
+        ErrorCounter.error_map = defaultdict(int, dict1)
         expected = "6 errors found (ProxyError: 3, TypeError: 2, ValueError: 1)"
         assert ErrorCounter.report() == expected
 
         dict2 = {ZeroDivisionError: 0, TypeError: 2, ProxyError: 3, ValueError: 5}
-        ErrorCounter.error_map = defaultdict(lambda: 0, dict2)
+        ErrorCounter.error_map = defaultdict(int, dict2)
         expected = "10 errors found (ValueError: 5, ProxyError: 3, TypeError: 2)"
         assert ErrorCounter.report() == expected
 

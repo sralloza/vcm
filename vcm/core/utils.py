@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 start_colorama()
 
 
+_def = bytes(1)
+
 # TODO: remove class in future versions
 class MetaGetch(type):
     _instances = {}
@@ -229,7 +231,6 @@ def exception_exit(exception, to_stderr=True, red=True):
         if not isinstance(exception, BaseException):
             raise_exception = True
 
-
     if raise_exception:
         raise TypeError("exception should be a subclass of Exception")
 
@@ -248,7 +249,7 @@ def exception_exit(exception, to_stderr=True, red=True):
     sys.exit(-1)
 
 
-def safe_exit(_func=None, *, to_stderr=True, red=True):
+def safe_exit(_func=_def, *, to_stderr=True, red=True):
     """Catches any exception and prints the traceback. Designed to work
     as a decorator.
 
@@ -263,8 +264,9 @@ def safe_exit(_func=None, *, to_stderr=True, red=True):
         red (bool, optional): If true, the traceback will be printed in red.
             Defaults to True.
     """
-    if _func and not callable(_func):
-        raise ValueError("Use keyword arguments in the timing decorator")
+
+    if _func is not _def and not callable(_func):
+        raise ValueError("Use keyword arguments in the safe_exit decorator")
 
     def outer_wrapper(func):
         @wraps(func)
@@ -276,14 +278,14 @@ def safe_exit(_func=None, *, to_stderr=True, red=True):
 
         return inner_wrapper
 
-    if _func is None:
+    if _func is _def:
         return outer_wrapper
     else:
         return outer_wrapper(_func)
 
 
-def timing(_func=None, *, name=None, level=None, report=True):
-    if _func and not callable(_func):
+def timing(_func=_def, *, name=None, level=None, report=True):
+    if _func is not _def and not callable(_func):
         raise ValueError("Use keyword arguments in the timing decorator")
 
     def outer_wrapper(func):
@@ -315,7 +317,7 @@ def timing(_func=None, *, name=None, level=None, report=True):
 
         return inner_wrapper
 
-    if _func is None:
+    if _func is _def:
         return outer_wrapper
     else:
         return outer_wrapper(_func)
