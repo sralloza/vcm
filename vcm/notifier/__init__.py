@@ -41,7 +41,7 @@ def notify(send_to: _A, use_icons=True, nthreads=20, status_server=False):
     Modules.set_current(Modules.notify)
 
     queue = Queue()
-    threads = start_workers(queue, nthreads, no_killer=True)
+    threads = start_workers(queue, nthreads, killer=False)
 
     if status_server:
         runserver(queue, threads)
