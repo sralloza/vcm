@@ -6,7 +6,6 @@ import re
 from bs4 import BeautifulSoup
 from colorama import init as init_colorama
 
-from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.settings import GeneralSettings
 from vcm.core.status_server import runserver
@@ -94,7 +93,6 @@ def download(nthreads=20, killer=True, status_server=True, discover_only=False):
         discover_only,
     )
 
-    Modules.set_current(Modules.download)
     init_colorama()
 
     queue = Queue()

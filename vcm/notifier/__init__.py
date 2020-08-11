@@ -3,13 +3,13 @@ import logging
 from queue import Queue
 from typing import List, Union
 
-from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.status_server import runserver
 from vcm.core.utils import Printer, timing
 from vcm.core.workers import start_workers
 from vcm.downloader import find_subjects
-from vcm.notifier.report import send_report
+
+from .report import send_report
 
 _A = Union[List[str], str]
 
@@ -38,7 +38,6 @@ def notify(send_to: _A, use_icons=True, nthreads=20, status_server=False):
     )
 
     Printer.silence()
-    Modules.set_current(Modules.notify)
 
     queue = Queue()
     threads = start_workers(queue, nthreads, no_killer=True)

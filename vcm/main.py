@@ -4,6 +4,7 @@ from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
 from typing import NoReturn, Tuple
+from vcm.core.modules import Modules
 
 from . import __version__ as version
 from .core.settings import (
@@ -348,6 +349,7 @@ def main():
 
     # Commands
     command = get_command(opt.command)
+    Modules.set_current(command.name)
 
     if command == Command.download and opt.quiet:
         Printer.silence()
