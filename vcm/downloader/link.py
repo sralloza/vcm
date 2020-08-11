@@ -132,7 +132,7 @@ class BaseLink(_Notify):
 
         try:
             # unidecode.unidecode is used to remove accents.
-            self.response_name = Patterns.FILENAME_PATTERN.search(
+            self.response_name = Patterns.FILENAME.search(
                 self.content_disposition
             ).group(1)
             extension = self._filename_to_ext(self.response_name)

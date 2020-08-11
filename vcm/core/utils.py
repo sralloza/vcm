@@ -210,7 +210,7 @@ def secure_filename(filename, spaces=True):
 class Patterns:
     """Stores useful regex patterns for this application."""
 
-    FILENAME_PATTERN = re.compile(
+    FILENAME = re.compile(
         r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
     )
 

@@ -146,8 +146,8 @@ class TestPatterns:
     )
 
     @pytest.mark.parametrize("input_str, expected", filename_data)
-    def test_filename_pattern(self, input_str, expected):
-        match = Patterns.FILENAME_PATTERN.search(input_str)
+    def test_filename(self, input_str, expected):
+        match = Patterns.FILENAME.search(input_str)
 
         if expected:
             assert match.group(1) == expected
