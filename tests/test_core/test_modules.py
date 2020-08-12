@@ -58,6 +58,3 @@ class TestHiddenStatic:
         assert hasattr(_Static, "module")
         assert isinstance(_Static.module, Modules)
         assert isinstance(_Static.module.value, str)
-
-    def test_default_value(self):
-        assert _Static.module == Modules.undefined
