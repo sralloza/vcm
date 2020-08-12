@@ -9,7 +9,7 @@ from vcm.core.modules import Modules
 
 from . import __version__ as version
 from .core.settings import (
-    exclude,
+    CheckSettings, exclude,
     include,
     section_index,
     settings,
@@ -19,7 +19,6 @@ from .core.settings import (
 from .core.utils import (
     Printer,
     check_updates,
-    more_settings_check,
     open_http_status_server,
     safe_exit,
     setup_vcm,
@@ -233,7 +232,7 @@ class NonKeyBasedSettingsSubcommand:
     @classmethod
     def check(cls):
         """Forces checks of settings."""
-        more_settings_check()
+        CheckSettings.check()
         print("Checked")
 
     @classmethod
