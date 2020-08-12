@@ -375,7 +375,6 @@ class TestTiming:
 
         assert caplog.record_tuples == expected_log_tuples
 
-
     def test_decorate_not_called(self, name, level):
         # Defaults: name=None, level=None
         @timing
@@ -394,6 +393,7 @@ class TestTiming:
 
         with pytest.raises(UnboundLocalError):
             custom_function()
+
 
 class TestStr2Bool:
     test_data = [
@@ -446,68 +446,67 @@ class TestStr2Bool:
 
 
 class TestConfigureLogging:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        lpe_m = gs_m.log_path.exists
-        ct_m = mock.patch("vcm.core.utils.current_thread").start()
-        rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
-        lbc_m = mock.patch("logging.basicConfig").start()
-        lgl_m = mock.patch("logging.getLogger").start()
+        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.lpe_m = self.gs_m.log_path.exists
+        self.ct_m = mock.patch("vcm.core.utils.current_thread").start()
+        self.rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
+        self.lbc_m = mock.patch("logging.basicConfig").start()
+        self.lgl_m = mock.patch("logging.getLogger").start()
 
-        yield gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m
+        yield
 
         mock.patch.stopall()
 
     @pytest.mark.parametrize("do_roll", [True, False])
-    def test_testing_none(self, mocks, do_roll):
+    def test_testing_none(self, do_roll):
         if os.environ.get("TESTING"):
             del os.environ["TESTING"]
-        gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
-        lpe_m.return_value = do_roll
+
+        self.lpe_m.return_value = do_roll
 
         fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
         configure_logging()
 
-        rfh_m.assert_called_once_with(
-            filename=gs_m.log_path,
+        self.rfh_m.assert_called_once_with(
+            filename=self.gs_m.log_path,
             maxBytes=2500000,
             encoding="utf-8",
-            backupCount=gs_m.max_logs,
+            backupCount=self.gs_m.max_logs,
         )
-        handler = rfh_m.return_value
+        handler = self.rfh_m.return_value
 
-        ct_m.return_value.setName.assert_called_with("MT")
+        self.ct_m.return_value.setName.assert_called_with("MT")
 
         if do_roll:
             handler.doRollover.assert_called_once()
         else:
             handler.doRollover.assert_not_called()
 
-        lbc_m.assert_called_once_with(
-            handlers=[handler], level=gs_m.logging_level, format=fmt
+        self.lbc_m.assert_called_once_with(
+            handlers=[handler], level=self.gs_m.logging_level, format=fmt
         )
-        lgl_m.assert_called_with("urllib3")
-        lgl_m.return_value.setLevel.assert_called_once_with(40)
+        self.lgl_m.assert_called_with("urllib3")
+        self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
     @pytest.mark.parametrize("do_roll", [True, False])
-    def test_testing_true(self, mocks, do_roll):
+    def test_testing_true(self, do_roll):
         os.environ["TESTING"] = "True"
-        _, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
-        lpe_m.return_value = do_roll
+        self.lpe_m.return_value = do_roll
 
         configure_logging()
 
-        rfh_m.assert_not_called()
-        handler = rfh_m.return_value
+        self.rfh_m.assert_not_called()
+        handler = self.rfh_m.return_value
 
-        ct_m.return_value.setName.assert_not_called()
+        self.ct_m.return_value.setName.assert_not_called()
 
         handler.doRollover.assert_not_called()
 
-        lbc_m.assert_not_called()
-        lgl_m.assert_called_with("urllib3")
-        lgl_m.return_value.setLevel.assert_called_once_with(40)
+        self.lbc_m.assert_not_called()
+        self.lgl_m.assert_called_with("urllib3")
+        self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
 class TestMoreSettingsCheck:
@@ -524,61 +523,52 @@ class TestMoreSettingsCheck:
             "notify": {"email": cls.default_email},
         }
 
-    @pytest.fixture(scope="function", autouse=True)
-    def ensure_default_environ(self):
-        # assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
-        yield
-        # assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
-
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
-        ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
+        self.gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
         mock.patch("vcm.core._settings.defaults", self.defaults).start()
-        mkdirs_mock = mock.patch("os.makedirs").start()
+        self.mkdirs_mock = mock.patch("os.makedirs").start()
 
-        gs_mock.root_folder = self.no_default_root_folder
-        ns_mock.email = self.no_default_email
+        self.gs_mock.root_folder = self.no_default_root_folder
+        self.ns_mock.email = self.no_default_email
 
-        yield gs_mock, ns_mock, mkdirs_mock
+        yield
+
         mock.patch.stopall()
 
-    def test_ok(self, mocks):
-        gs_mock, _, mkdirs_mock = mocks
+    def test_ok(self):
         more_settings_check()
 
-        mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
-        mkdirs_mock.assert_any_call(gs_mock.logs_folder, exist_ok=True)
-        assert mkdirs_mock.call_count == 2
+        self.mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
+        self.mkdirs_mock.assert_any_call(self.gs_mock.logs_folder, exist_ok=True)
+        assert self.mkdirs_mock.call_count == 2
 
-    def test_default_root_folder(self, mocks):
-        gs_mock, _, mkdirs_mock = mocks
-        gs_mock.root_folder = self.default_root_folder
+    def test_default_root_folder(self):
+        self.gs_mock.root_folder = self.default_root_folder
 
         with pytest.raises(Exception, match="Must set 'general.root-folder'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
-    def test_default_email(self, mocks):
-        _, ns_mock, mkdirs_mock = mocks
-        ns_mock.email = self.default_email
+    def test_default_email(self):
+        self.ns_mock.email = self.default_email
 
         with pytest.raises(Exception, match="Must set 'notify.email'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
-    def test_default_root_folder_and_email(self, mocks):
-        gs_mock, ns_mock, mkdirs_mock = mocks
-        gs_mock.root_folder = self.default_root_folder
-        ns_mock.email = self.default_email
+    def test_default_root_folder_and_email(self):
+        self.gs_mock.root_folder = self.default_root_folder
+        self.ns_mock.email = self.default_email
 
         with pytest.raises(Exception, match="Must set 'general.root-folder'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
 
 @mock.patch("vcm.core.utils.configure_logging")
@@ -648,29 +638,27 @@ class TestCheckUpdates:
 
     version_data = version_data + tuple([[x[1], x[0], False] for x in version_data])
 
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        con_mock = mock.patch("vcm.core.networking.connection").start()
-        print_mock = mock.patch("vcm.core.utils.Printer.print").start()
+        self.con_mock = mock.patch("vcm.core.networking.connection").start()
+        self.print_mock = mock.patch("vcm.core.utils.Printer.print").start()
 
-        yield con_mock, print_mock
+        yield
 
         mock.patch.stopall()
 
     @pytest.mark.parametrize("version1, version2, new_update", version_data)
-    def test_check_updates(self, mocks, version1, version2, new_update):
-        con_mock, print_mock = mocks
-
+    def test_check_updates(self, version1, version2, new_update):
         response_mock = mock.MagicMock()
         response_mock.text = version2
-        con_mock.get.return_value = response_mock
+        self.con_mock.get.return_value = response_mock
 
         vcm.__version__ = version1
 
         result = check_updates()
 
         assert result == new_update
-        print_mock.assert_called_once()
+        self.print_mock.assert_called_once()
 
 
 class TestMetaSingleton:
@@ -794,16 +782,16 @@ class TestErrorCounter:
 
 
 class TestSaveCrashContent:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        dt_m = mock.patch("vcm.core.utils.datetime").start()
-        dt_m.now.return_value.strftime.return_value = "<current datetime>"
-        pkl_m = mock.patch("pickle.dumps").start()
-        dcpy_m = mock.patch("vcm.core.utils.deepcopy").start()
-        dcpy_m.side_effect = lambda x: x
+        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.dt_m = mock.patch("vcm.core.utils.datetime").start()
+        self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
+        self.pkl_m = mock.patch("pickle.dumps").start()
+        self.dcpy_m = mock.patch("vcm.core.utils.deepcopy").start()
+        self.dcpy_m.side_effect = lambda x: x
 
-        yield gs_m, dt_m, pkl_m, dcpy_m
+        yield
 
         mock.patch.stopall()
 
@@ -828,9 +816,8 @@ class TestSaveCrashContent:
     def reason(self, request):
         return request.param
 
-    def test_save_crash_context(self, mocks, exists, crash_object, reason):
-        gs_m, dt_m, pkl_m, dcpy_m = mocks
-        crash_path = gs_m.root_folder.joinpath.return_value
+    def test_save_crash_context(self, exists, crash_object, reason):
+        crash_path = self.gs_m.root_folder.joinpath.return_value
         crash_path.exists.return_value = bool(exists)
         new_path = crash_path.with_name.return_value
         new_path.exists.side_effect = [True] * (exists - 1) + [False]
@@ -844,31 +831,31 @@ class TestSaveCrashContent:
             crash_path.with_name.assert_not_called()
 
         crash_name = "<object_name>.<current datetime>.pkl"
-        gs_m.root_folder.joinpath.assert_called_with(crash_name)
-        dt_m.now.assert_called_once_with()
-        dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
+        self.gs_m.root_folder.joinpath.assert_called_with(crash_name)
+        self.dt_m.now.assert_called_once_with()
+        self.dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
 
-        crash_object_saved = pkl_m.call_args[0][0]
+        crash_object_saved = self.pkl_m.call_args[0][0]
         if reason:
             if not isinstance(crash_object, str):
                 crash_object.vcm_reason = "<reason>"
                 assert crash_object_saved == crash_object
-                dcpy_m.assert_called_once_with(crash_object)
+                self.dcpy_m.assert_called_once_with(crash_object)
             else:
                 assert crash_object_saved == {
                     "real_object": crash_object,
                     "vcm_crash_reason": reason,
                 }
                 assert crash_object_saved["real_object"] == crash_object
-                dcpy_m.assert_called_once_with(crash_object)
+                self.dcpy_m.assert_called_once_with(crash_object)
         else:
             assert crash_object_saved == crash_object
-            dcpy_m.assert_called_once_with(crash_object)
+            self.dcpy_m.assert_called_once_with(crash_object)
 
         if not exists:
-            crash_path.write_bytes.assert_called_once_with(pkl_m.return_value)
+            crash_path.write_bytes.assert_called_once_with(self.pkl_m.return_value)
         else:
-            new_path.write_bytes.assert_called_once_with(pkl_m.return_value)
+            new_path.write_bytes.assert_called_once_with(self.pkl_m.return_value)
 
 
 @pytest.mark.parametrize("message", ("error", "real error", 4532))
