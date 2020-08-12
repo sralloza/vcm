@@ -1,228 +1,166 @@
-from copy import deepcopy
-import os
+import json
 from pathlib import Path
 from typing import List
 
-import toml
+from ruamel.yaml import YAML
 
-from ._settings import checkers, constructors, defaults, setters
+from vcm.core.exceptions import SettingsError
+from vcm.core.utils import handle_fatal_error_exit, str2bool
+
 from .exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
     NotExcludedError,
     NotIndexedError,
-    InvalidSettingsFileError,
 )
-from .utils import handle_fatal_error_exit
-
-
-def extend_settings_class_name(base_settings_class_name):
-    return "_" + base_settings_class_name.capitalize() + "Settings"
+from .utils import MetaSingleton, Patterns
 
 
 def save_settings():
-    settings_classes = list(settings_name_to_class.values())
-    toml_data = {}
+    CheckSettings.check()
+    settings.update_instance_config()
 
-    for cls in settings_classes:
-        name = cls.__class__.__name__.lower().replace("_", "").replace("settings", "")
-        toml_data[name] = cls
-
-    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
-    with CoreSettings.settings_path.open("wt") as file_handler:
-        toml.dump(toml_data, file_handler)
-
-    del os.environ["VCM_DISABLE_CONSTRUCTS"]
+    yaml = YAML()
+    with settings.settings_path.open("wt") as file:
+        yaml.dump(settings.config, file)
 
 
 def settings_to_string():
-    output = "- core:\n"
-    for key, value in CoreSettings.items():
-        # CoreSettings attributes are all pathlib.Path, so using
-        # repr will return PosixPath(...) or WindowsPath(...)
+    output = "- settings:\n"
+    for key in ["credentials_path", "settings_path"]:
+        value = getattr(settings, key)
         output += "    %s: %s\n" % (key, value)
 
-    output += "\n- general:\n"
-    for key, value in GeneralSettings.items():
-        output += "    %s: %r\n" % (key, value)
-
-    output += "\n- download:\n"
-
-    for key, value in DownloadSettings.items():
-        output += "    %s: %r\n" % (key, value)
-
-    output += "\n- notify:\n"
-
-    for key, value in NotifySettings.items():
+    for key, value in settings.items():
         output += "    %s: %r\n" % (key, value)
 
     return output
 
 
 def section_index(subject_id: int):
-    if subject_id in DownloadSettings.section_indexing_ids:
+    if subject_id in settings.section_indexing_ids:
         raise AlreadyIndexedError(
             "Subject ID '%d' is already section-indexed" % subject_id
         )
 
-    index = list(DownloadSettings.section_indexing_ids)
+    index = list(settings.section_indexing_ids)
     index.append(subject_id)
     index = list(set(index))
     index.sort()
-    DownloadSettings.__setitem__("section-indexing", index, force=True)
+    settings["section-indexing"] = index
 
 
 def un_section_index(subject_id: int):
-    if subject_id not in DownloadSettings.section_indexing_ids:
+    if subject_id not in settings.section_indexing_ids:
         raise NotIndexedError("Subject ID '%d' is not section-indexed" % subject_id)
 
-    index = list(DownloadSettings.section_indexing_ids)
+    index = list(settings.section_indexing_ids)
     index.remove(subject_id)
     index = list(set(index))
     index.sort()
-    DownloadSettings.__setitem__("section_indexing", index, force=True)
+    settings["section-indexing"] = index
 
 
 def exclude(subject_id: int):
-    if subject_id in GeneralSettings.exclude_subjects_ids:
+    if subject_id in settings.exclude_subjects_ids:
         raise AlreadyExcludedError("Subject ID '%d' is already excluded" % subject_id)
 
-    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded = list(settings.exclude_subjects_ids)
     all_excluded.append(subject_id)
     all_excluded = list(set(all_excluded))
     all_excluded.sort()
-    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
+    settings["exclude-subjects-ids"] = all_excluded
 
 
 def include(subject_id: int):
-    if subject_id not in GeneralSettings.exclude_subjects_ids:
+    if subject_id not in settings.exclude_subjects_ids:
         raise NotExcludedError("Subject ID '%d' is not excluded" % subject_id)
 
-    all_excluded = list(GeneralSettings.exclude_subjects_ids)
+    all_excluded = list(settings.exclude_subjects_ids)
     all_excluded.remove(subject_id)
     all_excluded = list(set(all_excluded))
     all_excluded.sort()
-    GeneralSettings.__setitem__("exclude-subjects-ids", all_excluded, force=True)
-
-
-class _CoreSettings(dict):
-    if os.environ.get("TESTING", False):
-        settings_path: Path = Path.home() / "test-vcm-settings.toml"
-        credentials_path: Path = Path.home() / "test-vcm-credentials.toml"
-    else:
-        settings_path: Path = Path.home() / "vcm-settings.toml"
-        credentials_path: Path = Path.home() / "vcm-credentials.toml"
-
-    def __init__(self):
-        super().__init__(
-            {
-                "settings_path": _CoreSettings.settings_path,
-                "credentials_path": _CoreSettings.credentials_path,
-            }
-        )
-
-
-CoreSettings = _CoreSettings()
+    settings["exclude-subjects-ids"] = all_excluded
 
 
 def create_default():
-    with CoreSettings.settings_path.open("wt") as file_handler:
-        toml.dump(defaults, file_handler)
+    raise NotImplementedError
 
 
-class MetaSettings(type):
-    require = []
+class Settings(dict, metaclass=MetaSingleton):
+    credentials_path = Path("~").expanduser() / "vcm-credentials.yaml"
+    settings_path = Path("~").expanduser() / "vcm-settings.yaml"
+    config = None
 
-    try:
-        with Path(CoreSettings.settings_path) as file_handler:
-            real_dict = toml.load(file_handler)
-    except FileNotFoundError:
-        create_default()
-        message = "Missing settings file, created sample (%s)"
-        handle_fatal_error_exit(message % CoreSettings.settings_path)
+    def exclude_subjects_ids_setter(self):
+        raise SettingsError("exclude-subjects-ids can't be set using the CLI.")
 
-    def __new__(mcs, name, bases, attrs, **kwargs):
-        lookup_name = name.lower().replace("_", "").replace("settings", "")
-        if "base" not in name.lower():
-            for arg in mcs.require:
-                if arg not in attrs:
-                    raise Exception("Expected %r to have %s attribute" % (name, arg))
+    def section_indexing_setter(self):
+        raise SettingsError("section-indexing can't be set using the CLI")
 
-            try:
-                attrs["def_dict"] = deepcopy(defaults)[lookup_name]
-                attrs["def_dict"].update(mcs.real_dict[lookup_name])
-                attrs["checkers_dict"] = checkers[lookup_name]
-                attrs["constructors"] = constructors[lookup_name]
-                attrs["setters"] = setters[lookup_name]
-            except KeyError as exc:
-                raise InvalidSettingsFileError(",".join(exc))
+    transforms = {
+        "email": str,
+        "exclude-subjects-ids": exclude_subjects_ids_setter,
+        "forum-subfolders": str2bool,
+        "http-status-port": int,
+        "http-status-tickrate": int,
+        "login-retries": int,
+        "logout-retries": int,
+        "max-logs": int,
+        "retries": int,
+        "root-folder": str,
+        "section-indexing": section_indexing_setter,
+        "secure-section-filename": str2bool,
+        "timeout": int,
+    }
 
-        return super().__new__(mcs, name, bases, attrs)
+    def __init__(self):
+        self.update_instance_config()
 
-    def __str__(cls, *args):
-        return cls().__str__()
+    @classmethod
+    def get_current_config(cls):
+        if not cls.settings_path.is_file():
+            cls.create_example()
+            return handle_fatal_error_exit("Settings file does not exist")
 
+        yaml = YAML(typ="safe")
+        return yaml.load(cls.settings_path.read_text())
 
-class BaseSettings(dict, metaclass=MetaSettings):
-    def __new__(cls):
-        self = super().__new__(cls)
-        self.__init__(cls.def_dict)
+    @classmethod
+    def create_example(cls):
+        yaml = YAML()
+        data = cls.get_defaults()
+        print(data)
+        with cls.settings_path.open("wt", encoding="utf-8") as file_handler:
+            yaml.dump(data, file_handler)
 
-        return self
-
-    def __getitem__(self, key):
-        key = self._parse_key(key)
-        if os.environ.get("VCM_DISABLE_CONSTRUCTS"):
-            return super().__getitem__(key)
-        return self.constructors[key](super().__getitem__(key))
-
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __setitem__(self, key, value, force=False):
-        # TODO: add support to check types like List[int]
-        key = self._parse_key(key)
-
-        # FIXME: think what to do with the check type call
-        # self.check_value_type(key, value)
-        try:
-            # FIXME: figure out what did force do
-            value = self.setters[key](value, force=force)
-        except Exception as exc:
-            if "'force'" not in exc.args[0]:
-                checker = self.checkers_dict[key]
-                raise TypeError(
-                    "Invalid value for %s.%s: %r [Checkers.%s]"
-                    % (self.__class__.__name__.strip("_"), key, value, checker.__name__)
-                )
-            value = self.setters[key](value)
-        super().__setitem__(key, value)
-        save_settings()
-
-    def check_value_type(self, key, value):
-        # TODO: add support to check types like List[int]
-
-        checker = self.checkers_dict[key]
-        result = checker(value)
-        if not result:
-            raise TypeError(
-                "Invalid value for %s.%s: %r [Checkers.%s]"
-                % (self.__class__.__name__.strip("_"), key, value, checker.__name__)
-            )
-        return True
+    @classmethod
+    def update_config(cls):
+        cls.config = cls.get_current_config()
 
     @staticmethod
-    def _parse_key(key: str):
-        return key.lower().replace("_", "-")
+    def get_defaults():
+        defaults_path = Path(__file__).with_name("defaults.json")
+        return json.loads(defaults_path.read_text())
 
+    def update_instance_config(self):
+        settings = self.get_defaults()
+        settings.update(self.config)
+        super().__init__(settings)
 
-class _GeneralSettings(BaseSettings):
+    def __setattr__(self, name: str, value) -> None:
+        value = self.transforms[name](value)
+
+        self.config[name] = value
+        self.update_instance_config()
+        save_settings()
+
+    def __setitem__(self, k, v) -> None:
+        self.__setattr__(k, v)
+
     @property
     def root_folder(self):
-        return self["root-folder"]
+        return Path(self["root-folder"])
 
     @property
     def logging_level(self) -> str:
@@ -279,8 +217,6 @@ class _GeneralSettings(BaseSettings):
         template = "https://campusvirtual.uva.es/course/view.php?id=%d"
         return [template % x for x in self.exclude_subjects_ids]
 
-
-class _DownloadSettings(BaseSettings):
     @property
     def forum_subfolders(self) -> bool:
         return self["forum-subfolders"]
@@ -298,47 +234,143 @@ class _DownloadSettings(BaseSettings):
     def secure_section_filename(self) -> bool:
         return self["secure-section-filename"]
 
-
-class _NotifySettings(BaseSettings):
     @property
     def email(self) -> str:
         return self["email"]
 
 
-GeneralSettings = _GeneralSettings()
-DownloadSettings = _DownloadSettings()
-NotifySettings = _NotifySettings()
-
-SETTINGS_CLASSES = ["general", "download", "notify"]
+Settings.update_config()
+settings = Settings()
 
 
-settings_name_to_class = {
-    "general": GeneralSettings,
-    "download": DownloadSettings,
-    "notify": NotifySettings,
-}
+class CheckSettings:
+    @classmethod
+    def check(cls):
+        for attribute in dir(cls):
+            if not attribute.startswith("check_"):
+                continue
+            check = getattr(cls, attribute)
+            check()
 
+    @classmethod
+    def check_root_folder(cls):
+        if not isinstance(settings["root-folder"], str):
+            raise TypeError("Setting root-folder must be str")
+        if not isinstance(settings.root_folder, Path):
+            raise TypeError("Wrapper of setting root-folder must return Path")
+        if settings["root-folder"] == "insert-root-folder":
+            raise ValueError("Must set root-folder setting")
+        settings.root_folder.mkdir(parents=True, exist_ok=True)
 
-def check_settings_type():
-    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
-    for settings_class in settings_name_to_class.values():
-        for setting in settings_class:
-            checker = settings_class.checkers_dict[setting]
-            result = checker(settings_class[setting])
+    @classmethod
+    def check_logging_level(cls):
+        from logging import _levelToName
 
-            if not result:
-                del os.environ["VCM_DISABLE_CONSTRUCTS"]
+        if settings.logging_level not in _levelToName.values():
+            raise TypeError(
+                "Setting logging-level must be one of %s" % _levelToName.values()
+            )
+
+    @classmethod
+    def check_timeout(cls):
+        return
+        if not isinstance(settings.timeout, int):
+            try:
+                timeout = int(settings.timeout)
+                settings.config["timeout"] = timeout
+            except ValueError:
+                raise TypeError("Setting timeout must be int")
+        if settings.timeout < 0:
+            raise ValueError("Setting timeout must be positive")
+
+    @classmethod
+    def check_general_retries(cls):
+        if not isinstance(settings.retries, int):
+            raise TypeError("Setting retries must be int")
+        if settings.retries < 0:
+            raise ValueError("Setting retries must be positive")
+
+    @classmethod
+    def check_login_retries(cls):
+        if not isinstance(settings.login_retries, int):
+            raise TypeError("Setting login-retries must be int")
+        if settings.login_retries < 0:
+            raise ValueError("Setting login-retries must be positive")
+
+    @classmethod
+    def check_logout_retries(cls):
+        if not isinstance(settings.logout_retries, int):
+            raise TypeError("Setting logout-retries must be int")
+        if settings.logout_retries < 0:
+            raise ValueError("Setting logout-retries must be positive")
+
+    @classmethod
+    def check_max_logs(cls):
+        if not isinstance(settings.max_logs, int):
+            raise TypeError("Setting max-logs must be int")
+        if settings.max_logs < 0:
+            raise ValueError("Setting max-logs must be positive")
+
+    @classmethod
+    def check_exclude_subjects_ids(cls):
+        if not isinstance(settings.exclude_subjects_ids, list):
+            raise TypeError("Setting exclude-subjects-ids must be list of integers")
+        for subject_id in settings.exclude_subjects_ids:
+            if not isinstance(subject_id, int):
                 raise TypeError(
-                    "Invalid value for %s.%s: %r [Checkers.%s]"
-                    % (
-                        settings_class.__class__.__name__.strip("_"),
-                        setting,
-                        settings_class[setting],
-                        checker.__name__,
-                    )
+                    "All elements of setting exclude-subjects-ids must be integers"
+                )
+            if subject_id < 0:
+                raise ValueError(
+                    "All elements of setting exclude-subjects-ids must be positive"
                 )
 
-    del os.environ["VCM_DISABLE_CONSTRUCTS"]
+    @classmethod
+    def check_http_status_port(cls):
+        if not isinstance(settings.http_status_port, int):
+            raise TypeError("Setting http-status-port must be int")
+        if settings.http_status_port < 0:
+            raise ValueError("Setting http-status-port must be positive")
+
+    @classmethod
+    def check_http_status_tickrate(cls):
+        if not isinstance(settings.http_status_tickrate, int):
+            raise TypeError("Setting http-status-tickrate must be int")
+        if settings.http_status_tickrate < 0:
+            raise ValueError("Setting http-status-tickrate must be positive")
+
+    @classmethod
+    def check_forum_subfolders(cls):
+        if not isinstance(settings.forum_subfolders, bool):
+            raise TypeError("Setting forum-subfolders must be a boolean")
+
+    @classmethod
+    def check_section_indexing_ids(cls):
+        if not isinstance(settings.section_indexing_ids, list):
+            raise TypeError("Setting section-indexing must be list of integers")
+        for subject_id in settings.section_indexing_ids:
+            if not isinstance(subject_id, int):
+                raise TypeError(
+                    "All elements of setting section-indexing must be integers"
+                )
+            if subject_id < 0:
+                raise ValueError(
+                    "All elements of setting section-indexing must be positive"
+                )
+
+    @classmethod
+    def check_secure_section_filename(cls):
+        if not isinstance(settings.secure_section_filename, bool):
+            raise TypeError("Setting secure-section-filename must be bool")
+
+    @classmethod
+    def check_email(cls):
+        if settings.email == "insert-email":
+            raise ValueError("Must set email setting")
+        if not isinstance(settings.email, str):
+            raise TypeError("Setting email must be str")
+        if not Patterns.EMAIL.search(settings.email):
+            raise ValueError("Setting email is not a valid email")
 
 
-check_settings_type()
+CheckSettings.check()

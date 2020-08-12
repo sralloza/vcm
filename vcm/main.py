@@ -4,17 +4,15 @@ from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
 from typing import NoReturn, Tuple
+
 from vcm.core.modules import Modules
 
 from . import __version__ as version
 from .core.settings import (
-    BaseSettings,
-    NotifySettings,
-    SETTINGS_CLASSES,
     exclude,
     include,
     section_index,
-    settings_name_to_class,
+    settings,
     settings_to_string,
     un_section_index,
 )
@@ -204,7 +202,7 @@ def execute_notify(opt):
     """
 
     return notify(
-        send_to=NotifySettings.email,
+        send_to=settings.email,
         use_icons=not opt.no_icons,
         nthreads=opt.nthreads,
         status_server=not opt.no_status_server,
@@ -270,45 +268,8 @@ class NonKeyBasedSettingsSubcommand:
     def keys(cls):
         """Prints the settings keys."""
         keys = []
-        for setting_class in settings_name_to_class:
-            for key in settings_name_to_class[setting_class].keys():
-                keys.append(" - " + setting_class + "." + key)
-
-        for key in keys:
-            print(key)
-
-
-def parse_settings_key(opt) -> Tuple[BaseSettings, str]:
-    """Validates a settings key and splits it into the settings class and the key itself.
-
-    Args:
-        opt (Namespace): namespace returned by parser.
-
-    Returns:
-        Tuple[BaseSettings, str]: settings class and key.
-    """
-
-    if opt.key.count(".") != 1:
-        return Parser.error("Invalid key (must be section.setting)")
-
-    # Now command can be show or set, both need to split the key
-    cls, key = opt.key.split(".")
-
-    try:
-        settings_class = settings_name_to_class[cls]
-    except KeyError:
-        return Parser.error(
-            "Invalid setting class: %r (valids are %r)" % (cls, SETTINGS_CLASSES)
-        )
-
-    if key not in settings_class:
-        message = "%r is not a valid %s setting (valids are %r)" % (
-            key,
-            cls,
-            list(settings_class.keys()),
-        )
-        return Parser.error(message)
-    return settings_class, key
+        for key in settings.keys():
+            print(" - " + key)
 
 
 def execute_settings(opt: Namespace):
@@ -325,12 +286,11 @@ def execute_settings(opt: Namespace):
         pass
 
     # Setting command needs the key
-    settings_class, key = parse_settings_key(opt)
 
     if opt.settings_subcommand == "set":
-        setattr(settings_class, key, opt.value)
+        setattr(settings, opt.key, opt.value)
     if opt.settings_subcommand == "show":
-        print("%s: %r" % (opt.key, getattr(settings_class, key)))
+        print("%s: %r" % (opt.key, getattr(settings, opt.key)))
 
 
 @safe_exit

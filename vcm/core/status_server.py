@@ -13,7 +13,7 @@ import waitress
 
 from vcm.core.utils import ErrorCounter
 
-from .settings import GeneralSettings
+from .settings import settings
 from .time_operations import seconds_to_str
 from .workers import Killer, ThreadStates, Worker, running, state_to_color
 
@@ -45,7 +45,7 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
     @app.route("/")
     def index():
-        updates_in_one_second = 1 / GeneralSettings.http_status_tickrate * 1000
+        updates_in_one_second = 1 / settings.http_status_tickrate * 1000
         a = f"<script>const updatesInOneSecond = {updates_in_one_second}</script>\n"
         a += '<script src="/backend.js"></script>'
         return a + '<p id="content">Here will be content</p>'
@@ -122,7 +122,7 @@ class HttpStatusServer(Thread):
         self.name = "http-status-server"
         self.app = app
         self.daemon = True
-        self.port = GeneralSettings.http_status_port
+        self.port = settings.http_status_port
         self.logger = getLogger(__name__)
 
     def real_run(self):

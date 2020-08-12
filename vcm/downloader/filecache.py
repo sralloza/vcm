@@ -3,13 +3,13 @@ import os
 from pathlib import Path
 
 from vcm.core.exceptions import FileCacheError
-from vcm.core.settings import GeneralSettings
+from vcm.core.settings import settings
 
 
 class FileCache:
     """File scanner to control file version."""
 
-    path = GeneralSettings.root_folder
+    path = settings.root_folder
 
     def __init__(self):
         self._cache = {}

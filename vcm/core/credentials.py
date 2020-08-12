@@ -1,7 +1,8 @@
 """Credentials manager for the web page of the University of Valladolid."""
-import toml
+from ruamel.yaml import YAML
+from ruamel.yaml.scanner import ScannerError
 
-from .settings import CoreSettings
+from .settings import settings
 from .utils import handle_fatal_error_exit
 
 
@@ -48,7 +49,7 @@ class VirtualCampusCredentials:
 class _Credentials:
     """Credentials manager."""
 
-    _path = CoreSettings.credentials_path
+    _path = settings.credentials_path
     VirtualCampus: VirtualCampusCredentials = None
     Email: EmailCredentials = None
 
@@ -65,18 +66,18 @@ class _Credentials:
         if not cls._path.exists():
             cls.make_default(reason="Credentials file does not exist")
 
+        yaml = YAML(typ="safe")
         with cls._path.open(encoding="utf-8") as pointer:
             try:
-                return toml.load(pointer)
-            except toml.TomlDecodeError:
-                return handle_fatal_error_exit("Invalid TOML file: %r" % cls._path)
+                return yaml.load(pointer)
+            except ScannerError:
+                return handle_fatal_error_exit("Invalid YAML file: %r" % cls._path.as_posix())
 
     def load(self):
         """Loads the credentials settings."""
         if not self._path.exists():
 
             self.make_example()
-            self.save()
             return handle_fatal_error_exit(
                 f"Credentials file not found, created sample ({self._path})"
             )
@@ -96,9 +97,9 @@ class _Credentials:
             "VirtualCampus": _Credentials.VirtualCampus.to_json(),
             "Email": _Credentials.Email.to_json(),
         }
-
+        yaml = YAML()
         with _Credentials._path.open("wt", encoding="utf-8") as file_handler:
-            toml.dump(data, file_handler)
+            yaml.dump(data, file_handler)
 
     @classmethod
     def make_example(cls):

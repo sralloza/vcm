@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from colorama import init as init_colorama
 
 from vcm.core.networking import Connection
-from vcm.core.settings import GeneralSettings
+from vcm.core.settings import settings
 from vcm.core.status_server import runserver
 from vcm.core.utils import timing
 from vcm.core.workers import start_workers
@@ -32,7 +32,7 @@ def get_subjects(queue):
         subject_url = "https://campusvirtual.uva.es/course/view.php?id=%d" % course_id
         name = re.search(r"^([\w\s]+?)\s?\(", li.text).group(1)
 
-        if course_id in GeneralSettings.exclude_subjects_ids:
+        if course_id in settings.exclude_subjects_ids:
             logger.info("Excluding subject %s (%d)", name, course_id)
             continue
 

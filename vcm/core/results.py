@@ -4,7 +4,7 @@ from threading import Lock
 
 from colorama import Fore
 
-from .settings import GeneralSettings
+from .settings import settings
 from .utils import Printer
 
 
@@ -14,7 +14,7 @@ class Results:
     print_lock = Lock()
 
     file_lock = Lock()
-    result_path = GeneralSettings.root_folder / "new-files.txt"
+    result_path = settings.root_folder / "new-files.txt"
 
     @staticmethod
     def print_updated(filepath):

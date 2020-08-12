@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
-from vcm.core.settings import GeneralSettings
+from vcm.core.settings import settings
 from vcm.core.utils import MetaSingleton
 
 
@@ -50,7 +50,7 @@ class Alias(metaclass=MetaSingleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
-        self.alias_path = GeneralSettings.root_folder / "alias.json"
+        self.alias_path = settings.root_folder / "alias.json"
         self.alias_entries = []
         self.load()
 
