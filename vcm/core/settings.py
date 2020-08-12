@@ -263,6 +263,12 @@ class CheckSettings:
         settings.root_folder.mkdir(parents=True, exist_ok=True)
 
     @classmethod
+    def check_logs_folder(cls):
+        if not isinstance(settings.logs_folder, Path):
+            raise TypeError("Wrapper of logs folder must return Path")
+        settings.logs_folder.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
     def check_logging_level(cls):
         from logging import _levelToName
 
