@@ -3,6 +3,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
+from functools import wraps
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -10,24 +11,30 @@ import pickle
 import re
 import sys
 from threading import Lock, current_thread
-import time
+from time import time
 from traceback import format_exc
 from typing import TypeVar, Union
+from warnings import warn
 from webbrowser import get as get_webbrowser
 
 from colorama import Fore
 from colorama import init as start_colorama
-from decorator import decorator
 from packaging import version
+from werkzeug.utils import (
+    _windows_device_files as WIN_DEVS,
+    secure_filename as _secure_filename,
+)
 
-from vcm.core.modules import Modules
-
+from .exceptions import FilenameWarning
+from .modules import Modules
 from .time_operations import seconds_to_str
 
 ExceptionClass = TypeVar("ExceptionClass")
 logger = logging.getLogger(__name__)
 start_colorama()
 
+
+_def = bytes(1)
 
 # TODO: remove class in future versions
 class MetaGetch(type):
@@ -166,53 +173,34 @@ class getch(metaclass=MetaGetch):
                 return msvcrt.getch()
 
 
-def secure_filename(filename, spaces=True):
-    if isinstance(filename, str):
-        from unicodedata import normalize
+def secure_filename(input_filename: str, spaces=True) -> str:
+    """Ensures that `input_filename` is a valid filename.
 
-        filename = normalize("NFKD", filename).encode("ascii", "ignore")
-        filename = filename.decode("ascii")
-    for sep in os.path.sep, os.path.altsep:
-        if sep:
-            filename = filename.replace(sep, " ")
+    Args:
+        filenainput_filenameme (str): filename to parse.
+        spaces (bool, optional): if False, all spaces are replaced with
+            underscores. Defaults to True.
 
-    _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
-    _windows_device_files = (
-        "CON",
-        "AUX",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "PRN",
-        "NUL",
-    )
+    Returns:
+        str: filename parsed.
+    """
 
-    temp_str = "_".join(filename.split())
-    filename = str(_filename_ascii_strip_re.sub("", temp_str)).strip("._")
+    filename = _secure_filename(input_filename)
+    if not spaces:
+        return filename
 
-    if spaces:
-        filename = " ".join(filename.split("_"))
+    spaced_filename = filename.replace("_", " ").strip()
+    if spaced_filename.split(".")[0].upper() in WIN_DEVS:
+        warn("Couldn't allow spaces parsing ", FilenameWarning)
+        return _secure_filename(filename)
 
-    if (
-        os.name == "nt"
-        and filename
-        and filename.split(".")[0].upper() in _windows_device_files
-    ):
-        filename = "_" + filename
-
-    return filename
+    return spaced_filename
 
 
 class Patterns:
     """Stores useful regex patterns for this application."""
 
-    FILENAME = re.compile(
-        r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
-    )
+    FILENAME = re.compile(r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?')
 
     # https://emailregex.com/
     EMAIL = re.compile(
@@ -253,70 +241,102 @@ def exception_exit(exception, to_stderr=True, red=True):
             raise_exception = True
 
     if raise_exception:
-        raise TypeError("exception should be a subclass of Exception")
+        raise TypeError("exception's class must be a subclass of Exception")
 
-    message = "%s: %s" % (
-        exception.__class__.__name__,
-        ", ".join((str(x) for x in exception.args)),
-    )
+    if not isinstance(exception, BaseException):
+        raise TypeError("exception must be an instance")
+
+    exc_str = ", ".join((str(x) for x in exception.args))
+    message = "%s: %s" % (exception.__class__.__name__, exc_str)
     message += "\n" + format_exc()
+
+    logger = logging.getLogger(__name__)
+    if Modules.current() != Modules.settings:
+        logger.error("Exception catched:\n%s", message)
 
     if red:
         message = Fore.LIGHTRED_EX + message + Fore.RESET
 
-    file = sys.stderr if to_stderr else sys.stdout
-    print(message, file=file)
+    if to_stderr:
+        print(message, file=sys.stderr)
+        sys.exit(-1)
 
-    return exit(-1)
+    print(message)
+    sys.exit(-1)
 
 
-@decorator
-def safe_exit(func, to_stderr=True, red=True, *args, **kwargs):
-    """Catches any exception raised and logs it. After logging it,
-    `exception_exit` handles the rest.
+def safe_exit(_func=_def, *, to_stderr=True, red=True):
+    """Catches any exception and prints the traceback. Designed to work
+    as a decorator.
+
+    Notes:
+        It doens't catch SystemExit exceptions.
 
     Args:
-        func (function): function to decorate. Usually given using
-            the `@safe_exit` decorator.
-        to_stderr (bool, optional): If True, the exception will be printed
-            in stderr instead of stdout. Defaults to True.
-        red (bool, optional): If True, the exception will be printed in
-            red color instead of the default. Defaults to True.
+        _func (function): function to control.
+        to_stderr (bool, optional): If true, the traceback will be printed
+            in sys.stderr, otherwise it will be printed in sys.stdout.
+            Defaults to True.
+        red (bool, optional): If true, the traceback will be printed in red.
+            Defaults to True.
     """
 
-    try:
-        return func(*args, **kwargs)
-    except Exception as exc:
-        if Modules.current() != Modules.settings:
-            logger.exception("Exception catched:")
-        return exception_exit(exc, to_stderr=to_stderr, red=red)
+    if _func is not _def and not callable(_func):
+        raise ValueError("Use keyword arguments in the safe_exit decorator")
+
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                return exception_exit(exc, to_stderr=to_stderr, red=red)
+
+        return inner_wrapper
+
+    if _func is _def:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
 
-@decorator
-def timing(func, name=None, level=None, *args, **kwargs):
-    level = level or logging.INFO
-    name = name or func.__name__
-    t0 = time.time()
-    result = None
+def timing(_func=_def, *, name=None, level=None, report=True):
+    if _func is not _def and not callable(_func):
+        raise ValueError("Use keyword arguments in the timing decorator")
 
-    logger.log(level, "Starting execution of %s", name)
+    def outer_wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            _name = name or func.__name__
+            _level = level or logging.INFO
+            t0 = time()
+            exception = None
+            result = None
 
-    try:
-        result = func(*args, **kwargs)
-    finally:
-        if ErrorCounter.has_errors():
-            logger.warning(ErrorCounter.report())
+            logger.log(_level, "Starting execution of %r", _name)
+            try:
+                result = func(*args, **kwargs)
+            except SystemExit as exc:
+                exception = exc
+            except Exception as exc:
+                exception = exc
+            finally:
+                if report and ErrorCounter.has_errors():
+                    logger.warning(ErrorCounter.report())
 
-        delta_t = time.time() - t0
-        logger.log(level, "%s executed in %s", name, seconds_to_str(delta_t))
+            eta = seconds_to_str(time() - t0)  # elapsed time
+            logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
-        is_exception = sys.exc_info()[0] is not None
-        if not is_exception:
+            if exception:
+                raise exception
             return result
 
+        return inner_wrapper
 
-_true_set = {"yes", "true", "t", "y", "1", "sí", "si", "s"}
-_false_set = {"no", "false", "f", "n", "0"}
+    if _func is _def:
+        return outer_wrapper
+    else:
+        return outer_wrapper(_func)
 
 
 def str2bool(value):
@@ -332,6 +352,10 @@ def str2bool(value):
     Returns:
         str: lowercase string.
     """
+
+    _true_set = {"yes", "true", "t", "y", "1", "s", "si", "sí"}
+    _false_set = {"no", "false", "f", "n", "0"}
+
     if value in (True, False):
         return value
 
@@ -347,17 +371,17 @@ def str2bool(value):
 
 
 def configure_logging():
-    from .settings import GeneralSettings
+    from .settings import settings
 
-    if os.environ.get("TESTING") is None:
-        should_roll_over = GeneralSettings.log_path.exists()
+    if not os.environ.get("TESTING", False):
+        should_roll_over = settings.log_path.exists()
 
         fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
         handler = RotatingFileHandler(
-            filename=GeneralSettings.log_path,
+            filename=settings.log_path,
             maxBytes=2_500_000,
             encoding="utf-8",
-            backupCount=GeneralSettings.max_logs,
+            backupCount=settings.max_logs,
         )
 
         current_thread().setName("MT")
@@ -366,33 +390,13 @@ def configure_logging():
             handler.doRollover()
 
         logging.basicConfig(
-            handlers=[handler], level=GeneralSettings.logging_level, format=fmt
+            handlers=[handler], level=settings.logging_level, format=fmt
         )
 
     logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 
-def more_settings_check():
-    from ._settings import defaults
-    from .settings import GeneralSettings, NotifySettings
-
-    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
-    if GeneralSettings.root_folder == defaults["general"]["root-folder"]:
-        raise Exception("Must set 'general.root-folder'")
-
-    if NotifySettings.email == defaults["notify"]["email"]:
-        raise Exception("Must set 'notify.email'")
-
-    del os.environ["VCM_DISABLE_CONSTRUCTS"]
-
-    # Setup
-
-    os.makedirs(GeneralSettings.root_folder, exist_ok=True)
-    os.makedirs(GeneralSettings.logs_folder, exist_ok=True)
-
-
 def setup_vcm():
-    more_settings_check()
     configure_logging()
 
 
@@ -410,7 +414,7 @@ class Printer:
 
     @classmethod
     def useless(cls, *args, **kwargs):
-        pass
+        """Useless function used to avoid call to print."""
 
     @classmethod
     def print(cls, *args, **kwargs):
@@ -437,19 +441,27 @@ def check_updates():
         )
         return True
 
-    Printer.print("No updates available (current version: %s)" % current_version)
+    Printer.print(
+        "No updates available (current version: %s, last version: %s)"
+        % (current_version, newer_version)
+    )
     return False
 
 
 class MetaSingleton(type):
     """Metaclass to always make class return the same instance."""
 
-    _instances = {}
+    def __init__(cls, name, bases, attrs):
+        super(MetaSingleton, cls).__init__(name, bases, attrs)
+        cls._instance = None
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(MetaSingleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+        if cls._instance is None:
+            cls._instance = super(MetaSingleton, cls).__call__(*args, **kwargs)
+
+        # Uncomment line to check possible singleton errors
+        # logger.info("Requested Connection (id=%d)", id(cls._instance))
+        return cls._instance
 
 
 class ErrorCounter:

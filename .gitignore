@@ -18,7 +18,7 @@ dist/
 *.ini
 *.ini
 
-TODO.MD
+*.egg-info/
 
 .coverage
 htmlcov/

@@ -1,13 +1,15 @@
 from collections import defaultdict
+from copy import deepcopy
 import logging
 import os
-from copy import Error, deepcopy
 from unittest import mock
-from requests.exceptions import ConnectionError, ProxyError
-import pytest
+
 from colorama.ansi import Fore
+import pytest
+from requests.exceptions import ConnectionError, ProxyError
 
 import vcm
+from vcm.core.exceptions import FilenameWarning
 from vcm.core.utils import (
     ErrorCounter,
     Key,
@@ -18,7 +20,7 @@ from vcm.core.utils import (
     configure_logging,
     exception_exit,
     handle_fatal_error_exit,
-    more_settings_check,
+    more_settings_check, open_http_status_server,
     safe_exit,
     save_crash_context,
     secure_filename,
@@ -122,13 +124,16 @@ class TestSecureFilename:
 
     @mock.patch("os.name", "nt")
     def test_windows_special_names(self):
-        assert secure_filename("aux", spaces=True) == "_aux"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("aux", spaces=True) == "_aux"
         assert secure_filename("aux", spaces=False) == "_aux"
 
-        assert secure_filename("con", spaces=True) == "_con"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("con", spaces=True) == "_con"
         assert secure_filename("con", spaces=False) == "_con"
 
-        assert secure_filename("com2", spaces=True) == "_com2"
+        with pytest.warns(FilenameWarning, match="Couldn't allow spaces"):
+            assert secure_filename("com2", spaces=True) == "_com2"
         assert secure_filename("com2", spaces=False) == "_com2"
 
 
@@ -173,16 +178,16 @@ class TestPatterns:
 
 class TestExceptionExit:
     exceptions = (
-        (ValueError, "Invalid path", True),
-        (TypeError, ("Invalid type", "Expected int"), True),
-        (ImportError, "Module not found: math", True),
-        (SystemExit, "exit program", False),
+        (ValueError, "Invalid path"),
+        (TypeError, ("Invalid type", "Expected int")),
+        (ImportError, "Module not found: math"),
+        (SystemExit, "exit program"),
     )
 
     @pytest.mark.parametrize("red", [True, False])
     @pytest.mark.parametrize("to_stderr", [True, False])
-    @pytest.mark.parametrize("exception, args, should_exit", exceptions)
-    def test_ok(self, exception, args, should_exit, to_stderr, red, capsys):
+    @pytest.mark.parametrize("exception, args", exceptions)
+    def test_ok(self, exception, args, to_stderr, red, capsys):
         if not isinstance(args, str):
             message = ", ".join(args)
         else:
@@ -214,17 +219,22 @@ class TestExceptionExit:
                 assert Fore.RESET not in captured.out
 
     def test_error_1(self):
-        match = "exception should be a subclass of Exception"
+        match = "exception's class must be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
             exception_exit("hi")
 
     def test_error_2(self):
         class Dummy:
-            pass
+            """Dummy class."""
 
-        match = "exception should be a subclass of Exception"
+        match = "exception's class must be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
             exception_exit(Dummy)
+
+    def test_error_3(self):
+        match = "exception must be an instance"
+        with pytest.raises(TypeError, match=match):
+            exception_exit(TypeError)
 
 
 class TestSafeExit:
@@ -241,7 +251,7 @@ class TestSafeExit:
         return request.param
 
     @mock.patch("vcm.core.utils.exception_exit")
-    def test_safe_exit(self, ee_m, red, to_stderr, exception):
+    def test_decorate_called(self, ee_m, red, to_stderr, exception):
         exc = exception()
         is_system_exit = isinstance(exc, SystemExit)
 
@@ -254,18 +264,47 @@ class TestSafeExit:
                 custom_function()
         else:
             custom_function()
-
             ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
+
+    @mock.patch("vcm.core.utils.exception_exit")
+    def test_decorate_not_called(self, ee_m, exception):
+        exc = exception()
+        is_system_exit = isinstance(exc, SystemExit)
+
+        # Defaults: to_stder=True, red=True
+        @safe_exit
+        def custom_function():
+            raise exc
+
+        if is_system_exit:
+            with pytest.raises(SystemExit):
+                custom_function()
+        else:
+            custom_function()
+            ee_m.assert_called_with(exc, to_stderr=True, red=True)
+
+    @mock.patch("vcm.core.utils.exception_exit")
+    def test_decorate_called_mixed_args(self, ee_m, to_stderr, red):
+        msg = "Use keyword arguments in the safe_exit decorator"
+        with pytest.raises(ValueError, match=msg):
+
+            @safe_exit(to_stderr, red=red)
+            def custom_function():
+                """Dummy function."""
+
+        ee_m.assert_not_called()
+        with pytest.raises(UnboundLocalError):
+            custom_function()
 
 
 class TestTiming:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        time_m = mock.patch("vcm.core.utils.time").start()
-        sts_m = mock.patch("vcm.core.utils.seconds_to_str").start()
-        err_counter_m = mock.patch("vcm.core.utils.ErrorCounter").start()
+        self.time_m = mock.patch("vcm.core.utils.time").start()
+        self.sts_m = mock.patch("vcm.core.utils.seconds_to_str").start()
+        self.err_counter_m = mock.patch("vcm.core.utils.ErrorCounter").start()
 
-        yield time_m, sts_m, err_counter_m
+        yield
 
         mock.patch.stopall()
 
@@ -281,20 +320,19 @@ class TestTiming:
     def errors(self, request):
         return request.param
 
-    def test_ok(self, mocks, caplog, name, level, errors):
+    def test_ok(self, caplog, name, level, errors):
         @timing(name=name, level=level)
         def custom_function(arg1="arg1"):
             return arg1
 
-        time_m, sts_m, err_counter_m = mocks
-        time_m.side_effect = [0, 30]
-        sts_m.return_value = "30 seconds"
+        self.time_m.side_effect = [0, 30]
+        self.sts_m.return_value = "30 seconds"
 
-        err_counter_m.report.return_value = "<error-report>"
+        self.err_counter_m.report.return_value = "<error-report>"
         if errors:
-            err_counter_m.has_errors.return_value = True
+            self.err_counter_m.has_errors.return_value = True
         else:
-            err_counter_m.has_errors.return_value = False
+            self.err_counter_m.has_errors.return_value = False
 
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
@@ -302,10 +340,10 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+        log_str = "%r executed in %s [%s]" % (log_name, self.sts_m.return_value, 25)
 
         expected_log_tuples = [
-            ("vcm.core.utils", log_level, f"Starting execution of {log_name}"),
+            ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
             ("vcm.core.utils", 30, "<error-report>"),
             ("vcm.core.utils", log_level, log_str),
         ]
@@ -319,20 +357,19 @@ class TestTiming:
     def exception(self, request):
         return request.param
 
-    def test_exception(self, mocks, caplog, name, level, exception, errors):
+    def test_exception(self, caplog, name, level, exception, errors):
         @timing(name=name, level=level)
         def custom_function(arg1="arg1"):
             raise exception(arg1)
 
-        time_m, sts_m, err_counter_m = mocks
-        time_m.side_effect = [0, 30]
-        sts_m.return_value = "30 seconds"
+        self.time_m.side_effect = [0, 30]
+        self.sts_m.return_value = "30 seconds"
 
-        err_counter_m.report.return_value = "<error-report>"
+        self.err_counter_m.report.return_value = "<error-report>"
         if errors:
-            err_counter_m.has_errors.return_value = True
+            self.err_counter_m.has_errors.return_value = True
         else:
-            err_counter_m.has_errors.return_value = False
+            self.err_counter_m.has_errors.return_value = False
 
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
@@ -341,10 +378,10 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%s executed in %s" % (log_name, sts_m.return_value)
+        log_str = "%r executed in %s [%s]" % (log_name, self.sts_m.return_value, None)
 
         expected_log_tuples = [
-            ("vcm.core.utils", log_level, f"Starting execution of {log_name}"),
+            ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
             ("vcm.core.utils", 30, "<error-report>"),
             ("vcm.core.utils", log_level, log_str),
         ]
@@ -353,6 +390,25 @@ class TestTiming:
             expected_log_tuples.pop(1)
 
         assert caplog.record_tuples == expected_log_tuples
+
+    def test_decorate_not_called(self, name, level):
+        # Defaults: name=None, level=None
+        @timing
+        def custom_function():
+            """Dummy function."""
+
+        custom_function()
+
+    def test_decorate_called_mixed_args(self, name, level):
+        msg = "Use keyword arguments in the timing decorator"
+        with pytest.raises(ValueError, match=msg):
+
+            @timing(name, level=level)
+            def custom_function():
+                """Dummy function."""
+
+        with pytest.raises(UnboundLocalError):
+            custom_function()
 
 
 class TestStr2Bool:
@@ -406,68 +462,67 @@ class TestStr2Bool:
 
 
 class TestConfigureLogging:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        lpe_m = gs_m.log_path.exists
-        ct_m = mock.patch("vcm.core.utils.current_thread").start()
-        rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
-        lbc_m = mock.patch("logging.basicConfig").start()
-        lgl_m = mock.patch("logging.getLogger").start()
+        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.lpe_m = self.gs_m.log_path.exists
+        self.ct_m = mock.patch("vcm.core.utils.current_thread").start()
+        self.rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
+        self.lbc_m = mock.patch("logging.basicConfig").start()
+        self.lgl_m = mock.patch("logging.getLogger").start()
 
-        yield gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m
+        yield
 
         mock.patch.stopall()
 
     @pytest.mark.parametrize("do_roll", [True, False])
-    def test_testing_none(self, mocks, do_roll):
+    def test_testing_none(self, do_roll):
         if os.environ.get("TESTING"):
             del os.environ["TESTING"]
-        gs_m, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
-        lpe_m.return_value = do_roll
+
+        self.lpe_m.return_value = do_roll
 
         fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
         configure_logging()
 
-        rfh_m.assert_called_once_with(
-            filename=gs_m.log_path,
+        self.rfh_m.assert_called_once_with(
+            filename=self.gs_m.log_path,
             maxBytes=2500000,
             encoding="utf-8",
-            backupCount=gs_m.max_logs,
+            backupCount=self.gs_m.max_logs,
         )
-        handler = rfh_m.return_value
+        handler = self.rfh_m.return_value
 
-        ct_m.return_value.setName.assert_called_with("MT")
+        self.ct_m.return_value.setName.assert_called_with("MT")
 
         if do_roll:
             handler.doRollover.assert_called_once()
         else:
             handler.doRollover.assert_not_called()
 
-        lbc_m.assert_called_once_with(
-            handlers=[handler], level=gs_m.logging_level, format=fmt
+        self.lbc_m.assert_called_once_with(
+            handlers=[handler], level=self.gs_m.logging_level, format=fmt
         )
-        lgl_m.assert_called_with("urllib3")
-        lgl_m.return_value.setLevel.assert_called_once_with(40)
+        self.lgl_m.assert_called_with("urllib3")
+        self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
     @pytest.mark.parametrize("do_roll", [True, False])
-    def test_testing_true(self, mocks, do_roll):
+    def test_testing_true(self, do_roll):
         os.environ["TESTING"] = "True"
-        _, lpe_m, ct_m, rfh_m, lbc_m, lgl_m = mocks
-        lpe_m.return_value = do_roll
+        self.lpe_m.return_value = do_roll
 
         configure_logging()
 
-        rfh_m.assert_not_called()
-        handler = rfh_m.return_value
+        self.rfh_m.assert_not_called()
+        handler = self.rfh_m.return_value
 
-        ct_m.return_value.setName.assert_not_called()
+        self.ct_m.return_value.setName.assert_not_called()
 
         handler.doRollover.assert_not_called()
 
-        lbc_m.assert_not_called()
-        lgl_m.assert_called_with("urllib3")
-        lgl_m.return_value.setLevel.assert_called_once_with(40)
+        self.lbc_m.assert_not_called()
+        self.lgl_m.assert_called_with("urllib3")
+        self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
 class TestMoreSettingsCheck:
@@ -484,61 +539,52 @@ class TestMoreSettingsCheck:
             "notify": {"email": cls.default_email},
         }
 
-    @pytest.fixture(scope="function", autouse=True)
-    def ensure_default_environ(self):
-        # assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
-        yield
-        # assert not os.environ.get("VCM_DISABLE_CONSTRUCTS")
-
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
-        ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
+        self.gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
         mock.patch("vcm.core._settings.defaults", self.defaults).start()
-        mkdirs_mock = mock.patch("os.makedirs").start()
+        self.mkdirs_mock = mock.patch("os.makedirs").start()
 
-        gs_mock.root_folder = self.no_default_root_folder
-        ns_mock.email = self.no_default_email
+        self.gs_mock.root_folder = self.no_default_root_folder
+        self.ns_mock.email = self.no_default_email
 
-        yield gs_mock, ns_mock, mkdirs_mock
+        yield
+
         mock.patch.stopall()
 
-    def test_ok(self, mocks):
-        gs_mock, _, mkdirs_mock = mocks
+    def test_ok(self):
         more_settings_check()
 
-        mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
-        mkdirs_mock.assert_any_call(gs_mock.logs_folder, exist_ok=True)
-        assert mkdirs_mock.call_count == 2
+        self.mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
+        self.mkdirs_mock.assert_any_call(self.gs_mock.logs_folder, exist_ok=True)
+        assert self.mkdirs_mock.call_count == 2
 
-    def test_default_root_folder(self, mocks):
-        gs_mock, _, mkdirs_mock = mocks
-        gs_mock.root_folder = self.default_root_folder
+    def test_default_root_folder(self):
+        self.gs_mock.root_folder = self.default_root_folder
 
         with pytest.raises(Exception, match="Must set 'general.root-folder'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
-    def test_default_email(self, mocks):
-        _, ns_mock, mkdirs_mock = mocks
-        ns_mock.email = self.default_email
+    def test_default_email(self):
+        self.ns_mock.email = self.default_email
 
         with pytest.raises(Exception, match="Must set 'notify.email'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
-    def test_default_root_folder_and_email(self, mocks):
-        gs_mock, ns_mock, mkdirs_mock = mocks
-        gs_mock.root_folder = self.default_root_folder
-        ns_mock.email = self.default_email
+    def test_default_root_folder_and_email(self):
+        self.gs_mock.root_folder = self.default_root_folder
+        self.ns_mock.email = self.default_email
 
         with pytest.raises(Exception, match="Must set 'general.root-folder'"):
             more_settings_check()
 
-        mkdirs_mock.assert_not_called()
+        self.mkdirs_mock.assert_not_called()
 
 
 @mock.patch("vcm.core.utils.configure_logging")
@@ -596,7 +642,6 @@ class TestPrinter:
         assert captured.out == ""
 
 
-@pytest.mark.skip
 class TestCheckUpdates:
     version_data = (
         ("3.0.1", "3.0.2", True),
@@ -608,30 +653,34 @@ class TestCheckUpdates:
 
     version_data = version_data + tuple([[x[1], x[0], False] for x in version_data])
 
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        con_mock = mock.patch("vcm.core.networking.connection").start()
-        print_mock = mock.patch("vcm.core.utils.Printer.print").start()
+        self.con_m = mock.patch("vcm.core.networking.connection").start()
+        self.print_m = mock.patch("vcm.core.utils.Printer.print").start()
 
-        yield con_mock, print_mock
+        yield
 
         mock.patch.stopall()
 
     @pytest.mark.parametrize("version1, version2, new_update", version_data)
-    def test_check_updates(self, mocks, version1, version2, new_update):
-        con_mock, print_mock = mocks
-
+    def test_check_updates(self, version1, version2, new_update):
         response_mock = mock.MagicMock()
-        response_mock.text = version2
-        con_mock.get.return_value = response_mock
+        response_mock.json.return_value = [
+            {"name": version2},
+        ]
+        self.con_m.get.return_value = response_mock
 
         vcm.__version__ = version1
 
         result = check_updates()
 
         assert result == new_update
-        print_mock.assert_called_once()
+        self.print_m.assert_called_once()
 
+        if new_update:
+            assert "Newer version available" in self.print_m.call_args[0][0]
+        else:
+            assert "No updates available" in self.print_m.call_args[0][0]
 
 class TestMetaSingleton:
     def test_one_class(self):
@@ -743,27 +792,27 @@ class TestErrorCounter:
 
     def test_report(self):
         dict1 = {TypeError: 2, ProxyError: 3, ValueError: 1}
-        ErrorCounter.error_map = defaultdict(lambda: 0, dict1)
+        ErrorCounter.error_map = defaultdict(int, dict1)
         expected = "6 errors found (ProxyError: 3, TypeError: 2, ValueError: 1)"
         assert ErrorCounter.report() == expected
 
         dict2 = {ZeroDivisionError: 0, TypeError: 2, ProxyError: 3, ValueError: 5}
-        ErrorCounter.error_map = defaultdict(lambda: 0, dict2)
+        ErrorCounter.error_map = defaultdict(int, dict2)
         expected = "10 errors found (ValueError: 5, ProxyError: 3, TypeError: 2)"
         assert ErrorCounter.report() == expected
 
 
 class TestSaveCrashContent:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mocks(self):
-        gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        dt_m = mock.patch("vcm.core.utils.datetime").start()
-        dt_m.now.return_value.strftime.return_value = "<current datetime>"
-        pkl_m = mock.patch("pickle.dumps").start()
-        dcpy_m = mock.patch("vcm.core.utils.deepcopy").start()
-        dcpy_m.side_effect = lambda x: x
+        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.dt_m = mock.patch("vcm.core.utils.datetime").start()
+        self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
+        self.pkl_m = mock.patch("pickle.dumps").start()
+        self.dcpy_m = mock.patch("vcm.core.utils.deepcopy").start()
+        self.dcpy_m.side_effect = lambda x: x
 
-        yield gs_m, dt_m, pkl_m, dcpy_m
+        yield
 
         mock.patch.stopall()
 
@@ -788,9 +837,8 @@ class TestSaveCrashContent:
     def reason(self, request):
         return request.param
 
-    def test_save_crash_context(self, mocks, exists, crash_object, reason):
-        gs_m, dt_m, pkl_m, dcpy_m = mocks
-        crash_path = gs_m.root_folder.joinpath.return_value
+    def test_save_crash_context(self, exists, crash_object, reason):
+        crash_path = self.gs_m.root_folder.joinpath.return_value
         crash_path.exists.return_value = bool(exists)
         new_path = crash_path.with_name.return_value
         new_path.exists.side_effect = [True] * (exists - 1) + [False]
@@ -804,31 +852,31 @@ class TestSaveCrashContent:
             crash_path.with_name.assert_not_called()
 
         crash_name = "<object_name>.<current datetime>.pkl"
-        gs_m.root_folder.joinpath.assert_called_with(crash_name)
-        dt_m.now.assert_called_once_with()
-        dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
+        self.gs_m.root_folder.joinpath.assert_called_with(crash_name)
+        self.dt_m.now.assert_called_once_with()
+        self.dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
 
-        crash_object_saved = pkl_m.call_args[0][0]
+        crash_object_saved = self.pkl_m.call_args[0][0]
         if reason:
             if not isinstance(crash_object, str):
                 crash_object.vcm_reason = "<reason>"
                 assert crash_object_saved == crash_object
-                dcpy_m.assert_called_once_with(crash_object)
+                self.dcpy_m.assert_called_once_with(crash_object)
             else:
                 assert crash_object_saved == {
                     "real_object": crash_object,
                     "vcm_crash_reason": reason,
                 }
                 assert crash_object_saved["real_object"] == crash_object
-                dcpy_m.assert_called_once_with(crash_object)
+                self.dcpy_m.assert_called_once_with(crash_object)
         else:
             assert crash_object_saved == crash_object
-            dcpy_m.assert_called_once_with(crash_object)
+            self.dcpy_m.assert_called_once_with(crash_object)
 
         if not exists:
-            crash_path.write_bytes.assert_called_once_with(pkl_m.return_value)
+            crash_path.write_bytes.assert_called_once_with(self.pkl_m.return_value)
         else:
-            new_path.write_bytes.assert_called_once_with(pkl_m.return_value)
+            new_path.write_bytes.assert_called_once_with(self.pkl_m.return_value)
 
 
 @pytest.mark.parametrize("message", ("error", "real error", 4532))
@@ -841,3 +889,17 @@ def test_handle_fatal_error_exit(capsys, message, exit_code):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err.strip() == real_message
+
+@mock.patch("vcm.core.settings.GeneralSettings")
+@mock.patch("vcm.core.utils.Printer.print")
+@mock.patch("vcm.core.utils.get_webbrowser")
+def test_open_http_status_server(browser_m, print_m, gen_settings_m):
+    gen_settings_m.http_status_port = "<http-port>"
+    open_http_status_server()
+
+    print_m.assert_called_once_with("Opening state server")
+    browser_m.assert_called_once()
+    open_m = browser_m.return_value.open_new
+    open_m.assert_called_once()
+    assert "--new-window" in open_m.call_args[0][0]
+    assert "http://localhost:<http-port>" in open_m.call_args[0][0]

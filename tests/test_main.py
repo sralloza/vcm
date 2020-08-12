@@ -397,6 +397,7 @@ class TestParseArgs:
 
 
 def test_parser_error(capsys):
+    Parser.init_parser()
     with pytest.raises(SystemExit, match="2"):
         Parser.error("custom error")
 

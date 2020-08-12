@@ -10,6 +10,7 @@ from vcm.core.exceptions import (
     CredentialError,
     DownloaderError,
     FileCacheError,
+    FilenameWarning,
     IdError,
     InvalidLanguageError,
     InvalidSettingsFileError,
@@ -283,3 +284,14 @@ class TestUnkownIconWarning:
     def test_warn(self):
         with pytest.warns(UnkownIconWarning):
             warnings.warn("message", UnkownIconWarning)
+
+
+class TestFilenameWarning:
+    def test_inheritance(self):
+        warn = FilenameWarning()
+        assert isinstance(warn, FilenameWarning)
+        assert isinstance(warn, VcmWarning)
+
+    def test_warn(self):
+        with pytest.warns(FilenameWarning):
+            warnings.warn("message", FilenameWarning)
