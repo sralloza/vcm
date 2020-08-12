@@ -1,5 +1,6 @@
 """Exceptions and warnings for the VCM application."""
 
+
 class VcmError(Exception):
     """Vcm error."""
 
