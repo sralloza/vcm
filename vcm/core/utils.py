@@ -557,9 +557,9 @@ def open_http_status_server():
     chrome windows.
     """
 
-    from .settings import GeneralSettings
+    from .settings import settings
 
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
-    args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+    args = f'--new-window "http://localhost:{settings.http_status_port}"'
     get_webbrowser(chrome_path).open_new(args)
