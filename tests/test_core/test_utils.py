@@ -626,7 +626,6 @@ class TestPrinter:
         assert captured.out == ""
 
 
-@pytest.mark.skip
 class TestCheckUpdates:
     version_data = (
         ("3.0.1", "3.0.2", True),
@@ -640,8 +639,8 @@ class TestCheckUpdates:
 
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.con_mock = mock.patch("vcm.core.networking.connection").start()
-        self.print_mock = mock.patch("vcm.core.utils.Printer.print").start()
+        self.con_m = mock.patch("vcm.core.networking.connection").start()
+        self.print_m = mock.patch("vcm.core.utils.Printer.print").start()
 
         yield
 
@@ -650,16 +649,22 @@ class TestCheckUpdates:
     @pytest.mark.parametrize("version1, version2, new_update", version_data)
     def test_check_updates(self, version1, version2, new_update):
         response_mock = mock.MagicMock()
-        response_mock.text = version2
-        self.con_mock.get.return_value = response_mock
+        response_mock.json.return_value = [
+            {"name": version2},
+        ]
+        self.con_m.get.return_value = response_mock
 
         vcm.__version__ = version1
 
         result = check_updates()
 
         assert result == new_update
-        self.print_mock.assert_called_once()
+        self.print_m.assert_called_once()
 
+        if new_update:
+            assert "Newer version available" in self.print_m.call_args[0][0]
+        else:
+            assert "No updates available" in self.print_m.call_args[0][0]
 
 class TestMetaSingleton:
     def test_one_class(self):

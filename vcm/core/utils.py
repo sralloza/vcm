@@ -449,7 +449,10 @@ def check_updates():
         )
         return True
 
-    Printer.print("No updates available (current version: %s)" % current_version)
+    Printer.print(
+        "No updates available (current version: %s, last version: %s)"
+        % (current_version, newer_version)
+    )
     return False
 
 
