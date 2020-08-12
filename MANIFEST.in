@@ -1,2 +1,4 @@
 include versioneer.py
 include vcm/_version.py
+include vcm/core/defaults.json
+include vcm/core/http-status-server.js
