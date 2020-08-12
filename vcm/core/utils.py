@@ -417,16 +417,12 @@ class Printer:
         cls._print = print
 
     @classmethod
-    def reset(cls):
-        cls._print = print
-
-    @classmethod
     def silence(cls):
         cls._print = cls.useless
 
     @classmethod
     def useless(cls, *args, **kwargs):
-        pass
+        """Useless function used to avoid call to print."""
 
     @classmethod
     def print(cls, *args, **kwargs):
@@ -435,10 +431,6 @@ class Printer:
 
         with cls._lock:
             return cls._print(*args, **kwargs)
-
-    @classmethod
-    def useless(cls, *args, **kwargs):
-        pass
 
 
 def check_updates():

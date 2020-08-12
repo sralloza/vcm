@@ -209,7 +209,7 @@ class TestExceptionExit:
 
     def test_error_2(self):
         class Dummy:
-            pass
+            """Dummy class."""
 
         match = "exception's class must be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
@@ -274,7 +274,7 @@ class TestSafeExit:
 
             @safe_exit(to_stderr, red=red)
             def custom_function():
-                pass
+                """Dummy function."""
 
         ee_m.assert_not_called()
         with pytest.raises(UnboundLocalError):
@@ -379,7 +379,7 @@ class TestTiming:
         # Defaults: name=None, level=None
         @timing
         def custom_function():
-            pass
+            """Dummy function."""
 
         custom_function()
 
@@ -389,7 +389,7 @@ class TestTiming:
 
             @timing(name, level=level)
             def custom_function():
-                pass
+                """Dummy function."""
 
         with pytest.raises(UnboundLocalError):
             custom_function()
