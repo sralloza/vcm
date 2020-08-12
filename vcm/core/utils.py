@@ -205,12 +205,12 @@ class Patterns:
     # https://emailregex.com/
     EMAIL = re.compile(
         r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\""
-        "(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b"
-        '\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]('
-        "?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\."
-        "){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01"
-        "-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f"
-        "])+)\])"
+        r"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b"
+        r'\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]('
+        r"?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\."
+        r"){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01"
+        r"-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f"
+        r"])+)\])"
     )
 
 
@@ -507,12 +507,12 @@ def save_crash_context(crash_object, object_name, reason=None):
         reason (str, optional): reason of the crash. Defaults to None.
     """
 
-    from .settings import GeneralSettings
+    from .settings import settings
 
     now = datetime.now()
     index = 0
     while True:
-        crash_path = GeneralSettings.root_folder.joinpath(
+        crash_path = settings.root_folder.joinpath(
             object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
         )
         if index:

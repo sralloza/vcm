@@ -20,7 +20,7 @@ from vcm.core.utils import (
     configure_logging,
     exception_exit,
     handle_fatal_error_exit,
-    more_settings_check, open_http_status_server,
+    open_http_status_server,
     safe_exit,
     save_crash_context,
     secure_filename,
@@ -525,68 +525,6 @@ class TestConfigureLogging:
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
-class TestMoreSettingsCheck:
-    @classmethod
-    def setup_class(cls):
-        cls.default_root_folder = "<default-root-folder>"
-        cls.no_default_root_folder = "<no-default-root-folder>"
-
-        cls.default_email = "<default-email>"
-        cls.no_default_email = "<no-default-email>"
-
-        cls.defaults = {
-            "general": {"root-folder": cls.default_root_folder},
-            "notify": {"email": cls.default_email},
-        }
-
-    @pytest.fixture(autouse=True)
-    def mocks(self):
-        self.gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
-        self.ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
-        mock.patch("vcm.core._settings.defaults", self.defaults).start()
-        self.mkdirs_mock = mock.patch("os.makedirs").start()
-
-        self.gs_mock.root_folder = self.no_default_root_folder
-        self.ns_mock.email = self.no_default_email
-
-        yield
-
-        mock.patch.stopall()
-
-    def test_ok(self):
-        more_settings_check()
-
-        self.mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
-        self.mkdirs_mock.assert_any_call(self.gs_mock.logs_folder, exist_ok=True)
-        assert self.mkdirs_mock.call_count == 2
-
-    def test_default_root_folder(self):
-        self.gs_mock.root_folder = self.default_root_folder
-
-        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-
-    def test_default_email(self):
-        self.ns_mock.email = self.default_email
-
-        with pytest.raises(Exception, match="Must set 'notify.email'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-        self.mkdirs_mock.assert_not_called()
-
-    def test_default_root_folder_and_email(self):
-        self.gs_mock.root_folder = self.default_root_folder
-        self.ns_mock.email = self.default_email
-
-        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-
-
 @mock.patch("vcm.core.utils.configure_logging")
 @mock.patch("vcm.core.utils.more_settings_check")
 def test_setup_vcm(msc_mock, cl_mock):
@@ -805,7 +743,7 @@ class TestErrorCounter:
 class TestSaveCrashContent:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.ss_m = mock.patch("vcm.core.settings.settings").start()
         self.dt_m = mock.patch("vcm.core.utils.datetime").start()
         self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
         self.pkl_m = mock.patch("pickle.dumps").start()
@@ -838,7 +776,7 @@ class TestSaveCrashContent:
         return request.param
 
     def test_save_crash_context(self, exists, crash_object, reason):
-        crash_path = self.gs_m.root_folder.joinpath.return_value
+        crash_path = self.ss_m.root_folder.joinpath.return_value
         crash_path.exists.return_value = bool(exists)
         new_path = crash_path.with_name.return_value
         new_path.exists.side_effect = [True] * (exists - 1) + [False]
@@ -852,7 +790,7 @@ class TestSaveCrashContent:
             crash_path.with_name.assert_not_called()
 
         crash_name = "<object_name>.<current datetime>.pkl"
-        self.gs_m.root_folder.joinpath.assert_called_with(crash_name)
+        self.ss_m.root_folder.joinpath.assert_called_with(crash_name)
         self.dt_m.now.assert_called_once_with()
         self.dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
 
