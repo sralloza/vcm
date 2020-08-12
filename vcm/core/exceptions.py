@@ -1,3 +1,6 @@
+"""Exceptions and warnings for the VCM application."""
+
+
 class VcmError(Exception):
     """Vcm error."""
 
@@ -92,3 +95,7 @@ class VcmWarning(Warning):
 
 class UnkownIconWarning(VcmWarning):
     """Unkown icon warning."""
+
+
+class FilenameWarning(VcmWarning):
+    """Filename warning."""
