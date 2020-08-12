@@ -20,7 +20,7 @@ from vcm.core.utils import (
     configure_logging,
     exception_exit,
     handle_fatal_error_exit,
-    more_settings_check,
+    more_settings_check, open_http_status_server,
     safe_exit,
     save_crash_context,
     secure_filename,
@@ -873,3 +873,17 @@ def test_handle_fatal_error_exit(capsys, message, exit_code):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err.strip() == real_message
+
+@mock.patch("vcm.core.settings.GeneralSettings")
+@mock.patch("vcm.core.utils.Printer.print")
+@mock.patch("vcm.core.utils.get_webbrowser")
+def test_open_http_status_server(browser_m, print_m, gen_settings_m):
+    gen_settings_m.http_status_port = "<http-port>"
+    open_http_status_server()
+
+    print_m.assert_called_once_with("Opening state server")
+    browser_m.assert_called_once()
+    open_m = browser_m.return_value.open_new
+    open_m.assert_called_once()
+    assert "--new-window" in open_m.call_args[0][0]
+    assert "http://localhost:<http-port>" in open_m.call_args[0][0]
