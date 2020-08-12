@@ -17,7 +17,6 @@ from vcm.main import (
     get_command,
     instructions,
     main,
-    parse_settings_key,
     show_version,
 )
 
@@ -683,69 +682,6 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
         self.set_class_m.assert_not_called()
-
-
-class TestParseSettingsKey:
-    class Base(dict):
-        def __repr__(self):
-            return f"<{self.__class__.__name__}>"
-
-    class CustomClass1(Base):
-        pass
-
-    class CustomClass2(Base):
-        pass
-
-    @pytest.fixture(autouse=True)
-    def mocks(self):
-        assert repr(self.Base()) == "<Base>"
-        # cc stands for CustomClass, and m1 stands for method-1
-        self.settings_dict = {
-            "cc1": self.CustomClass1({"m1": "m1"}),
-            "cc2": self.CustomClass2({"m2": "m2", "m3": "m3"}),
-        }
-        mock.patch("vcm.main.settings_name_to_class", self.settings_dict).start()
-        self.error_m = mock.patch("vcm.main.Parser.error").start()
-        self.error_m.side_effect = SystemExit
-
-        yield
-
-        mock.patch.stopall()
-
-    @pytest.mark.parametrize("key", ("cc1.m1", "cc2.m2", "cc2.m3"))
-    def test_ok(self, key):
-        opt = Namespace(key=key)
-        cls, parsed_key = parse_settings_key(opt)
-        assert cls == self.settings_dict[key.split(".")[0]]
-        assert parsed_key == key.split(".")[-1]
-
-        self.error_m.assert_not_called()
-
-    @pytest.mark.parametrize("key", ("a.b.c.d.", "aaaa", "aa-bb"))
-    def test_invalid_key_1(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once_with("Invalid key (must be section.setting)")
-
-    @pytest.mark.parametrize("key", ("cc103.asdf", "invalid.34", "mec.a"))
-    def test_invalid_key_2(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once()
-        assert "Invalid setting class: " in self.error_m.call_args[0][0]
-
-    @pytest.mark.parametrize("key", ("cc1.m2", "cc1.m3", "cc2.m1", "cc2.m4"))
-    def test_invalid_key_3(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once()
-        assert re.search(r"is not a valid \w+ setting", self.error_m.call_args[0][0])
 
 
 class TestExecuteSettings:
