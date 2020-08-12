@@ -232,7 +232,10 @@ def exception_exit(exception, to_stderr=True, red=True):
             raise_exception = True
 
     if raise_exception:
-        raise TypeError("exception should be a subclass of Exception")
+        raise TypeError("exception's class must be a subclass of Exception")
+
+    if not isinstance(exception, BaseException):
+        raise TypeError("exception must be an instance")
 
     exc_str = ", ".join((str(x) for x in exception.args))
     message = "%s: %s" % (exception.__class__.__name__, exc_str)

@@ -203,7 +203,7 @@ class TestExceptionExit:
                 assert Fore.RESET not in captured.out
 
     def test_error_1(self):
-        match = "exception should be a subclass of Exception"
+        match = "exception's class must be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
             exception_exit("hi")
 
@@ -211,9 +211,14 @@ class TestExceptionExit:
         class Dummy:
             pass
 
-        match = "exception should be a subclass of Exception"
+        match = "exception's class must be a subclass of Exception"
         with pytest.raises(TypeError, match=match):
             exception_exit(Dummy)
+
+    def test_error_3(self):
+        match = "exception must be an instance"
+        with pytest.raises(TypeError, match=match):
+            exception_exit(TypeError)
 
 
 class TestSafeExit:
@@ -262,11 +267,11 @@ class TestSafeExit:
             custom_function()
             ee_m.assert_called_with(exc, to_stderr=True, red=True)
 
-
     @mock.patch("vcm.core.utils.exception_exit")
     def test_decorate_called_mixed_args(self, ee_m, to_stderr, red):
         msg = "Use keyword arguments in the safe_exit decorator"
         with pytest.raises(ValueError, match=msg):
+
             @safe_exit(to_stderr, red=red)
             def custom_function():
                 pass
@@ -275,14 +280,15 @@ class TestSafeExit:
         with pytest.raises(UnboundLocalError):
             custom_function()
 
-class TestTiming:
-    @pytest.fixture
-    def mocks(self):
-        time_m = mock.patch("vcm.core.utils.time").start()
-        sts_m = mock.patch("vcm.core.utils.seconds_to_str").start()
-        err_counter_m = mock.patch("vcm.core.utils.ErrorCounter").start()
 
-        yield time_m, sts_m, err_counter_m
+class TestTiming:
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        self.time_m = mock.patch("vcm.core.utils.time").start()
+        self.sts_m = mock.patch("vcm.core.utils.seconds_to_str").start()
+        self.err_counter_m = mock.patch("vcm.core.utils.ErrorCounter").start()
+
+        yield
 
         mock.patch.stopall()
 
@@ -298,31 +304,19 @@ class TestTiming:
     def errors(self, request):
         return request.param
 
-    @pytest.fixture(params=["good", "bad"])
-    def how(self, request):
-        return request.param
-
-    def test_ok(self, mocks, caplog, name, level, errors, how):
-        if how == "bad":
-            msg = "Use keyword arguments in the timing decorator"
-            with pytest.raises(ValueError, match=msg):
-                @timing(name, level=level)
-                def custom_function(arg1="arg1"):
-                    return arg1
-            return
+    def test_ok(self, caplog, name, level, errors):
         @timing(name=name, level=level)
         def custom_function(arg1="arg1"):
             return arg1
 
-        time_m, sts_m, err_counter_m = mocks
-        time_m.side_effect = [0, 30]
-        sts_m.return_value = "30 seconds"
+        self.time_m.side_effect = [0, 30]
+        self.sts_m.return_value = "30 seconds"
 
-        err_counter_m.report.return_value = "<error-report>"
+        self.err_counter_m.report.return_value = "<error-report>"
         if errors:
-            err_counter_m.has_errors.return_value = True
+            self.err_counter_m.has_errors.return_value = True
         else:
-            err_counter_m.has_errors.return_value = False
+            self.err_counter_m.has_errors.return_value = False
 
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
@@ -330,7 +324,7 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%r executed in %s [%s]" % (log_name, sts_m.return_value, 25)
+        log_str = "%r executed in %s [%s]" % (log_name, self.sts_m.return_value, 25)
 
         expected_log_tuples = [
             ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
@@ -347,20 +341,19 @@ class TestTiming:
     def exception(self, request):
         return request.param
 
-    def test_exception(self, mocks, caplog, name, level, exception, errors):
+    def test_exception(self, caplog, name, level, exception, errors):
         @timing(name=name, level=level)
         def custom_function(arg1="arg1"):
             raise exception(arg1)
 
-        time_m, sts_m, err_counter_m = mocks
-        time_m.side_effect = [0, 30]
-        sts_m.return_value = "30 seconds"
+        self.time_m.side_effect = [0, 30]
+        self.sts_m.return_value = "30 seconds"
 
-        err_counter_m.report.return_value = "<error-report>"
+        self.err_counter_m.report.return_value = "<error-report>"
         if errors:
-            err_counter_m.has_errors.return_value = True
+            self.err_counter_m.has_errors.return_value = True
         else:
-            err_counter_m.has_errors.return_value = False
+            self.err_counter_m.has_errors.return_value = False
 
         logging.getLogger("vcm.core.utils").setLevel(10)
         caplog.at_level(10, logger="vcm.core.utils")
@@ -369,7 +362,7 @@ class TestTiming:
 
         log_name = name or "custom_function"
         log_level = level or 20
-        log_str = "%r executed in %s [%s]" % (log_name, sts_m.return_value, None)
+        log_str = "%r executed in %s [%s]" % (log_name, self.sts_m.return_value, None)
 
         expected_log_tuples = [
             ("vcm.core.utils", log_level, f"Starting execution of {log_name!r}"),
@@ -382,6 +375,25 @@ class TestTiming:
 
         assert caplog.record_tuples == expected_log_tuples
 
+
+    def test_decorate_not_called(self, name, level):
+        # Defaults: name=None, level=None
+        @timing
+        def custom_function():
+            pass
+
+        custom_function()
+
+    def test_decorate_called_mixed_args(self, name, level):
+        msg = "Use keyword arguments in the timing decorator"
+        with pytest.raises(ValueError, match=msg):
+
+            @timing(name, level=level)
+            def custom_function():
+                pass
+
+        with pytest.raises(UnboundLocalError):
+            custom_function()
 
 class TestStr2Bool:
     test_data = [
