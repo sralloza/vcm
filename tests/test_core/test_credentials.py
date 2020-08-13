@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from toml import TomlDecodeError
+from ruamel.yaml.scanner import ScannerError
 
 from vcm.core.credentials import (
     EmailCredentials,
@@ -103,10 +103,11 @@ class TestHiddenCredentials:
                 "vcm.core.credentials.handle_fatal_error_exit"
             ).start()
             self.hfee_m.side_effect = SystemExit(-1)
-            self.load_m = mock.patch("toml.load").start()
+            self.yaml_m = mock.patch("vcm.core.credentials.YAML").start()
+            self.load_m = self.yaml_m.return_value.load
             self.path_m = mock.MagicMock()
             self.path_m.exists.return_value = True
-            self.path_m.__repr__ = lambda x: repr("<credentials-path>")
+            self.path_m.as_posix.return_value = "<credentials-path>"
             mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
             self.mdf_m = mock.patch(
                 "vcm.core.credentials._Credentials.make_default"
@@ -123,6 +124,7 @@ class TestHiddenCredentials:
             self.path_m.open.assert_called_once_with(encoding="utf-8")
             pointer = self.path_m.open.return_value.__enter__.return_value
             self.load_m.assert_called_once_with(pointer)
+            self.yaml_m.assert_called_once_with(typ="safe")
 
             assert result == self.load_m.return_value
 
@@ -135,13 +137,14 @@ class TestHiddenCredentials:
             self.mdf_m.assert_called()
 
         def test_error(self):
-            self.load_m.side_effect = TomlDecodeError("a", "b", 1)
+            self.load_m.side_effect = ScannerError("a", "b", 1)
 
             with pytest.raises(SystemExit, match="-1"):
                 _Credentials.read_credentials()
 
-            message = "Invalid TOML file: %r" % "<credentials-path>"
+            message = "Invalid YAML file: %r" % "<credentials-path>"
             self.hfee_m.assert_called_once_with(message)
+            self.yaml_m.assert_called_once_with(typ="safe")
 
     class TestLoad:
         @pytest.fixture(autouse=True)
@@ -195,14 +198,15 @@ class TestHiddenCredentials:
 
             self.rc_m.assert_not_called()
             self.me_m.assert_called_once()
-            self.save_m.assert_called_once()
+            self.save_m.assert_not_called()
 
     class TestSave:
         @pytest.fixture(autouse=True)
         def mocks(self):
-            self.dump_m = mock.patch("toml.dump").start()
+            self.yaml_m = mock.patch("vcm.core.credentials.YAML").start()
+            self.dump_m = self.yaml_m.return_value.dump
             self.path_m = mock.MagicMock()
-            self.path_m.__repr__ = lambda x: repr("<credentials-path>")
+            self.path_m.as_posix.return_value = "<credentials-path>"
             mock.patch("vcm.core.credentials._Credentials._path", self.path_m).start()
             self.vcc_m = mock.MagicMock()
             mock.patch(
@@ -232,6 +236,7 @@ class TestHiddenCredentials:
             self.path_m.open.assert_called_once_with("wt", encoding="utf-8")
             pointer = self.path_m.open.return_value.__enter__.return_value
             self.dump_m.assert_called_once_with(data, pointer)
+            self.yaml_m.assert_called_once_with()
 
     @mock.patch("vcm.core.credentials._Credentials.save")
     def test_make_example(self, save_m):
