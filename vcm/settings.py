@@ -29,9 +29,11 @@ def settings_to_string():
     output = "- settings:\n"
     for key in ["credentials_path", "settings_path"]:
         value = getattr(settings, key)
+        key = key.replace("_", "-")
         output += "    %s: %s\n" % (key, value)
 
     for key, value in settings.items():
+        key = key.replace("_", "-")
         output += "    %s: %r\n" % (key, value)
 
     return output
@@ -149,6 +151,7 @@ class Settings(dict, metaclass=MetaSingleton):
         super().__init__(settings)
 
     def __setattr__(self, name: str, value) -> None:
+        name = name.replace("_", "-")
         value = self.transforms[name](value)
 
         self.config[name] = value
