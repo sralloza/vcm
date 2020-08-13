@@ -163,7 +163,7 @@ class TestPatterns:
         ("asdf@adsf.asdf", True),
         ("adsf++-dsafads-fsaf@adsfsdalkfj.clkdsjflksjdf", True),
         (".@gmail.com", False),
-        ("kidding", False)
+        ("kidding", False),
     )
 
     @pytest.mark.parametrize("input_str, expected", email_data)
@@ -464,8 +464,8 @@ class TestStr2Bool:
 class TestConfigureLogging:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        self.lpe_m = self.gs_m.log_path.exists
+        self.settings_m = mock.patch("vcm.core.settings.settings").start()
+        self.lpe_m = self.settings_m.log_path.exists
         self.ct_m = mock.patch("vcm.core.utils.current_thread").start()
         self.rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
         self.lbc_m = mock.patch("logging.basicConfig").start()
@@ -486,10 +486,10 @@ class TestConfigureLogging:
         configure_logging()
 
         self.rfh_m.assert_called_once_with(
-            filename=self.gs_m.log_path,
+            filename=self.settings_m.log_path,
             maxBytes=2500000,
             encoding="utf-8",
-            backupCount=self.gs_m.max_logs,
+            backupCount=self.settings_m.max_logs,
         )
         handler = self.rfh_m.return_value
 
@@ -501,7 +501,7 @@ class TestConfigureLogging:
             handler.doRollover.assert_not_called()
 
         self.lbc_m.assert_called_once_with(
-            handlers=[handler], level=self.gs_m.logging_level, format=fmt
+            handlers=[handler], level=self.settings_m.logging_level, format=fmt
         )
         self.lgl_m.assert_called_with("urllib3")
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
@@ -526,10 +526,8 @@ class TestConfigureLogging:
 
 
 @mock.patch("vcm.core.utils.configure_logging")
-@mock.patch("vcm.core.utils.more_settings_check")
-def test_setup_vcm(msc_mock, cl_mock):
+def test_setup_vcm(cl_mock):
     setup_vcm()
-    msc_mock.assert_called_once_with()
     cl_mock.assert_called_once_with()
 
 
@@ -619,6 +617,7 @@ class TestCheckUpdates:
             assert "Newer version available" in self.print_m.call_args[0][0]
         else:
             assert "No updates available" in self.print_m.call_args[0][0]
+
 
 class TestMetaSingleton:
     def test_one_class(self):
@@ -743,7 +742,7 @@ class TestErrorCounter:
 class TestSaveCrashContent:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.ss_m = mock.patch("vcm.core.settings.settings").start()
+        self.settings_m = mock.patch("vcm.core.settings.settings").start()
         self.dt_m = mock.patch("vcm.core.utils.datetime").start()
         self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
         self.pkl_m = mock.patch("pickle.dumps").start()
@@ -776,7 +775,7 @@ class TestSaveCrashContent:
         return request.param
 
     def test_save_crash_context(self, exists, crash_object, reason):
-        crash_path = self.ss_m.root_folder.joinpath.return_value
+        crash_path = self.settings_m.root_folder.joinpath.return_value
         crash_path.exists.return_value = bool(exists)
         new_path = crash_path.with_name.return_value
         new_path.exists.side_effect = [True] * (exists - 1) + [False]
@@ -790,7 +789,7 @@ class TestSaveCrashContent:
             crash_path.with_name.assert_not_called()
 
         crash_name = "<object_name>.<current datetime>.pkl"
-        self.ss_m.root_folder.joinpath.assert_called_with(crash_name)
+        self.settings_m.root_folder.joinpath.assert_called_with(crash_name)
         self.dt_m.now.assert_called_once_with()
         self.dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
 
@@ -828,11 +827,12 @@ def test_handle_fatal_error_exit(capsys, message, exit_code):
     assert captured.out == ""
     assert captured.err.strip() == real_message
 
-@mock.patch("vcm.core.settings.GeneralSettings")
+
+@mock.patch("vcm.core.settings.settings")
 @mock.patch("vcm.core.utils.Printer.print")
 @mock.patch("vcm.core.utils.get_webbrowser")
-def test_open_http_status_server(browser_m, print_m, gen_settings_m):
-    gen_settings_m.http_status_port = "<http-port>"
+def test_open_http_status_server(browser_m, print_m, settings_m):
+    settings_m.http_status_port = "<http-port>"
     open_http_status_server()
 
     print_m.assert_called_once_with("Opening state server")
