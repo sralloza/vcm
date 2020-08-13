@@ -266,7 +266,6 @@ class NonKeyBasedSettingsSubcommand:
     @classmethod
     def keys(cls):
         """Prints the settings keys."""
-        keys = []
         for key in settings.keys():
             print(" - " + key)
 
