@@ -3,19 +3,11 @@
 from argparse import ArgumentParser, Namespace
 from enum import Enum
 import logging
-from typing import NoReturn, Tuple
+from typing import NoReturn
 
 from vcm.core.modules import Modules
 
 from . import __version__ as version
-from .core.settings import (
-    CheckSettings, exclude,
-    include,
-    section_index,
-    settings,
-    settings_to_string,
-    un_section_index,
-)
 from .core.utils import (
     Printer,
     check_updates,
@@ -25,6 +17,15 @@ from .core.utils import (
 )
 from .downloader import download
 from .notifier import notify
+from .settings import (
+    CheckSettings,
+    exclude,
+    include,
+    section_index,
+    settings,
+    settings_to_string,
+    un_section_index,
+)
 
 
 class Command(Enum):

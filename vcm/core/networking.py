@@ -6,9 +6,10 @@ from typing import Optional
 from bs4 import BeautifulSoup
 import requests
 
+from vcm.settings import settings
+
 from .credentials import Credentials
 from .exceptions import DownloaderError, LoginError, LogoutError, MoodleError
-from .settings import settings
 from .utils import MetaSingleton, save_crash_context
 
 logger = logging.getLogger(__name__)

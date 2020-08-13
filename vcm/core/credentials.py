@@ -2,7 +2,8 @@
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
-from .settings import settings
+from vcm.settings import settings
+
 from .utils import handle_fatal_error_exit
 
 

@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 from requests import Response
 
 from vcm.core.networking import Connection
-from vcm.core.settings import settings
 from vcm.core.utils import secure_filename
+from vcm.settings import settings
 
 from .alias import Alias
 from .link import (

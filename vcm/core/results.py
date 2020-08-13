@@ -4,7 +4,8 @@ from threading import Lock
 
 from colorama import Fore
 
-from .settings import settings
+from vcm.settings import settings
+
 from .utils import Printer
 
 

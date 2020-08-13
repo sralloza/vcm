@@ -12,8 +12,8 @@ import flask
 import waitress
 
 from vcm.core.utils import ErrorCounter
+from vcm.settings import settings
 
-from .settings import settings
 from .time_operations import seconds_to_str
 from .workers import Killer, ThreadStates, Worker, running, state_to_color
 

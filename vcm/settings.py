@@ -7,13 +7,13 @@ from ruamel.yaml import YAML
 from vcm.core.exceptions import SettingsError
 from vcm.core.utils import handle_fatal_error_exit, str2bool
 
-from .exceptions import (
+from .core.exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
     NotExcludedError,
     NotIndexedError,
 )
-from .utils import MetaSingleton, Patterns
+from .core.utils import MetaSingleton, Patterns
 
 
 def save_settings():
@@ -140,7 +140,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     @staticmethod
     def get_defaults():
-        defaults_path = Path(__file__).with_name("defaults.json")
+        defaults_path = Path(__file__).with_name("data")/"defaults.json"
         return json.loads(defaults_path.read_text())
 
     def update_instance_config(self):

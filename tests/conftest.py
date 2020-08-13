@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 
 @lru_cache(maxsize=10)
 def get_settings_defaults():
-    path = Path(__file__).parent.with_name("vcm").joinpath("core/defaults.json")
+    path = Path(__file__).parent.with_name("vcm").joinpath("data/defaults.json")
     return json.loads(path.read_text())
 
 

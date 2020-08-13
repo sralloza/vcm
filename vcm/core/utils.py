@@ -371,7 +371,7 @@ def str2bool(value):
 
 
 def configure_logging():
-    from .settings import settings
+    from vcm.settings import settings
 
     if not os.environ.get("TESTING", False):
         should_roll_over = settings.log_path.exists()
@@ -507,7 +507,7 @@ def save_crash_context(crash_object, object_name, reason=None):
         reason (str, optional): reason of the crash. Defaults to None.
     """
 
-    from .settings import settings
+    from vcm.settings import settings
 
     now = datetime.now()
     index = 0
@@ -557,7 +557,7 @@ def open_http_status_server():
     chrome windows.
     """
 
-    from .settings import settings
+    from vcm.settings import settings
 
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"

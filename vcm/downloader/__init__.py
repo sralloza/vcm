@@ -7,10 +7,10 @@ from bs4 import BeautifulSoup
 from colorama import init as init_colorama
 
 from vcm.core.networking import Connection
-from vcm.core.settings import settings
 from vcm.core.status_server import runserver
 from vcm.core.utils import timing
 from vcm.core.workers import start_workers
+from vcm.settings import settings
 
 from .subject import Subject
 

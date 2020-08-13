@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from vcm.core.exceptions import FileCacheError
-from vcm.core.settings import settings
+from vcm.settings import settings
 
 
 class FileCache:

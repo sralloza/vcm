@@ -1,13 +1,13 @@
 """Alias manager for signatures."""
-import json
 from dataclasses import dataclass
 from hashlib import sha1
+import json
 from pathlib import Path
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
-from vcm.core.settings import settings
 from vcm.core.utils import MetaSingleton
+from vcm.settings import settings
 
 
 def calculate_hash(byte_data):

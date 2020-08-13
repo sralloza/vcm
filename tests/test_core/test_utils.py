@@ -464,7 +464,7 @@ class TestStr2Bool:
 class TestConfigureLogging:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.settings_m = mock.patch("vcm.core.settings.settings").start()
+        self.settings_m = mock.patch("vcm.settings.settings").start()
         self.lpe_m = self.settings_m.log_path.exists
         self.ct_m = mock.patch("vcm.core.utils.current_thread").start()
         self.rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
@@ -742,7 +742,7 @@ class TestErrorCounter:
 class TestSaveCrashContent:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.settings_m = mock.patch("vcm.core.settings.settings").start()
+        self.settings_m = mock.patch("vcm.settings.settings").start()
         self.dt_m = mock.patch("vcm.core.utils.datetime").start()
         self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
         self.pkl_m = mock.patch("pickle.dumps").start()
@@ -828,7 +828,7 @@ def test_handle_fatal_error_exit(capsys, message, exit_code):
     assert captured.err.strip() == real_message
 
 
-@mock.patch("vcm.core.settings.settings")
+@mock.patch("vcm.settings.settings")
 @mock.patch("vcm.core.utils.Printer.print")
 @mock.patch("vcm.core.utils.get_webbrowser")
 def test_open_http_status_server(browser_m, print_m, settings_m):

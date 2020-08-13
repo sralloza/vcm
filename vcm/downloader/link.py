@@ -14,8 +14,8 @@ from vcm.core.exceptions import AlgorithmFailureError, MoodleError, ResponseErro
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
-from vcm.core.settings import settings
 from vcm.core.utils import Patterns, save_crash_context, secure_filename
+from vcm.settings import settings
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE

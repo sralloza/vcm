@@ -1,7 +1,7 @@
-import sqlite3
 from datetime import datetime
+import sqlite3
 
-from vcm.core.settings import settings
+from vcm.settings import settings
 
 
 class DatabaseInterface:
