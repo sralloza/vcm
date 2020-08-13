@@ -5,7 +5,7 @@ Flask
 packaging
 psutil
 requests
-toml
+ruamel.yaml
 unidecode
 versioneer
 waitress
