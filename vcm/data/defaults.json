@@ -10,7 +10,7 @@
   "max-logs": 5,
   "retries": 10,
   "root-folder": "insert-root-folder",
-  "section-indexing": [],
+  "section-indexing-ids": [],
   "secure-section-filename": false,
   "timeout": 30
 }

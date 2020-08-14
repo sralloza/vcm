@@ -51,7 +51,7 @@ def section_index(subject_id: int):
     index.append(subject_id)
     index = list(set(index))
     index.sort()
-    settings["section-indexing"] = index
+    settings["section-indexing-ids"] = index
 
 
 def un_section_index(subject_id: int):
@@ -62,7 +62,7 @@ def un_section_index(subject_id: int):
     index.remove(subject_id)
     index = list(set(index))
     index.sort()
-    settings["section-indexing"] = index
+    settings["section-indexing-ids"] = index
 
 
 def exclude(subject_id: int):
@@ -116,7 +116,7 @@ class Settings(dict, metaclass=MetaSingleton):
         "max-logs": int,
         "retries": int,
         "root-folder": str,
-        "section-indexing": section_indexing_setter,
+        "section-indexing-ids": section_indexing_setter,
         "secure-section-filename": str2bool,
         "timeout": int,
     }
@@ -230,7 +230,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     @property
     def section_indexing_ids(self) -> List[int]:
-        return self["section-indexing"]
+        return self["section-indexing-ids"]
 
     @property
     def section_indexing_urls(self) -> List[str]:
