@@ -344,6 +344,7 @@ class TestSettings:
         assert hasattr(Settings, "credentials_path")
         assert hasattr(Settings, "settings_path")
         assert hasattr(Settings, "config")
+        assert hasattr(Settings, "_template")
 
     def test_exclude_subjects_ids_setter(self):
         settings = Settings()

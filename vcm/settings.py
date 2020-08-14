@@ -20,7 +20,7 @@ from .core.utils import MetaSingleton, Patterns, str2bool
 
 def save_settings():
     CheckSettings.check()
-    settings.update_instance_config()
+    settings.update_config()
 
     yaml = YAML()
     with settings.settings_path.open("wt") as file:
@@ -98,6 +98,12 @@ class Settings(dict, metaclass=MetaSingleton):
     credentials_path = settings_folder.joinpath(_preffix + "vcm-credentials.yaml")
     settings_path = settings_folder.joinpath(_preffix + "vcm-settings.yaml")
     config = {}
+
+    _template = "https://campusvirtual.uva.es/course/view.php?id=%d"
+
+    @classmethod
+    def gen_subject_url(cls, subject_id: int) -> str:
+        return cls._template % subject_id
 
     def exclude_subjects_ids_setter(self):
         raise SettingsError("exclude-subjects-ids can't be set using the CLI.")
@@ -216,8 +222,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     @property
     def exclude_urls(self) -> List[str]:
-        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-        return [template % x for x in self.exclude_subjects_ids]
+        return [self.gen_subject_url(x) for x in self.exclude_subjects_ids]
 
     @property
     def forum_subfolders(self) -> bool:
@@ -229,8 +234,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     @property
     def section_indexing_urls(self) -> List[str]:
-        template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-        return [template % x for x in self.section_indexing_ids]
+        return [self.gen_subject_url(x) for x in self.section_indexing_ids]
 
     @property
     def secure_section_filename(self) -> bool:
