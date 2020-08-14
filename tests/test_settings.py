@@ -61,7 +61,6 @@ class TestSaveSettings:
     def mocks(self):
         self.check_m = mock.patch("vcm.settings.CheckSettings.check").start()
         self.settings_m = mock.patch("vcm.settings.settings").start()
-        self.uic_m = self.settings_m.update_instance_config
         self.yaml_m = mock.patch("vcm.settings.YAML").start()
 
         yield
@@ -72,7 +71,6 @@ class TestSaveSettings:
         save_settings()
 
         self.check_m.assert_called_once_with()
-        self.uic_m.assert_called_once_with()
         self.yaml_m.assert_called_once_with()
         self.settings_m.settings_path.open.assert_called_once_with("wt")
         enter_m = self.settings_m.settings_path.open.return_value.__enter__
@@ -362,10 +360,10 @@ class TestSettings:
         for transform in Settings.transforms.values():
             assert callable(transform)
 
-    @mock.patch("vcm.settings.Settings.update_instance_config")
-    def test_init(self, uic_m):
+    @mock.patch("vcm.settings.Settings.update_config")
+    def test_init(self, upd_conf_m):
         Settings()
-        uic_m.assert_called_once_with()
+        upd_conf_m.assert_called_once_with()
 
     def test_getitem(self):
         settings = Settings()
@@ -410,10 +408,6 @@ class TestSettings:
 
     @pytest.mark.skip
     def test_get_defaults(self):
-        assert 0, "Not implemented"
-
-    @pytest.mark.skip
-    def test_update_instance_config(self):
         assert 0, "Not implemented"
 
 

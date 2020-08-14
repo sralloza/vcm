@@ -122,7 +122,7 @@ class Settings(dict, metaclass=MetaSingleton):
     }
 
     def __init__(self):
-        self.update_instance_config()
+        self.update_config()
 
     def __setitem__(self, k, v) -> None:
         k = k.replace("_", "-").lower()
@@ -149,20 +149,15 @@ class Settings(dict, metaclass=MetaSingleton):
         with cls.settings_path.open("wt", encoding="utf-8") as file_handler:
             yaml.dump(data, file_handler)
 
-    @classmethod
-    def update_config(cls):
-        if not cls.config:
-            cls.config = cls.get_defaults()
-            cls.config.update(cls.get_current_config())
-
     @staticmethod
     def get_defaults():
         defaults_path = Path(__file__).with_name("data") / "defaults.json"
         return json.loads(defaults_path.read_text())
 
-    def update_instance_config(self):
-        # FIXME: consider joining this method and `update_config()`
-        self.update_config()
+    def update_config(self):
+        if not self.config:
+            self.__class__.config = self.get_defaults()
+            self.__class__.config.update(self.get_current_config())
         super().__init__(self.config)
 
     @property
@@ -246,7 +241,6 @@ class Settings(dict, metaclass=MetaSingleton):
         return self["email"]
 
 
-Settings.update_config()
 settings = Settings()
 
 
