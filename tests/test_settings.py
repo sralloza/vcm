@@ -23,39 +23,6 @@ from vcm.settings import (
 )
 
 
-class TestUseDash:
-    @pytest.fixture(autouse=True)
-    def mocks(self):
-        Settings._instance = None
-        Settings.config = {}
-
-        self.settings_m = mock.patch("vcm.settings.settings").start()
-        self.save_m = mock.patch("vcm.settings.save_settings").start()
-        self.transforms_m = mock.patch("vcm.settings.Settings.transforms").start()
-        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
-
-        yield
-
-        Settings._instance = None
-        Settings.config = None
-
-        mock.patch.stopall()
-
-    def test_use_of_dash(self):
-        settings = Settings()
-
-        settings["test_key"] = "test-1"
-        assert settings["test_key"] == "test-1"
-        assert settings["test-key"] == "test-1"
-
-        settings["test-key"] = "test-2"
-        assert settings["test_key"] == "test-2"
-        assert settings["test-key"] == "test-2"
-
-        self.save_m.assert_called()
-        assert self.save_m.call_count == 2
-
-
 class TestSaveSettings:
     @pytest.fixture(autouse=True)
     def mocks(self):
