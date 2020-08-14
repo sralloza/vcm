@@ -2,6 +2,7 @@ from functools import lru_cache
 import json
 import os
 from pathlib import Path
+from tempfile import gettempdir
 
 import pytest
 from ruamel.yaml import YAML
@@ -26,10 +27,10 @@ CREDENTIALS_DEFAULT = {
     },
 }
 
-
-test_settings_path: Path = Path.home() / "test-vcm-settings.yaml"
-test_credentials_path: Path = Path.home() / "test-vcm-credentials.yaml"
-test_root_folder = Path.home() / "vcm-test-data"
+settings_folder = Path(gettempdir())
+test_settings_path: Path = settings_folder / "test-vcm-settings.yaml"
+test_credentials_path: Path = settings_folder / "test-vcm-credentials.yaml"
+test_root_folder = settings_folder / "vcm-test-data"
 
 
 def pytest_configure():

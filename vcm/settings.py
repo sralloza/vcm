@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+from tempfile import gettempdir
 from typing import List
 
 from ruamel.yaml import YAML
@@ -85,14 +87,17 @@ def include(subject_id: int):
     settings["exclude-subjects-ids"] = all_excluded
 
 
-def create_default():
-    raise NotImplementedError
-
-
 class Settings(dict, metaclass=MetaSingleton):
-    credentials_path = Path("~").expanduser() / "vcm-credentials.yaml"
-    settings_path = Path("~").expanduser() / "vcm-settings.yaml"
-    config = None
+    if os.getenv("TESTING", False):
+        settings_folder = Path(gettempdir())
+        _preffix = "test-"
+    else:
+        settings_folder = Path.home()
+        _preffix = ""
+
+    credentials_path = settings_folder.joinpath(_preffix + "vcm-credentials.yaml")
+    settings_path = settings_folder.joinpath(_preffix + "vcm-settings.yaml")
+    config = {}
 
     def exclude_subjects_ids_setter(self):
         raise SettingsError("exclude-subjects-ids can't be set using the CLI.")
@@ -119,6 +124,15 @@ class Settings(dict, metaclass=MetaSingleton):
     def __init__(self):
         self.update_instance_config()
 
+    def __setitem__(self, k, v) -> None:
+        k = k.replace("_", "-").lower()
+        self.config[k] = v
+        save_settings()
+
+    def __getitem__(self, k):
+        k = k.replace("_", "-").lower()
+        return self.config[k]
+
     @classmethod
     def get_current_config(cls):
         if not cls.settings_path.is_file():
@@ -132,34 +146,24 @@ class Settings(dict, metaclass=MetaSingleton):
     def create_example(cls):
         yaml = YAML()
         data = cls.get_defaults()
-        print(data)
         with cls.settings_path.open("wt", encoding="utf-8") as file_handler:
             yaml.dump(data, file_handler)
 
     @classmethod
     def update_config(cls):
-        cls.config = cls.get_current_config()
+        if not cls.config:
+            cls.config = cls.get_defaults()
+            cls.config.update(cls.get_current_config())
 
     @staticmethod
     def get_defaults():
-        defaults_path = Path(__file__).with_name("data")/"defaults.json"
+        defaults_path = Path(__file__).with_name("data") / "defaults.json"
         return json.loads(defaults_path.read_text())
 
     def update_instance_config(self):
-        settings = self.get_defaults()
-        settings.update(self.config)
-        super().__init__(settings)
-
-    def __setattr__(self, name: str, value) -> None:
-        name = name.replace("_", "-")
-        value = self.transforms[name](value)
-
-        self.config[name] = value
-        self.update_instance_config()
-        save_settings()
-
-    def __setitem__(self, k, v) -> None:
-        self.__setattr__(k, v)
+        # FIXME: consider joining this method and `update_config()`
+        self.update_config()
+        super().__init__(self.config)
 
     @property
     def root_folder(self):
