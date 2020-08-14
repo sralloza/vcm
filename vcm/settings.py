@@ -15,7 +15,7 @@ from .core.exceptions import (
     NotExcludedError,
     NotIndexedError,
 )
-from .core.utils import MetaSingleton, Patterns
+from .core.utils import MetaSingleton, Patterns, str2bool
 
 
 def save_settings():
@@ -277,50 +277,71 @@ class CheckSettings:
 
     @classmethod
     def check_logging_level(cls):
+        if not isinstance(settings.logging_level, str):
+            raise TypeError("Setting logging-level must be str")
+
         from logging import _levelToName
 
         if settings.logging_level not in _levelToName.values():
-            raise TypeError(
-                "Setting logging-level must be one of %s" % _levelToName.values()
-            )
+            logging_level = settings.logging_level.upper()
+            if logging_level not in _levelToName.values():
+                raise ValueError(
+                    "Setting logging-level must be one of %s" % _levelToName.values()
+                )
+            settings["logging-level"] = logging_level
 
     @classmethod
     def check_timeout(cls):
-        return
         if not isinstance(settings.timeout, int):
             try:
                 timeout = int(settings.timeout)
-                settings.config["timeout"] = timeout
+                settings["timeout"] = timeout
             except ValueError:
                 raise TypeError("Setting timeout must be int")
         if settings.timeout < 0:
             raise ValueError("Setting timeout must be positive")
 
     @classmethod
-    def check_general_retries(cls):
+    def check_retries(cls):
         if not isinstance(settings.retries, int):
-            raise TypeError("Setting retries must be int")
+            try:
+                retries = int(settings.retries)
+                settings["retries"] = retries
+            except ValueError:
+                raise TypeError("Setting retries must be int")
         if settings.retries < 0:
             raise ValueError("Setting retries must be positive")
 
     @classmethod
     def check_login_retries(cls):
         if not isinstance(settings.login_retries, int):
-            raise TypeError("Setting login-retries must be int")
+            try:
+                login_retries = int(settings.login_retries)
+                settings["login-retries"] = login_retries
+            except ValueError:
+                raise TypeError("Setting login-retries must be int")
         if settings.login_retries < 0:
             raise ValueError("Setting login-retries must be positive")
 
     @classmethod
     def check_logout_retries(cls):
         if not isinstance(settings.logout_retries, int):
-            raise TypeError("Setting logout-retries must be int")
+            try:
+                logout_retries = int(settings.logout_retries)
+                settings["logout-retries"] = logout_retries
+            except ValueError:
+                raise TypeError("Setting logout-retries must be int")
         if settings.logout_retries < 0:
             raise ValueError("Setting logout-retries must be positive")
 
     @classmethod
     def check_max_logs(cls):
         if not isinstance(settings.max_logs, int):
-            raise TypeError("Setting max-logs must be int")
+            try:
+                max_logs = int(settings.max_logs)
+                settings["max-logs"] = max_logs
+            except ValueError:
+                raise TypeError("Setting max-logs must be int")
         if settings.max_logs < 0:
             raise ValueError("Setting max-logs must be positive")
 
@@ -341,21 +362,33 @@ class CheckSettings:
     @classmethod
     def check_http_status_port(cls):
         if not isinstance(settings.http_status_port, int):
-            raise TypeError("Setting http-status-port must be int")
+            try:
+                http_status_port = int(settings.http_status_port)
+                settings["http_status_port"] = http_status_port
+            except ValueError:
+                raise TypeError("Setting http-status-port must be int")
         if settings.http_status_port < 0:
             raise ValueError("Setting http-status-port must be positive")
 
     @classmethod
     def check_http_status_tickrate(cls):
         if not isinstance(settings.http_status_tickrate, int):
-            raise TypeError("Setting http-status-tickrate must be int")
+            try:
+                http_status_tickrate = int(settings.http_status_tickrate)
+                settings["http_status_tickrate"] = http_status_tickrate
+            except ValueError:
+                raise TypeError("Setting http-status-tickrate must be int")
         if settings.http_status_tickrate < 0:
             raise ValueError("Setting http-status-tickrate must be positive")
 
     @classmethod
     def check_forum_subfolders(cls):
         if not isinstance(settings.forum_subfolders, bool):
-            raise TypeError("Setting forum-subfolders must be a boolean")
+            try:
+                forum_subfolders = str2bool(settings.forum_subfolders)
+                settings["forum_subfolders"] = forum_subfolders
+            except ValueError:
+                raise TypeError("Setting forum-subfolders must be a boolean")
 
     @classmethod
     def check_section_indexing_ids(cls):
@@ -374,7 +407,11 @@ class CheckSettings:
     @classmethod
     def check_secure_section_filename(cls):
         if not isinstance(settings.secure_section_filename, bool):
-            raise TypeError("Setting secure-section-filename must be bool")
+            try:
+                secure_section_filename = str2bool(settings.secure_section_filename)
+                settings["secure_section_filename"] = secure_section_filename
+            except ValueError:
+                raise TypeError("Setting secure-section-filename must be bool")
 
     @classmethod
     def check_email(cls):
