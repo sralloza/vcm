@@ -11,6 +11,7 @@ from ruamel.yaml import YAML
 from vcm.core.exceptions import SettingsError
 from vcm.core.utils import handle_fatal_error_exit, str2bool
 
+from logging import _levelToName
 from .core.exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
@@ -173,12 +174,34 @@ class Settings(dict, metaclass=MetaSingleton):
 
         raise SettingsError("section-indexing can't be set using the CLI")
 
+    def logging_level_setter(*args) -> str:
+        """Setter for logging-level.
+
+        Args:
+            value (str): logging level.
+
+        Raises:
+            ValueError: if `value` is not a valid logging-level.
+
+        Returns:
+            str: parsed logging level.
+        """
+
+        # FIXME: not pythonic
+
+        value = str(args[0]).upper()
+        if value in _levelToName.values():
+            return value
+
+        raise ValueError(f"Invalid logging-level: {value!r}")
+
     transforms = {
         "email": str,
         "exclude-subjects-ids": exclude_subjects_ids_setter,
         "forum-subfolders": str2bool,
         "http-status-port": int,
         "http-status-tickrate": int,
+        "logging-level": logging_level_setter,
         "login-retries": int,
         "logout-retries": int,
         "max-logs": int,
@@ -494,9 +517,6 @@ class CheckSettings:
         if not isinstance(settings.logging_level, str):
             raise TypeError("Setting logging-level must be str")
 
-        # pylint: disable=import-outside-toplevel
-        from logging import _levelToName
-
         if settings.logging_level not in _levelToName.values():
             logging_level = settings.logging_level.upper()
             if logging_level not in _levelToName.values():
@@ -643,7 +663,6 @@ class CheckSettings:
             TypeError: if settings.http_status_tickrate is not a valid number.
             ValueError: if settings.http_status_tickrate is negative.
         """
-
 
         if not isinstance(settings.http_status_tickrate, int):
             try:
