@@ -138,12 +138,12 @@ class Settings(dict, metaclass=MetaSingleton):
     # pylint: disable=too-many-public-methods
     """Settings manager."""
 
-    if os.getenv("TESTING"):
-        settings_folder = Path(gettempdir())
-        _preffix = "test-"
-    else:
-        settings_folder = Path.home()
-        _preffix = ""
+    if os.getenv("TESTING"):  # pragma: no cover
+        settings_folder = Path(gettempdir())  # pragma: no cover
+        _preffix = "test-"  # pragma: no cover
+    else:  # pragma: no cover
+        settings_folder = Path.home()  # pragma: no cover
+        _preffix = ""  # pragma: no cover
 
     credentials_path = settings_folder.joinpath(_preffix + "vcm-credentials.yaml")
     settings_path = settings_folder.joinpath(_preffix + "vcm-settings.yaml")
@@ -225,6 +225,10 @@ class Settings(dict, metaclass=MetaSingleton):
     def __getitem__(self, k):
         k = k.replace("_", "-").lower()
         return self.config[k]
+
+    def __contains__(self, k: str) -> bool:
+        k = k.replace("_", "-").lower()
+        return k in self.config
 
     @classmethod
     def get_current_config(cls) -> Dict[str, Any]:

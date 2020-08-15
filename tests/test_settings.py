@@ -3,6 +3,7 @@ from shutil import rmtree
 from typing import Optional
 from unittest import mock
 
+from colorama import Fore
 import pytest
 
 from vcm.core.exceptions import (
@@ -22,7 +23,6 @@ from vcm.settings import (
     settings_to_string,
     un_section_index,
 )
-
 
 # pylint: disable=protected-access
 Settings._instance: Optional[Settings]  # for pylint
@@ -82,8 +82,8 @@ class TestSectionIndex:
         Settings.config = {}
 
         self.save_m = mock.patch("vcm.settings.save_settings").start()
-        transforms_m = mock.patch("vcm.settings.Settings.transforms").start()
-        transforms_m.__getitem__.return_value.side_effect = lambda x: x
+        self.transforms_m = mock.patch("vcm.settings.Settings.transforms").start()
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
 
         self.settings = Settings()
         assert self.settings["section-indexing-ids"] == []
@@ -294,7 +294,11 @@ class TestSettings:
     @pytest.fixture(autouse=True)
     def mocks(self):
         Settings._instance = None
+        Settings.config = {}
         self.save_m = mock.patch("vcm.settings.save_settings").start()
+        self.transf_patcher = mock.patch("vcm.settings.Settings.transforms")
+        self.transforms_m = self.transf_patcher.start()
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
         yield
         self.save_m.assert_not_called()
         mock.patch.stopall()
@@ -328,8 +332,19 @@ class TestSettings:
         with pytest.raises(SettingsError, match="can't be set using the CLI"):
             settings.section_indexing_setter()
 
+    def test_logging_level_setter(self):
+        test = Settings.logging_level_setter
+        assert test("debug") == "DEBUG"
+        assert test("iNfO") == "INFO"
+        assert test("WARNINg") == "WARNING"
+        assert test("critical") == "CRITICAL"
+
+        with pytest.raises(ValueError):
+            test("invalid")
+
     def test_transforms(self):
-        assert len(Settings.transforms) == 13
+        self.transf_patcher.stop()
+        assert len(Settings.transforms) == 14
         for transform in Settings.transforms.values():
             assert callable(transform)
 
@@ -349,6 +364,15 @@ class TestSettings:
         with pytest.raises(KeyError):
             assert settings["hello world"]
 
+    def test_contains(self):
+        settings = Settings()
+        settings.config = {"hello-world": "yes"}
+        assert "hello-world" in settings
+        assert "hello_world" in settings
+        assert "HELLO_WORLD" in settings
+        assert "hElLo_WoRlD" in settings
+
+
     def test_setitem(self):
         settings = Settings()
         settings["hello-world"] = "yes"
@@ -367,21 +391,86 @@ class TestSettings:
         assert self.save_m.call_count == 4
         self.save_m.reset_mock()
 
-    @pytest.mark.skip
-    def test_get_current_config(self):
-        assert 0, "Not implemented"
+    @mock.patch("vcm.settings.Settings.create_example")
+    @mock.patch("pathlib.Path.is_file")
+    def test_get_current_config_ok(self, is_file_m, example_m, capsys):
+        is_file_m.return_value = True
 
-    @pytest.mark.skip
-    def test_create_example(self):
-        assert 0, "Not implemented"
+        config = Settings.get_current_config()
 
-    @pytest.mark.skip
-    def test_update_config(self):
-        assert 0, "Not implemented"
+        assert isinstance(config, dict)
+        for key, value in config.items():
+            assert isinstance(key, str)
+            assert "_" not in key
+            assert key.islower()
+            assert value.__class__
 
-    @pytest.mark.skip
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert captured.err == ""
+
+    @mock.patch("vcm.settings.Settings.create_example")
+    @mock.patch("pathlib.Path.is_file")
+    def test_get_current_config_fail(self, is_file_m, example_m, capsys):
+        is_file_m.return_value = False
+
+        with pytest.raises(SystemExit, match="-1"):
+            config = Settings.get_current_config()
+
+        with pytest.raises(NameError):
+            assert config
+
+        captured = capsys.readouterr()
+        assert "Settings file does not exist" in captured.err
+        assert Fore.RED in captured.err
+        assert Fore.RESET in captured.err
+        assert captured.out == ""
+
+    @mock.patch("vcm.settings.YAML")
+    @mock.patch("vcm.settings.Settings.get_defaults")
+    @mock.patch("pathlib.Path.open")
+    def test_create_example(self, open_m, gd_m, yaml_m):
+        gd_m.return_value = {"defaults": True}
+
+        Settings.create_example()
+
+        yaml_m.assert_called_once_with()
+        gd_m.assert_called_once_with()
+        open_m.assert_called_once_with("wt", encoding="utf-8")
+        open_m.return_value.__enter__.assert_called_once_with()
+        file_handler = open_m.return_value.__enter__.return_value
+        yaml_m.return_value.dump({"defaults": True}, file_handler)
+        open_m.return_value.__exit__.assert_called_once_with(None, None, None)
+
+    @mock.patch("vcm.settings.Settings.get_defaults")
+    @mock.patch("vcm.settings.Settings.get_current_config")
+    @pytest.mark.parametrize("empty_config", [True, False])
+    def test_update_config(self, gcc_m, gd_m, empty_config):
+        if empty_config:
+            Settings.config = {}
+        else:
+            Settings.config = {"set-up": True}
+
+        gd_m.return_value = {"key-a": "a0", "key-c": "c0"}
+        gcc_m.return_value = {"key-a": "a1", "key-b": "b1"}
+
+        settings = Settings()
+        settings.update_config()
+
+        if empty_config:
+            assert settings["key-a"] == "a1"
+            assert settings["key-b"] == "b1"
+            assert settings["key-c"] == "c0"
+        else:
+            assert settings["set-up"] is True
+
     def test_get_defaults(self):
-        assert 0, "Not implemented"
+        defaults = Settings.get_defaults()
+        assert isinstance(defaults, dict)
+
+        for key, value in defaults.items():
+            assert isinstance(key, str)
+            assert value.__class__
 
 
 class TestSettingsAttributes:
@@ -389,6 +478,9 @@ class TestSettingsAttributes:
     def mocks(self):
         Settings._instance = None
         self.save_m = mock.patch("vcm.settings.save_settings").start()
+        self.transf_patcher = mock.patch("vcm.settings.Settings.transforms")
+        self.transforms_m = self.transf_patcher.start()
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
         self.settings = Settings()
         yield
         mock.patch.stopall()
@@ -506,7 +598,11 @@ class TestCheckSettings:
     @pytest.fixture(autouse=True)
     def mocks(self):
         Settings._instance = None
+        Settings.config = {}
         self.save_m = mock.patch("vcm.settings.save_settings").start()
+        self.transf_patcher = mock.patch("vcm.settings.Settings.transforms")
+        self.transforms_m = self.transf_patcher.start()
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
         self.settings = Settings()
         yield
         mock.patch.stopall()
@@ -564,10 +660,11 @@ class TestCheckSettings:
                 CheckSettings.check_root_folder()
             rf_m.assert_called_once_with()
 
-    def test_check_logs_folder(self):
+    @mock.patch("pathlib.Path.mkdir")
+    def test_check_logs_folder(self, mkdir_m):
         rmtree(self.settings.logs_folder, ignore_errors=True)
         CheckSettings.check_logs_folder()
-        assert self.settings.logs_folder.is_dir()
+        mkdir_m.assert_called_once_with(parents=True, exist_ok=True)
 
         mocked_logs_folder = "vcm.settings.Settings.logs_folder"
         with mock.patch(mocked_logs_folder, new_callable=mock.PropertyMock) as lf_m:
@@ -575,6 +672,8 @@ class TestCheckSettings:
             with pytest.raises(TypeError, match="Wrapper"):
                 CheckSettings.check_logs_folder()
             lf_m.assert_called_once_with()
+
+        assert mkdir_m.call_count == 1
 
     def test_check_logging_level(self):
         self.settings["logging-level"] = "DEBUG"
