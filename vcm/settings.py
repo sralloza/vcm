@@ -218,6 +218,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     def __setitem__(self, k, v) -> None:
         k = k.replace("_", "-").lower()
+        v = self.transforms[k](v)
         self.config[k] = v
         save_settings()
 
