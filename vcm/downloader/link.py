@@ -14,8 +14,8 @@ from vcm.core.exceptions import AlgorithmFailureError, MoodleError, ResponseErro
 from vcm.core.modules import Modules
 from vcm.core.networking import Connection
 from vcm.core.results import Results
-from vcm.core.settings import GeneralSettings
 from vcm.core.utils import Patterns, save_crash_context, secure_filename
+from vcm.settings import settings
 
 from .alias import Alias
 from .filecache import REAL_FILE_CACHE
@@ -132,7 +132,7 @@ class BaseLink(_Notify):
 
         try:
             # unidecode.unidecode is used to remove accents.
-            self.response_name = Patterns.FILENAME_PATTERN.search(
+            self.response_name = Patterns.FILENAME.search(
                 self.content_disposition
             ).group(1)
             extension = self._filename_to_ext(self.response_name)
@@ -157,7 +157,7 @@ class BaseLink(_Notify):
         self.logger.debug("Making request")
 
         self.response = self.connection.get(
-            self.redirect_url or self.url, timeout=GeneralSettings.timeout
+            self.redirect_url or self.url, timeout=settings.timeout
         )
 
         self.logger.debug(
@@ -463,7 +463,7 @@ class Folder(BaseLink):
 
         data = {"id": self.id, "sesskey": self.connection.sesskey}
         self.response = self.connection.post(
-            self.url, timeout=GeneralSettings.timeout, data=data
+            self.url, timeout=settings.timeout, data=data
         )
         self.logger.debug("Response obtained [%d]", self.response.status_code)
 

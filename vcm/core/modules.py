@@ -5,7 +5,9 @@ class Modules(Enum):
     undefined = "undefined"
     download = "download"
     notify = "notify"
+    discover = "discover"
     settings = "settings"
+
 
     @classmethod
     def current(cls):

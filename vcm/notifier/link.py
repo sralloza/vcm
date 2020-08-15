@@ -1,7 +1,7 @@
-import json
-import warnings
 from enum import Enum, auto
+import json
 from pathlib import Path
+import warnings
 
 from vcm.core.exceptions import UnkownIconWarning
 from vcm.downloader.link import BaseLink, Folder

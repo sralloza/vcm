@@ -1,0 +1,16 @@
+{
+  "email": "insert-email",
+  "exclude-subjects-ids": [],
+  "forum-subfolders": true,
+  "http-status-port": 8080,
+  "http-status-tickrate": 5,
+  "logging-level": "INFO",
+  "login-retries": 5,
+  "logout-retries": 5,
+  "max-logs": 5,
+  "retries": 10,
+  "root-folder": "insert-root-folder",
+  "section-indexing-ids": [],
+  "secure-section-filename": false,
+  "timeout": 30
+}

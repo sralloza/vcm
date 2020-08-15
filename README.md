@@ -38,79 +38,75 @@ _Note: both installations need to have Python 3.6+ installed._
 
 # How to use
 
-When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\<username>\vcm-settings.toml` and `C:\Users\<username>\vcm-credentials.toml` (you may need to execute the program twice).
+When executing the program for the first time, the settings and credential files will be automatically created. You can find them in `C:\Users\<username>\vcm-settings.yaml` and `C:\Users\<username>\vcm-credentials.yaml` (you may need to execute the program twice).
 
-If you are using Linux, the settings and credential files will be created in and `/home/<username>/vcm-credentials.toml`.
+If you are using Linux, the settings and credential files will be created in and `/home/<username>/vcm-credentials.yaml`.
 
 ## Settings File
 
-The settings file path is `C:\Users\<username>\vcm-settings.toml` (or `/home/<username>/vcm-settings.toml` in Linux). It's written in [TOML](https://github.com/toml-lang/toml#toml). Changing a setting can be done editing the settings file (discouraged, because a syntax error will make the hole program to fail) or using the [`settings` command](#settings-command).
-
-It has 3 sections: general, download and notify.
-
-### General section
-
-Settings:
-
-- **root-folder** - Path to the folder where the files will be downloaded. It will be used to store other files, as logs, notify database, filecache json and others. Must be set, it lacks of a default value.
-- **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
-- **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
-- **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
-- **login-retries** - Number of attempts to login. Defaults to 5.
-- **logout-retries** - Number of attempts to logout. Defaults to 5.
-- **max-logs** - Max number of log files. Defaults to 5.
-- **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter. You can change its content using the commands `vcm settings exclude <subject_id>` and `vcm settings include <subject_id>`, because it can't be changed using `vcm settings set general.exclude-subjects-ids <value>`.
-- **http-status-port** - TCP port to start the http status server on. Defaults to 8080.
-- **http-status-tickrate** - Number of times to update the http status server per second. Defaults to 5.
-
-### Download section
-
-Settings:
-
-- **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a separate folder. Defaults to true.
-- **section-indexing** - List of subject's ids that will have section indexing enabled. You can change its content using the commands `vcm settings index <subject_id>` and `vcm settings unindex <subject_id>`, because it can't be changed using `vcm settings set download.section-indexing <value>`. For more info read [What is a section](#what-is-a-section).
-- **secure-section-filename** - If true, sections folder's name will have its white spaces replaced with low bars.
-
-### Notify section
+The settings file path is `C:\Users\<username>\vcm-settings.yaml` (or `/home/<username>/vcm-settings.yaml` in Linux). It's written in [YAML](https://yaml.org/). Changing a setting can be done editing the settings file (discouraged, because a syntax error will make the hole program to fail) or using the [`settings` command](#settings-command).
 
 Settings:
 
 - **email** - Recipient of the notify email. Must be set, it lacks of a default value.
+- **exclude-subjects-ids** - List of subject ids to exclude while downloading. It's designed to allow the user to avoid downloading files from first quarter's subjects while cursing second quarter. You can change its content using the commands `vcm settings exclude <subject_id>` and `vcm settings include <subject_id>`, because it can't be changed using `vcm settings set exclude-subjects-ids <value>`.
+- **forum-subfolders** - If true, all the files found inside a forum discussion will be stored in a separate folder. Defaults to true.
+- **http-status-port** - TCP port to start the http status server on. Defaults to 8080.
+- **http-status-tickrate** - Number of times to update the http status server per second. Defaults to 5.
+- **logging-level** - Logging level. Can be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`. Defaults to `INFO`.
+- **login-retries** - Number of attempts to login. Defaults to 5.
+- **logout-retries** - Number of attempts to logout. Defaults to 5.
+- **max-logs** - Max number of log files. Defaults to 5.
+- **retries** - Number of attempts to download a web page before raising an error. Defaults to 10.
+- **root-folder** - Path to the folder where the files will be downloaded. It will be used to store other files, as logs, notify database, filecache json and others. Must be set, it lacks of a default value.
+- **section-indexing** - List of subject's ids that will have section indexing enabled. You can change its content using the commands `vcm settings index <subject_id>` and `vcm settings unindex <subject_id>`, because it can't be changed using `vcm settings set section-indexing <value>`. For more info read [What is a section](#what-is-a-section).
+- **secure-section-filename** - If true, sections folder's name will have its white spaces replaced with low bars.
+- **timeout** - Number of seconds without response before abandoning download attempt. Defaults to 30.
 
 ### Settings file example
 
-**_vcm-settings.toml_**
+**_vcm-settings.yaml_**
 
-```toml
-[general]
-root-folder = "/home/user/virtual-campus-data"
-logging-level = "INFO"
-timeout = 30
-retries = 10
-login-retries = 5
-logout-retries = 1
-max-logs = 7
-exclude-subjects-ids = [ 89712, ]
-http-status-port = 80
-http-status-tickrate = 5
-
-[download]
-forum-subfolders = true
-section-indexing = [16942, 82645, 45651, ]
-secure-section-filename = false
-
-[notify]
-email = "email@example.com"
-
+```yaml
+email: example@example.com
+exclude-subjects-ids:
+  - 14113
+forum-subfolders: true
+http-status-port: 8080
+http-status-tickrate: 5
+logging-level: INFO
+login-retries: 5
+logout-retries: 5
+max-logs: 5
+retries: 10
+root-folder: C:/users/example/desktop/university
+section-indexing: []
+secure-section-filename: false
+timeout: 80
 ```
 
 ## Credentials file
 
-The credentials file path is `C:\Users\<username>\vcm-credentials.toml` (or `/home/<username>/vcm-credentials.toml` if you are using Linux). It's written in [TOML](https://github.com/toml-lang/toml#toml).
+The credentials file path is `C:\Users\<username>\vcm-credentials.yaml` (or `/home/<username>/vcm-credentials.yaml` if you are using Linux). It's written in [YAML](https://yaml.org/).
 **Note that the credentials will be stored in plain text.**
 
 It has 2 sections: VirtualCampus and Email.
 All settings must be set, there are no default values.
+
+### Credentials file example
+
+**_vcm-credentials.yaml_**
+
+```yaml
+VirtualCampus:
+  username: <campus-username>
+  password: <campus-password>
+Email:
+  username: <email-username>
+  password: <email-password>
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+```
 
 ### VirtualCampus section
 
@@ -176,8 +172,7 @@ Uses:
 - **List all settings:** `vcm settings list`.
 - **List one specific setting:** `vcm settings show <setting>`
 - **List key settings (not values):** `vcm settings keys`
-- **Set settings value:** `vcm settings set section.key value`.
-  - _Section_ is the settings section, can be one of `general`, `download` or `notify`.
+- **Set settings value:** `vcm settings set key value`.
   - _Key_ is the settings key you want to change. It depends on the section.
   - _Value_ is the settings value you want to set.
   - To view the comand help, use `vcm settings set -h` or `vcm settings set --help`.

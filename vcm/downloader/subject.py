@@ -1,7 +1,7 @@
 """Contains all related to subjects."""
+from hashlib import sha1
 import logging
 import os
-from hashlib import sha1
 from threading import Lock
 from urllib.parse import parse_qs, urlparse
 
@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 from requests import Response
 
 from vcm.core.networking import Connection
-from vcm.core.settings import DownloadSettings, GeneralSettings
 from vcm.core.utils import secure_filename
+from vcm.settings import settings
 
 from .alias import Alias
 from .link import (
@@ -43,23 +43,21 @@ class Subject:
         name = name.capitalize().strip()
 
         self.name = Alias.id_to_alias(
-            sha1(url.encode()).hexdigest(), GeneralSettings.root_folder / name
+            sha1(url.encode()).hexdigest(), settings.root_folder / name
         ).name
         self.url = url
         self.connection = Connection()
         self.queue = queue
 
-        self.enable_section_indexing = (
-            self.url in DownloadSettings.section_indexing_urls
-        )
+        self.enable_section_indexing = self.url in settings.section_indexing_urls
 
         self.response: Response = None
         self.soup: BeautifulSoup = None
         self.notes_links = []
         self.folder_lock = Lock()
         self.hasfolder = False
-        # self.folder = GeneralSettings.root_folder / secure_filename(self.name)
-        self.folder = GeneralSettings.root_folder / self.name
+        # self.folder = settings.root_folder / secure_filename(self.name)
+        self.folder = settings.root_folder / self.name
         self.logger = logging.getLogger(__name__)
 
         self.logger.debug(
@@ -210,9 +208,7 @@ class Section:
         self.name = self.filter_name(name)
         self.url = url
 
-        self.name = secure_filename(
-            self.name, spaces=DownloadSettings.secure_section_filename
-        )
+        self.name = secure_filename(self.name, spaces=settings.secure_section_filename)
 
     def __str__(self):
         if self.url:

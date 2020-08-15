@@ -1,13 +1,13 @@
 """Alias manager for signatures."""
-import json
 from dataclasses import dataclass
 from hashlib import sha1
+import json
 from pathlib import Path
 from threading import Semaphore
 
 from vcm.core.exceptions import AliasFatalError, AliasNotFoundError
-from vcm.core.settings import GeneralSettings
 from vcm.core.utils import MetaSingleton
+from vcm.settings import settings
 
 
 def calculate_hash(byte_data):
@@ -50,7 +50,7 @@ class Alias(metaclass=MetaSingleton):
     """Class designed to declare aliases"""
 
     def __init__(self):
-        self.alias_path = GeneralSettings.root_folder / "alias.json"
+        self.alias_path = settings.root_folder / "alias.json"
         self.alias_entries = []
         self.load()
 

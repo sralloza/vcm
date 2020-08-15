@@ -200,8 +200,17 @@ def secure_filename(input_filename: str, spaces=True) -> str:
 class Patterns:
     """Stores useful regex patterns for this application."""
 
-    FILENAME_PATTERN = re.compile(
-        r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?'
+    FILENAME = re.compile(r'filename="?([\w\s\-!$%^&()_+=`´\¨{\}\[\].;\',¡¿@#·€]+)"?')
+
+    # https://emailregex.com/
+    EMAIL = re.compile(
+        r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\""
+        r"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b"
+        r'\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]('
+        r"?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\."
+        r"){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01"
+        r"-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f"
+        r"])+)\])"
     )
 
 
@@ -240,6 +249,10 @@ def exception_exit(exception, to_stderr=True, red=True):
     exc_str = ", ".join((str(x) for x in exception.args))
     message = "%s: %s" % (exception.__class__.__name__, exc_str)
     message += "\n" + format_exc()
+
+    logger = logging.getLogger(__name__)
+    if Modules.current() != Modules.settings:
+        logger.error("Exception catched:\n%s", message)
 
     if red:
         message = Fore.LIGHTRED_EX + message + Fore.RESET
@@ -358,17 +371,17 @@ def str2bool(value):
 
 
 def configure_logging():
-    from .settings import GeneralSettings
+    from vcm.settings import settings
 
-    if os.environ.get("TESTING") is None:
-        should_roll_over = GeneralSettings.log_path.exists()
+    if not os.environ.get("TESTING", False):
+        should_roll_over = settings.log_path.exists()
 
         fmt = "[%(asctime)s] %(levelname)s - %(threadName)s.%(module)s:%(lineno)s - %(message)s"
         handler = RotatingFileHandler(
-            filename=GeneralSettings.log_path,
+            filename=settings.log_path,
             maxBytes=2_500_000,
             encoding="utf-8",
-            backupCount=GeneralSettings.max_logs,
+            backupCount=settings.max_logs,
         )
 
         current_thread().setName("MT")
@@ -377,34 +390,13 @@ def configure_logging():
             handler.doRollover()
 
         logging.basicConfig(
-            handlers=[handler], level=GeneralSettings.logging_level, format=fmt
+            handlers=[handler], level=settings.logging_level, format=fmt
         )
 
     logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 
-def more_settings_check():
-    from vcm.core._settings import defaults
-    from vcm.core.settings import GeneralSettings, NotifySettings
-
-    os.environ["VCM_DISABLE_CONSTRUCTS"] = "True"
-    if GeneralSettings.root_folder == defaults["general"]["root-folder"]:
-        del os.environ["VCM_DISABLE_CONSTRUCTS"]
-        raise Exception("Must set 'general.root-folder'")
-
-    if NotifySettings.email == defaults["notify"]["email"]:
-        del os.environ["VCM_DISABLE_CONSTRUCTS"]
-        raise Exception("Must set 'notify.email'")
-
-    del os.environ["VCM_DISABLE_CONSTRUCTS"]
-
-    # Setup
-    os.makedirs(GeneralSettings.root_folder, exist_ok=True)
-    os.makedirs(GeneralSettings.logs_folder, exist_ok=True)
-
-
 def setup_vcm():
-    more_settings_check()
     configure_logging()
 
 
@@ -515,12 +507,12 @@ def save_crash_context(crash_object, object_name, reason=None):
         reason (str, optional): reason of the crash. Defaults to None.
     """
 
-    from .settings import GeneralSettings
+    from vcm.settings import settings
 
     now = datetime.now()
     index = 0
     while True:
-        crash_path = GeneralSettings.root_folder.joinpath(
+        crash_path = settings.root_folder.joinpath(
             object_name + ".%s.pkl" % now.strftime("%Y.%m.%d-%H.%M.%S")
         )
         if index:
@@ -565,9 +557,9 @@ def open_http_status_server():
     chrome windows.
     """
 
-    from .settings import GeneralSettings
+    from vcm.settings import settings
 
     Printer.print("Opening state server")
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
-    args = f'--new-window "http://localhost:{GeneralSettings.http_status_port}"'
+    args = f'--new-window "http://localhost:{settings.http_status_port}"'
     get_webbrowser(chrome_path).open_new(args)

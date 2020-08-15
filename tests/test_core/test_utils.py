@@ -20,7 +20,7 @@ from vcm.core.utils import (
     configure_logging,
     exception_exit,
     handle_fatal_error_exit,
-    more_settings_check, open_http_status_server,
+    open_http_status_server,
     safe_exit,
     save_crash_context,
     secure_filename,
@@ -151,11 +151,27 @@ class TestPatterns:
     )
 
     @pytest.mark.parametrize("input_str, expected", filename_data)
-    def test_filename_pattern(self, input_str, expected):
-        match = Patterns.FILENAME_PATTERN.search(input_str)
+    def test_filename(self, input_str, expected):
+        match = Patterns.FILENAME.search(input_str)
 
         if expected:
             assert match.group(1) == expected
+        else:
+            assert match is None
+
+    email_data = (
+        ("asdf@adsf.asdf", True),
+        ("adsf++-dsafads-fsaf@adsfsdalkfj.clkdsjflksjdf", True),
+        (".@gmail.com", False),
+        ("kidding", False),
+    )
+
+    @pytest.mark.parametrize("input_str, expected", email_data)
+    def test_email(self, input_str, expected):
+        match = Patterns.EMAIL.search(input_str)
+
+        if expected:
+            assert match.group(0) == input_str
         else:
             assert match is None
 
@@ -448,8 +464,8 @@ class TestStr2Bool:
 class TestConfigureLogging:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
-        self.lpe_m = self.gs_m.log_path.exists
+        self.settings_m = mock.patch("vcm.settings.settings").start()
+        self.lpe_m = self.settings_m.log_path.exists
         self.ct_m = mock.patch("vcm.core.utils.current_thread").start()
         self.rfh_m = mock.patch("vcm.core.utils.RotatingFileHandler").start()
         self.lbc_m = mock.patch("logging.basicConfig").start()
@@ -470,10 +486,10 @@ class TestConfigureLogging:
         configure_logging()
 
         self.rfh_m.assert_called_once_with(
-            filename=self.gs_m.log_path,
+            filename=self.settings_m.log_path,
             maxBytes=2500000,
             encoding="utf-8",
-            backupCount=self.gs_m.max_logs,
+            backupCount=self.settings_m.max_logs,
         )
         handler = self.rfh_m.return_value
 
@@ -485,7 +501,7 @@ class TestConfigureLogging:
             handler.doRollover.assert_not_called()
 
         self.lbc_m.assert_called_once_with(
-            handlers=[handler], level=self.gs_m.logging_level, format=fmt
+            handlers=[handler], level=self.settings_m.logging_level, format=fmt
         )
         self.lgl_m.assert_called_with("urllib3")
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
@@ -509,73 +525,9 @@ class TestConfigureLogging:
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
-class TestMoreSettingsCheck:
-    @classmethod
-    def setup_class(cls):
-        cls.default_root_folder = "<default-root-folder>"
-        cls.no_default_root_folder = "<no-default-root-folder>"
-
-        cls.default_email = "<default-email>"
-        cls.no_default_email = "<no-default-email>"
-
-        cls.defaults = {
-            "general": {"root-folder": cls.default_root_folder},
-            "notify": {"email": cls.default_email},
-        }
-
-    @pytest.fixture(autouse=True)
-    def mocks(self):
-        self.gs_mock = mock.patch("vcm.core.settings.GeneralSettings").start()
-        self.ns_mock = mock.patch("vcm.core.settings.NotifySettings").start()
-        mock.patch("vcm.core._settings.defaults", self.defaults).start()
-        self.mkdirs_mock = mock.patch("os.makedirs").start()
-
-        self.gs_mock.root_folder = self.no_default_root_folder
-        self.ns_mock.email = self.no_default_email
-
-        yield
-
-        mock.patch.stopall()
-
-    def test_ok(self):
-        more_settings_check()
-
-        self.mkdirs_mock.assert_any_call(self.no_default_root_folder, exist_ok=True)
-        self.mkdirs_mock.assert_any_call(self.gs_mock.logs_folder, exist_ok=True)
-        assert self.mkdirs_mock.call_count == 2
-
-    def test_default_root_folder(self):
-        self.gs_mock.root_folder = self.default_root_folder
-
-        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-
-    def test_default_email(self):
-        self.ns_mock.email = self.default_email
-
-        with pytest.raises(Exception, match="Must set 'notify.email'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-        self.mkdirs_mock.assert_not_called()
-
-    def test_default_root_folder_and_email(self):
-        self.gs_mock.root_folder = self.default_root_folder
-        self.ns_mock.email = self.default_email
-
-        with pytest.raises(Exception, match="Must set 'general.root-folder'"):
-            more_settings_check()
-
-        self.mkdirs_mock.assert_not_called()
-
-
 @mock.patch("vcm.core.utils.configure_logging")
-@mock.patch("vcm.core.utils.more_settings_check")
-def test_setup_vcm(msc_mock, cl_mock):
+def test_setup_vcm(cl_mock):
     setup_vcm()
-    msc_mock.assert_called_once_with()
     cl_mock.assert_called_once_with()
 
 
@@ -665,6 +617,7 @@ class TestCheckUpdates:
             assert "Newer version available" in self.print_m.call_args[0][0]
         else:
             assert "No updates available" in self.print_m.call_args[0][0]
+
 
 class TestMetaSingleton:
     def test_one_class(self):
@@ -789,7 +742,7 @@ class TestErrorCounter:
 class TestSaveCrashContent:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.gs_m = mock.patch("vcm.core.settings.GeneralSettings").start()
+        self.settings_m = mock.patch("vcm.settings.settings").start()
         self.dt_m = mock.patch("vcm.core.utils.datetime").start()
         self.dt_m.now.return_value.strftime.return_value = "<current datetime>"
         self.pkl_m = mock.patch("pickle.dumps").start()
@@ -822,7 +775,7 @@ class TestSaveCrashContent:
         return request.param
 
     def test_save_crash_context(self, exists, crash_object, reason):
-        crash_path = self.gs_m.root_folder.joinpath.return_value
+        crash_path = self.settings_m.root_folder.joinpath.return_value
         crash_path.exists.return_value = bool(exists)
         new_path = crash_path.with_name.return_value
         new_path.exists.side_effect = [True] * (exists - 1) + [False]
@@ -836,7 +789,7 @@ class TestSaveCrashContent:
             crash_path.with_name.assert_not_called()
 
         crash_name = "<object_name>.<current datetime>.pkl"
-        self.gs_m.root_folder.joinpath.assert_called_with(crash_name)
+        self.settings_m.root_folder.joinpath.assert_called_with(crash_name)
         self.dt_m.now.assert_called_once_with()
         self.dt_m.now.return_value.strftime.assert_called_with("%Y.%m.%d-%H.%M.%S")
 
@@ -874,11 +827,12 @@ def test_handle_fatal_error_exit(capsys, message, exit_code):
     assert captured.out == ""
     assert captured.err.strip() == real_message
 
-@mock.patch("vcm.core.settings.GeneralSettings")
+
+@mock.patch("vcm.settings.settings")
 @mock.patch("vcm.core.utils.Printer.print")
 @mock.patch("vcm.core.utils.get_webbrowser")
-def test_open_http_status_server(browser_m, print_m, gen_settings_m):
-    gen_settings_m.http_status_port = "<http-port>"
+def test_open_http_status_server(browser_m, print_m, settings_m):
+    settings_m.http_status_port = "<http-port>"
     open_http_status_server()
 
     print_m.assert_called_once_with("Opening state server")

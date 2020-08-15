@@ -17,7 +17,6 @@ from vcm.main import (
     get_command,
     instructions,
     main,
-    parse_settings_key,
     show_version,
 )
 
@@ -497,8 +496,8 @@ class TestExecuteNotify:
     @pytest.fixture(autouse=True)
     def mocks(self):
         self.notify_m = mock.patch("vcm.main.notify").start()
-        self.not_set_m = mock.patch("vcm.main.NotifySettings").start()
-        self.not_set_m.email = "<email>"
+        self.settings_m = mock.patch("vcm.main.settings").start()
+        self.settings_m.email = "<email>"
 
         yield
 
@@ -530,31 +529,16 @@ class TestExecuteNotify:
 class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-attributes
     @pytest.fixture(autouse=True)
     def mocks(self):
-        class Base(dict):
-            def __repr__(self):
-                return f"<{self.__class__.__name__}>"
-
-        class CustomClass1(Base):
-            pass
-
-        class CustomClass2(Base):
-            pass
-
-        assert repr(Base()) == "<Base>"
-        self.settings_dict = {
-            "cc1": CustomClass1({"m1": "m1"}),
-            "cc2": CustomClass2({"m2": "m2", "m3": "m3"}),
-        }
         self.sts_m = mock.patch("vcm.main.settings_to_string").start()
         self.sts_m.return_value = "<settings-to-str>"
-        self.msc_m = mock.patch("vcm.main.more_settings_check").start()
+        self.check_m = mock.patch("vcm.main.CheckSettings.check").start()
         self.exclude_m = mock.patch("vcm.main.exclude").start()
         self.include_m = mock.patch("vcm.main.include").start()
         self.print_m = mock.patch("vcm.main.Printer.print").start()
         self.sect_idx_m = mock.patch("vcm.main.section_index").start()
         self.unsect_idx_m = mock.patch("vcm.main.un_section_index").start()
-        self.set_class_m = mock.patch("vcm.main.SETTINGS_CLASSES").start()
-        mock.patch("vcm.main.settings_name_to_class", self.settings_dict).start()
+        self.settings_dict = {"key1": 1, "key2": True, "key3": "three"}
+        mock.patch("vcm.main.settings", self.settings_dict).start()
 
         NonKeyBasedSettingsSubcommand.opt = None
 
@@ -572,13 +556,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
             NonKeyBasedSettingsSubcommand, "<set-subcommand>"
         )
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_list(self, capsys):
         NonKeyBasedSettingsSubcommand.list()
@@ -588,13 +571,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         assert result.out == "<settings-to-str>\n"
 
         self.sts_m.assert_called_once_with()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_check(self, capsys):
         NonKeyBasedSettingsSubcommand.check()
@@ -604,13 +586,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         assert result.out == "Checked\n"
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_called_once_with()
+        self.check_m.assert_called_once_with()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_exclude(self):
         opt = Namespace(subject_id=9876543210)
@@ -618,13 +599,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         NonKeyBasedSettingsSubcommand.exclude()
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_called_once_with(9876543210)
         self.include_m.assert_not_called()
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_include(self):
         opt = Namespace(subject_id=9876543210)
@@ -632,13 +612,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         NonKeyBasedSettingsSubcommand.include()
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_called_once_with(9876543210)
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_index(self):
         opt = Namespace(subject_id=9876543210)
@@ -646,13 +625,12 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         NonKeyBasedSettingsSubcommand.index()
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_called_once()
         self.sect_idx_m.assert_called_once_with(9876543210)
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
 
     def test_un_index(self):
         opt = Namespace(subject_id=9876543210)
@@ -660,92 +638,27 @@ class TestNonKeyBasedSettingsSubcommand:  # pylint: disable=too-many-instance-at
         NonKeyBasedSettingsSubcommand.un_index()
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_called_once()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_called_once_with(9876543210)
-        self.set_class_m.assert_not_called()
 
     def test_keys(self, capsys):
         NonKeyBasedSettingsSubcommand.keys()
 
         result = capsys.readouterr()
         assert result.err == ""
-        assert result.out == " - cc1.m1\n - cc2.m2\n - cc2.m3\n"
+        assert result.out == " - key1\n - key2\n - key3\n"
 
         self.sts_m.assert_not_called()
-        self.msc_m.assert_not_called()
+        self.check_m.assert_not_called()
         self.exclude_m.assert_not_called()
         self.include_m.assert_not_called()
         self.print_m.assert_not_called()
         self.sect_idx_m.assert_not_called()
         self.unsect_idx_m.assert_not_called()
-        self.set_class_m.assert_not_called()
-
-
-class TestParseSettingsKey:
-    class Base(dict):
-        def __repr__(self):
-            return f"<{self.__class__.__name__}>"
-
-    class CustomClass1(Base):
-        pass
-
-    class CustomClass2(Base):
-        pass
-
-    @pytest.fixture(autouse=True)
-    def mocks(self):
-        assert repr(self.Base()) == "<Base>"
-        # cc stands for CustomClass, and m1 stands for method-1
-        self.settings_dict = {
-            "cc1": self.CustomClass1({"m1": "m1"}),
-            "cc2": self.CustomClass2({"m2": "m2", "m3": "m3"}),
-        }
-        mock.patch("vcm.main.settings_name_to_class", self.settings_dict).start()
-        self.error_m = mock.patch("vcm.main.Parser.error").start()
-        self.error_m.side_effect = SystemExit
-
-        yield
-
-        mock.patch.stopall()
-
-    @pytest.mark.parametrize("key", ("cc1.m1", "cc2.m2", "cc2.m3"))
-    def test_ok(self, key):
-        opt = Namespace(key=key)
-        cls, parsed_key = parse_settings_key(opt)
-        assert cls == self.settings_dict[key.split(".")[0]]
-        assert parsed_key == key.split(".")[-1]
-
-        self.error_m.assert_not_called()
-
-    @pytest.mark.parametrize("key", ("a.b.c.d.", "aaaa", "aa-bb"))
-    def test_invalid_key_1(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once_with("Invalid key (must be section.setting)")
-
-    @pytest.mark.parametrize("key", ("cc103.asdf", "invalid.34", "mec.a"))
-    def test_invalid_key_2(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once()
-        assert "Invalid setting class: " in self.error_m.call_args[0][0]
-
-    @pytest.mark.parametrize("key", ("cc1.m2", "cc1.m3", "cc2.m1", "cc2.m4"))
-    def test_invalid_key_3(self, key):
-        opt = Namespace(key=key)
-        with pytest.raises(SystemExit):
-            parse_settings_key(opt)
-
-        self.error_m.assert_called_once()
-        assert re.search(r"is not a valid \w+ setting", self.error_m.call_args[0][0])
 
 
 class TestExecuteSettings:
@@ -760,9 +673,7 @@ class TestExecuteSettings:
         self.execute_m = mock.patch(
             "vcm.main.NonKeyBasedSettingsSubcommand.execute"
         ).start()
-        self.psk_m = mock.patch("vcm.main.parse_settings_key").start()
-        self.psk_m.return_value = (self.DummyClass, "parsed_key")
-
+        self.settings_m = mock.patch("vcm.main.settings").start()
         self.getattr_m = mock.patch("vcm.main.getattr").start()
         self.getattr_m.return_value = "requested-value"
         self.setattr_m = mock.patch("vcm.main.setattr").start()
@@ -776,7 +687,7 @@ class TestExecuteSettings:
         self.execute_m.side_effect = AttributeError
 
         opt = Namespace(
-            settings_subcommand=command, value="value", key="DummyClass.key"
+            settings_subcommand=command, value="value", key="key"
         )
         execute_settings(opt)
 
@@ -784,23 +695,22 @@ class TestExecuteSettings:
         assert result.err == ""
 
         self.execute_m.assert_called_once_with(opt)
-        self.psk_m.assert_called_once_with(opt)
 
         if command == "set":
             self.getattr_m.assert_not_called()
             self.setattr_m.assert_called_once_with(
-                self.DummyClass, "parsed_key", "value"
+                self.settings_m, "key", "value"
             )
             assert result.out == ""
         if command == "show":
-            self.getattr_m.assert_called_once_with(self.DummyClass, "parsed_key")
+            self.getattr_m.assert_called_once_with(self.settings_m, "key")
             self.setattr_m.assert_not_called()
-            assert result.out == "DummyClass.key: 'requested-value'\n"
+            assert result.out == "key: 'requested-value'\n"
 
     @pytest.mark.parametrize("command", rest)
     def test_not_key_based_settings(self, command, capsys):
         opt = Namespace(
-            settings_subcommand=command, value="value", key="DummyClass.key"
+            settings_subcommand=command, value="value", key="key"
         )
         executed_result = execute_settings(opt)
         assert executed_result == self.execute_m.return_value
@@ -810,7 +720,6 @@ class TestExecuteSettings:
         assert result.out == ""
 
         self.execute_m.assert_called_once_with(opt)
-        self.psk_m.assert_not_called()
         self.getattr_m.assert_not_called()
         self.setattr_m.assert_not_called()
 

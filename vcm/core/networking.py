@@ -6,9 +6,10 @@ from typing import Optional
 from bs4 import BeautifulSoup
 import requests
 
+from vcm.settings import settings
+
 from .credentials import Credentials
 from .exceptions import DownloaderError, LoginError, LogoutError, MoodleError
-from .settings import GeneralSettings
 from .utils import MetaSingleton, save_crash_context
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class Connection(metaclass=MetaSingleton):
         return self._downloader.delete(url, **kwargs)
 
     def logout(self):
-        logout_retries = GeneralSettings.logout_retries
+        logout_retries = settings.logout_retries
         logger.debug("Logging out (%d retries)", logout_retries)
 
         while True:
@@ -86,7 +87,7 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logged out")
 
     def login(self):
-        login_retries = GeneralSettings.login_retries
+        login_retries = settings.login_retries
 
         while True:
             try:
@@ -105,7 +106,7 @@ class Connection(metaclass=MetaSingleton):
                         )
 
                     raise LoginError(
-                        f"{GeneralSettings.login_retries} login attempts, unkwown error. See logs."
+                        f"{settings.login_retries} login attempts, unkwown error. See logs."
                     ) from exc
 
     def _login(self):
@@ -191,7 +192,7 @@ class Downloader(requests.Session):
 
     def request(self, method, url, **kwargs):
         self.logger.debug("%s %r", method, url)
-        retries = GeneralSettings.retries
+        retries = settings.retries
 
         while retries > 0:
             try:
