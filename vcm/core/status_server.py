@@ -40,7 +40,8 @@ def runserver(queue: Queue, threadlist: List[Worker]):
 
     @app.route("/backend.js")
     def backend_js():
-        data = Path(__file__).with_name("http-status-server.js").read_bytes()
+        js_path = Path(__file__).parent.parent / "data/http-status-server.js"
+        data = js_path.read_bytes()
         return flask.Response(data, mimetype="application/javascript")
 
     @app.route("/")
