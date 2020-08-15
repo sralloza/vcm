@@ -638,12 +638,13 @@ class TestCheckSettings:
             mocked_check.assert_called_once_with()
             mocked_check.reset_mock()
 
-    def test_check_root_folder(self):
+    @mock.patch("pathlib.Path.mkdir")
+    def test_check_root_folder(self, mkdir_m):
         rmtree(self.settings.root_folder, ignore_errors=True)
 
         self.settings["root-folder"] = "/path/to/folder"
         CheckSettings.check_root_folder()
-        assert self.settings.root_folder.is_dir()
+        mkdir_m.assert_called_once_with(parents=True, exist_ok=True)
 
         self.settings["root-folder"] = 65
         with pytest.raises(TypeError):
@@ -659,6 +660,7 @@ class TestCheckSettings:
             with pytest.raises(TypeError, match="Wrapper"):
                 CheckSettings.check_root_folder()
             rf_m.assert_called_once_with()
+        mkdir_m.assert_called_once_with(parents=True, exist_ok=True)
 
     @mock.patch("pathlib.Path.mkdir")
     def test_check_logs_folder(self, mkdir_m):
