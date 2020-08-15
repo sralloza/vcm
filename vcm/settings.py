@@ -1,6 +1,7 @@
 """Settings manager."""
 
 import json
+from logging import _levelToName
 import os
 from pathlib import Path
 from tempfile import gettempdir
@@ -11,7 +12,6 @@ from ruamel.yaml import YAML
 from vcm.core.exceptions import SettingsError
 from vcm.core.utils import handle_fatal_error_exit, str2bool
 
-from logging import _levelToName
 from .core.exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
