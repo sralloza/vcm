@@ -1,5 +1,6 @@
 from pathlib import Path
 from shutil import rmtree
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -21,6 +22,10 @@ from vcm.settings import (
     settings_to_string,
     un_section_index,
 )
+
+
+# pylint: disable=protected-access
+Settings._instance: Optional[Settings]  # for pylint
 
 
 class TestSaveSettings:
@@ -50,11 +55,11 @@ class TestSaveSettings:
 class TestSettingsToString:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        class Settings(dict):
+        class TestingSettings(dict):
             credentials_path = "<creds-path>"
             settings_path = "<settings-path>"
 
-        self.settings = Settings()
+        self.settings = TestingSettings()
         self.settings["key_a"] = "a"
         self.settings["key-b"] = "b"
 
@@ -295,15 +300,15 @@ class TestSettings:
         mock.patch.stopall()
 
     def test_use_metaclass(self):
-        s1 = Settings()
-        s2 = Settings()
-        s3 = Settings()
-        assert s1 is s2
-        assert s2 is s3
-        assert s3 is s1
-        assert s1 is Settings._instance
-        assert s2 is Settings._instance
-        assert s3 is Settings._instance
+        settings1 = Settings()
+        settings2 = Settings()
+        settings3 = Settings()
+        assert settings1 is settings2
+        assert settings2 is settings3
+        assert settings3 is settings1
+        assert settings1 is Settings._instance
+        assert settings2 is Settings._instance
+        assert settings3 is Settings._instance
 
     def test_class_attributes(self):
         assert hasattr(Settings, "settings_folder")
@@ -342,7 +347,7 @@ class TestSettings:
         assert settings["hElLo_WoRlD"] == "yes"
 
         with pytest.raises(KeyError):
-            settings["hello world"]
+            assert settings["hello world"]
 
     def test_setitem(self):
         settings = Settings()
@@ -437,6 +442,7 @@ class TestSettingsAttributes:
         assert self.settings.logs_folder.as_posix().endswith("logs")
         rel = self.settings.logs_folder.relative_to(self.settings.root_folder)
         assert rel == Path(".logs")
+
     def test_log_path(self):
         assert isinstance(self.settings.log_path, Path)
         assert self.settings.log_path.as_posix().endswith("log")
@@ -453,7 +459,7 @@ class TestSettingsAttributes:
         ids = [654, 655, 656]
         self.settings["exclude-subjects-ids"] = ids
         assert isinstance(self.settings.exclude_urls, list)
-        for url, subject_id in zip(self.settings.exclude_urls,ids):
+        for url, subject_id in zip(self.settings.exclude_urls, ids):
             assert isinstance(url, str)
             assert str(subject_id) in url
             assert "campusvirtual.uva.es" in url
@@ -476,7 +482,7 @@ class TestSettingsAttributes:
         ids = [654, 655, 656]
         self.settings["section-indexing-ids"] = ids
         assert isinstance(self.settings.section_indexing_urls, list)
-        for url, subject_id in zip(self.settings.section_indexing_urls,ids):
+        for url, subject_id in zip(self.settings.section_indexing_urls, ids):
             assert isinstance(url, str)
             assert str(subject_id) in url
             assert "campusvirtual.uva.es" in url
@@ -557,7 +563,6 @@ class TestCheckSettings:
             with pytest.raises(TypeError, match="Wrapper"):
                 CheckSettings.check_root_folder()
             rf_m.assert_called_once_with()
-
 
     def test_check_logs_folder(self):
         rmtree(self.settings.logs_folder, ignore_errors=True)
@@ -674,7 +679,7 @@ class TestCheckSettings:
         self.settings["exclude-subjects-ids"] = [500]
         CheckSettings.check_exclude_subjects_ids()
 
-        self.settings["exclude-subjects-ids"] = 5+2j
+        self.settings["exclude-subjects-ids"] = 5 + 2j
         with pytest.raises(TypeError):
             CheckSettings.check_exclude_subjects_ids()
 
@@ -745,7 +750,7 @@ class TestCheckSettings:
         self.settings["section-indexing-ids"] = [500]
         CheckSettings.check_section_indexing_ids()
 
-        self.settings["section-indexing-ids"] = 5+2j
+        self.settings["section-indexing-ids"] = 5 + 2j
         with pytest.raises(TypeError):
             CheckSettings.check_section_indexing_ids()
 
