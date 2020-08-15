@@ -163,14 +163,12 @@ class Settings(dict, metaclass=MetaSingleton):
 
         return cls._template % subject_id
 
-    @staticmethod
-    def exclude_subjects_ids_setter():
+    def exclude_subjects_ids_setter(self):  # pylint: disable=no-self-use
         """Setter for setting exclude-subjects-ids."""
 
         raise SettingsError("exclude-subjects-ids can't be set using the CLI.")
 
-    @staticmethod
-    def section_indexing_setter():
+    def section_indexing_setter(self):  # pylint: disable=no-self-use
         """Setter for setting section-indexing."""
 
         raise SettingsError("section-indexing can't be set using the CLI")
