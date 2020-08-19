@@ -290,14 +290,12 @@ class Downloader(requests.Session):
         while retries > 0:
             try:
                 return super().request(method, url, **kwargs)
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.RequestException as exc:
+                excname = type(exc).__name__
                 retries -= 1
                 self.logger.warning(
-                    "Connection error in %s, retries=%s", method, retries
+                    "Catched %s in %s, retries=%s", excname, method, retries
                 )
-            except requests.exceptions.ReadTimeout:
-                retries -= 1
-                self.logger.warning("Timeout error in %s, retries=%s", method, retries)
 
         self.logger.critical("Download error in %s %r", method, url)
         raise DownloaderError("max retries failed.")
