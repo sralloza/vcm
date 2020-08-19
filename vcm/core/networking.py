@@ -1,6 +1,7 @@
 """Custom downloader with retries control."""
 
 import logging
+import sys
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -21,6 +22,8 @@ USER_AGENT = (
 
 
 class Connection(metaclass=MetaSingleton):
+    """Manages HTTP connection with the university's servers."""
+
     def __init__(self):
         self._downloader = Downloader()
         self._logout_response: Optional[requests.Response] = None
@@ -30,11 +33,33 @@ class Connection(metaclass=MetaSingleton):
         self._login_attempts = 0
 
     @property
-    def sesskey(self):
+    def sesskey(self) -> str:
+        """Returns the sesskey.
+
+        Raises:
+            RuntimeError: if sesskey is not defined.
+
+        Returns:
+            str: sesskey.
+        """
+
+        if not self._sesskey:
+            raise RuntimeError("Sesskey not set, try to login")
         return self._sesskey
 
     @property
-    def user_url(self):
+    def user_url(self) -> str:
+        """Returns the user url.
+
+        Raises:
+            RuntimeError: if user-url is not set.
+
+        Returns:
+            str: user url.
+        """
+
+        if not self._user_url:
+            raise RuntimeError("User url not set, try to login")
         return self._user_url
 
     def __enter__(self):
@@ -44,16 +69,50 @@ class Connection(metaclass=MetaSingleton):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
 
-    def get(self, url, **kwargs):
+    def get(self, url, **kwargs) -> requests.Response:
+        """Sends an HTTP GET request.
+
+        Args:
+            url (str): url of the request.
+
+        Returns:
+            request.Response: response.
+        """
+
         return self._downloader.get(url, **kwargs)
 
-    def post(self, url, data=None, json=None, **kwargs):
-        return self._downloader.post(url, data, json, **kwargs)
+    def post(self, url: str, data: dict = None, **kwargs) -> requests.Response:
+        """Sends an HTTP POST request.
 
-    def delete(self, url, **kwargs):
+        Args:
+            url (str): url of the request.
+            data (dict, optional): data to send. Defaults to None.
+
+        Returns:
+            requests.Response: response.
+        """
+
+        return self._downloader.post(url, data, **kwargs)
+
+    def delete(self, url: str, **kwargs) -> requests.Response:
+        """Sends an HTTP DELETE request.
+
+        Args:
+            url (str): url of the request.
+
+        Returns:
+            requests.Response: response.
+        """
+
         return self._downloader.delete(url, **kwargs)
 
     def logout(self):
+        """Logs out of the virtual campus web page.
+
+        Raises:
+            LogoutError: if the system couldn't log out.
+        """
+
         logout_retries = settings.logout_retries
         logger.debug("Logging out (%d retries)", logout_retries)
 
@@ -87,6 +146,12 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logged out")
 
     def login(self):
+        """Wrapper of real loging function.
+
+        Raises:
+            LoginError: if login was unsuccessfull.
+        """
+
         login_retries = settings.login_retries
 
         while True:
@@ -95,7 +160,7 @@ class Connection(metaclass=MetaSingleton):
                 self._login()
                 logger.info("Logged in")
                 return
-            except Exception as exc:
+            except Exception as exc: # pylint: disable=broad-except
                 logger.warning("Needed to call again Connection.login() due to %r", exc)
                 login_retries -= 1
 
@@ -110,6 +175,14 @@ class Connection(metaclass=MetaSingleton):
                     ) from exc
 
     def _login(self):
+        """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
+
+        Raises:
+            MoodleError: if moodle is under maintenance.
+            LoginError: if login HTTP POST request returned wrong status.
+            LoginError: if login was unsuccessfull.
+        """
+
         response = self.get("https://campusvirtual.uva.es/login/index.php")
 
         if not response.ok:
@@ -119,7 +192,7 @@ class Connection(metaclass=MetaSingleton):
                     response.status_code,
                     response.reason,
                 )
-                return exit(-1)
+                sys.exit(-1)
 
             logger.critical(
                 "Moodle error (%d - %s)", response.status_code, response.reason
@@ -168,6 +241,12 @@ class Connection(metaclass=MetaSingleton):
         self.find_sesskey_and_user_url(soup)
 
     def find_sesskey_and_user_url(self, soup: BeautifulSoup):
+        """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`.
+
+        Args:
+            soup (BeautifulSoup): HTTP response parsed with bs4.
+        """
+
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
             "value"
         ]
@@ -190,7 +269,21 @@ class Downloader(requests.Session):
         super().__init__()
         self.headers.update({"User-Agent": USER_AGENT})
 
-    def request(self, method, url, **kwargs):
+    #pylint: disable=arguments-differ
+    def request(self, method, url, **kwargs) -> requests.Response:
+        """Makes an HTTP request.
+
+        Args:
+            method (str): HTTP method of the request.
+            url (str): url of the request.
+
+        Raises:
+            DownloaderError: if all retries failed.
+
+        Returns:
+            requests.Response: HTTP response.
+        """
+
         self.logger.debug("%s %r", method, url)
         retries = settings.retries
 
