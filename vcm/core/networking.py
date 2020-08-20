@@ -127,38 +127,58 @@ class Connection(metaclass=MetaSingleton):
 
         return self.post(self.logout_url, data={"sesskey": self.sesskey},)
 
-    def logout(self):
-        """Logs out of the virtual campus web page.
+    def inner_logout(self):
+        """Logs out of the virtual campus.
 
         Raises:
-            LogoutError: if the system couldn't log out.
+            LogoutError: if the HTTP request raises an aerror.
+            LogoutError: if the server returns a 4xx or 5xx HTTP code.
+            LogoutError: if logout was not successfull.
         """
-
-        logout_retries = settings.logout_retries
-        logger.debug("Logging out (%d retries)", logout_retries)
-
-        while True:
+        
+        try:
             self._logout_response = self.make_logout_request()
-            if not self._logout_response.ok:
-                logout_retries -= 1
+        except DownloaderError as exc:
+            excname = type(exc).__name__
+            raise LogoutError(f"Logout request raised {excname}") from exc
 
-                logger.warning(
-                    "Server Error during logout [%d], %d retries left",
-                    self._logout_response.status_code,
-                    logout_retries,
-                )
+        if not self._logout_response.ok:
+            raise LogoutError("Logout returned %d" % self._logout_response.status_code)
 
-                if logout_retries <= 0:
-                    raise LogoutError("Logout retries expired")
-
-                continue
-            break
-
+        # Really weird error, save context to try to fix it
         if "Usted no se ha identificado" not in self._logout_response.text:
             save_crash_context(
                 self._logout_response, "logout-error", "unkown error happened"
             )
-            raise LogoutError("Unkown error happened")
+            raise LogoutError("Unkown error during logout")
+
+    def logout(self):
+        """Wrapper for inner_logout().
+
+        Raises:
+            LogoutError: if all retries fail.
+        """
+
+        logout_retries = settings.logout_retries
+        logger.debug("Logging out (%d retries)", logout_retries)
+        exception = None
+
+        while logout_retries:
+            try:
+                self.inner_logout()
+                break
+            except LogoutError as exc:
+                exception = exc
+                logout_retries -= 1
+                logger.warning(
+                    "Error during logout [%d], %d retries left",
+                    self._logout_response.status_code,
+                    logout_retries,
+                )
+
+        if not logout_retries:
+            logger.critical("Logout retries expired")
+            raise LogoutError("Logout retries expired") from exception
 
         logger.info("Logged out")
 
