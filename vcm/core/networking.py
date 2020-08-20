@@ -209,6 +209,7 @@ class Connection(metaclass=MetaSingleton):
             },
         )
 
+
     def handle_maintenance_mode(self, status_code, reason) -> NoReturn:
         """Handles the situation when the moodle is under maintenance.
 
@@ -268,27 +269,21 @@ class Connection(metaclass=MetaSingleton):
     def inner_login(self):
         # Logs into the webpage of the virtual campus. Needed to make HTTP requests.
 
-
         if self.check_already_logged_in():
             return
 
         login_token = self.get_login_token()
 
-
         logger.info("Logging in with user %r", Credentials.VirtualCampus.username)
-
         self._login_response = self.make_login_request(login_token)
 
         if not self._login_response.ok:
-            raise LoginError(
-                "Got response with HTTP code %d" % self._login_response.status_code
-            )
-
-        soup = BeautifulSoup(self._login_response.text, "html.parser")
+            raise LoginError("Server returned %s" % self._login_response.status_code)
 
         if "Usted se ha identificado" not in self._login_response.text:
-            raise LoginError
+            raise LoginError("Unsuccessfull login")
 
+        soup = BeautifulSoup(self._login_response.text, "html.parser")
         self.find_sesskey_and_user_url(soup)
 
     def login(self):
