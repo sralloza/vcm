@@ -212,20 +212,14 @@ class Connection(metaclass=MetaSingleton):
         response = self.get("https://campusvirtual.uva.es/my/")
         self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
 
-    def _login(self):
-        """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
-
-        Raises:
-            MoodleError: if moodle is under maintenance.
-            LoginError: if login HTTP POST request returned wrong status.
-            LoginError: if login was unsuccessfull.
-        """
-
+    def get_login_token(self) -> Optional[str]:
         response = self.make_login_request()
 
         if not response.ok:
             if "maintenance" in response.reason:
-                return self.handle_maintenance_mode(response.status_code, response.reason)
+                return self.handle_maintenance_mode(
+                    response.status_code, response.reason
+                )
 
             logger.critical(
                 "Moodle error (%d - %s)", response.status_code, response.reason
@@ -239,10 +233,32 @@ class Connection(metaclass=MetaSingleton):
         if "Usted ya está en el sistema" in response.text:
             return self.handle_already_logged_in()
 
-
         soup = BeautifulSoup(response.text, "html.parser")
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
-        login_token = login_token["value"]
+        try:
+            login_token = login_token.get("value")
+            if not login_token:
+                raise ValueError
+        except (AttributeError, ValueError):
+            save_crash_context(
+                response, "login-token-not-found", "Can't find login token"
+            )
+            raise LoginError("Can't find token")
+
+        return login_token
+
+    def _login(self):
+        """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
+
+        Raises:
+            MoodleError: if moodle is under maintenance.
+            LoginError: if login HTTP POST request returned wrong status.
+            LoginError: if login was unsuccessfull.
+        """
+
+        login_token = self.get_login_token()
+        if not login_token:  # User already logged in, token unnecessary
+            return
 
         logger.debug("Login token: %s", login_token)
 
