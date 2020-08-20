@@ -221,11 +221,6 @@ class Connection(metaclass=MetaSingleton):
         logger.critical("Moodle under maintenance (%d - %s)", status_code, reason)
         sys.exit(-1)
 
-    def handle_already_logged_in(self):
-        logger.info("User already logged in")
-        response = self.get("https://campusvirtual.uva.es/my/")
-        self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
-
     def check_already_logged_in(self) -> bool:
         response = self.get_login_page()
 
@@ -245,7 +240,7 @@ class Connection(metaclass=MetaSingleton):
 
         # Detect if user is already logged in
         if "Usted ya está en el sistema" in response.text:
-            self.handle_already_logged_in()
+            logger.info("User already logged in")
             return True
         return False
 
@@ -253,6 +248,7 @@ class Connection(metaclass=MetaSingleton):
         response = self.get_login_page()
         soup = BeautifulSoup(response.text, "html.parser")
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
+
         try:
             login_token = login_token.get("value")
             if not login_token:
@@ -283,9 +279,6 @@ class Connection(metaclass=MetaSingleton):
         if "Usted se ha identificado" not in self._login_response.text:
             raise LoginError("Unsuccessfull login")
 
-        soup = BeautifulSoup(self._login_response.text, "html.parser")
-        self.find_sesskey_and_user_url(soup)
-
     def login(self):
         """Wrapper of real loging function.
 
@@ -315,13 +308,14 @@ class Connection(metaclass=MetaSingleton):
                         f"{settings.login_retries} login attempts, unkwown error. See logs."
                     ) from exc
 
-    def find_sesskey_and_user_url(self, soup: BeautifulSoup):
+    def find_sesskey_and_user_url(self):
         """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`.
 
         Args:
             soup (BeautifulSoup): HTTP response parsed with bs4.
         """
 
+        soup = BeautifulSoup(self.get_login_page(), "html.parser")
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
             "value"
         ]
