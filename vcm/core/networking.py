@@ -1,5 +1,6 @@
 """Custom downloader with retries control."""
 
+from functools import lru_cache
 import logging
 import sys
 from typing import NoReturn, Optional
@@ -29,11 +30,11 @@ class Connection(metaclass=MetaSingleton):
 
     def __init__(self):
         self._downloader = Downloader()
-        self._logout_response: Optional[requests.Response] = None
+        self._login_attempts = 0
         self._login_response: Optional[requests.Response] = None
+        self._logout_response: Optional[requests.Response] = None
         self._sesskey: Optional[str] = None
         self._user_url: Optional[str] = None
-        self._login_attempts = 0
 
     @property
     def sesskey(self) -> str:
@@ -193,8 +194,20 @@ class Connection(metaclass=MetaSingleton):
 
         logger.info("Logged out")
 
-    def make_login_request(self) -> requests.Response:
+    @lru_cache(maxsize=10)
+    def get_login_page(self) -> requests.Response:
         return self.get(self.login_url)
+
+    def make_login_request(self, login_token: str) -> requests.Response:
+        return self.post(
+            self.login_url,
+            data={
+                "anchor": "",
+                "username": Credentials.VirtualCampus.username,
+                "password": Credentials.VirtualCampus.password,
+                "logintoken": login_token,
+            },
+        )
 
     def handle_maintenance_mode(self, status_code, reason) -> NoReturn:
         """Handles the situation when the moodle is under maintenance.
@@ -212,8 +225,8 @@ class Connection(metaclass=MetaSingleton):
         response = self.get("https://campusvirtual.uva.es/my/")
         self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
 
-    def get_login_token(self) -> Optional[str]:
-        response = self.make_login_request()
+    def check_already_logged_in(self) -> bool:
+        response = self.get_login_page()
 
         if not response.ok:
             if "maintenance" in response.reason:
@@ -231,8 +244,12 @@ class Connection(metaclass=MetaSingleton):
 
         # Detect if user is already logged in
         if "Usted ya está en el sistema" in response.text:
-            return self.handle_already_logged_in()
+            self.handle_already_logged_in()
+            return True
+        return False
 
+    def get_login_token(self) -> str:
+        response = self.get_login_page()
         soup = BeautifulSoup(response.text, "html.parser")
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
         try:
@@ -245,34 +262,22 @@ class Connection(metaclass=MetaSingleton):
             )
             raise LoginError("Can't find token")
 
+        logger.debug("Login token: %s", login_token)
         return login_token
 
-    def _login(self):
-        """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
+    def inner_login(self):
+        # Logs into the webpage of the virtual campus. Needed to make HTTP requests.
 
-        Raises:
-            MoodleError: if moodle is under maintenance.
-            LoginError: if login HTTP POST request returned wrong status.
-            LoginError: if login was unsuccessfull.
-        """
 
-        login_token = self.get_login_token()
-        if not login_token:  # User already logged in, token unnecessary
+        if self.check_already_logged_in():
             return
 
-        logger.debug("Login token: %s", login_token)
+        login_token = self.get_login_token()
+
 
         logger.info("Logging in with user %r", Credentials.VirtualCampus.username)
 
-        self._login_response = self.post(
-            "https://campusvirtual.uva.es/login/index.php",
-            data={
-                "anchor": "",
-                "username": Credentials.VirtualCampus.username,
-                "password": Credentials.VirtualCampus.password,
-                "logintoken": login_token,
-            },
-        )
+        self._login_response = self.make_login_request(login_token)
 
         if not self._login_response.ok:
             raise LoginError(
@@ -298,7 +303,7 @@ class Connection(metaclass=MetaSingleton):
         while True:
             try:
                 logger.debug("Logging in (%d retries left)", login_retries)
-                self._login()
+                self.inner_login()
                 logger.info("Logged in")
                 return
             except Exception as exc:  # pylint: disable=broad-except
