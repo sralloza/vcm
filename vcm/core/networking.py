@@ -207,6 +207,11 @@ class Connection(metaclass=MetaSingleton):
         logger.critical("Moodle under maintenance (%d - %s)", status_code, reason)
         sys.exit(-1)
 
+    def handle_already_logged_in(self):
+        logger.info("User already logged in")
+        response = self.get("https://campusvirtual.uva.es/my/")
+        self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
+
     def _login(self):
         """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
 
@@ -230,15 +235,12 @@ class Connection(metaclass=MetaSingleton):
                 f"Moodle error ({response.status_code} - {response.reason})",
             )
 
-        soup = BeautifulSoup(response.text, "html.parser")
-
         # Detect if user is already logged in
         if "Usted ya está en el sistema" in response.text:
-            logger.info("User already logged in")
-            response = self.get("https://campusvirtual.uva.es/my/")
-            self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
-            return
+            return self.handle_already_logged_in()
 
+
+        soup = BeautifulSoup(response.text, "html.parser")
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
         login_token = login_token["value"]
 
