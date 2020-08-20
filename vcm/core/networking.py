@@ -122,7 +122,7 @@ class Connection(metaclass=MetaSingleton):
                 % self.sesskey,
                 data={"sesskey": self.sesskey},
             )
-            if 500 <= self._logout_response.status_code <= 599:
+            if not self._logout_response.ok:
                 logout_retries -= 1
 
                 logger.warning(
