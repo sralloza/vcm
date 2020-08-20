@@ -24,6 +24,8 @@ USER_AGENT = (
 class Connection(metaclass=MetaSingleton):
     """Manages HTTP connection with the university's servers."""
 
+    _logout_url_template = "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
+
     def __init__(self):
         self._downloader = Downloader()
         self._logout_response: Optional[requests.Response] = None
@@ -61,6 +63,16 @@ class Connection(metaclass=MetaSingleton):
         if not self._user_url:
             raise RuntimeError("User url not set, try to login")
         return self._user_url
+
+    @property
+    def logout_url(self) -> str:
+        """Returns the url of the api endpoint to log out.
+
+        Returns:
+            str: logout url.
+        """
+
+        return self._logout_url_template % self.sesskey
 
     def __enter__(self):
         self.login()
@@ -160,7 +172,7 @@ class Connection(metaclass=MetaSingleton):
                 self._login()
                 logger.info("Logged in")
                 return
-            except Exception as exc: # pylint: disable=broad-except
+            except Exception as exc:  # pylint: disable=broad-except
                 logger.warning("Needed to call again Connection.login() due to %r", exc)
                 login_retries -= 1
 
@@ -269,7 +281,7 @@ class Downloader(requests.Session):
         super().__init__()
         self.headers.update({"User-Agent": USER_AGENT})
 
-    #pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
     def request(self, method, url, **kwargs) -> requests.Response:
         """Makes an HTTP request.
 
