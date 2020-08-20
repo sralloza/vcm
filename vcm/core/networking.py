@@ -193,6 +193,9 @@ class Connection(metaclass=MetaSingleton):
 
         logger.info("Logged out")
 
+    def make_login_request(self) -> requests.Response:
+        return self.get(self.login_url)
+
     def _login(self):
         """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
 
@@ -202,7 +205,7 @@ class Connection(metaclass=MetaSingleton):
             LoginError: if login was unsuccessfull.
         """
 
-        response = self.get("https://campusvirtual.uva.es/login/index.php")
+        response = self.make_login_request()
 
         if not response.ok:
             if "maintenance" in response.reason:
