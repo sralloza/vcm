@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Optional
+from typing import NoReturn, Optional
 
 from bs4 import BeautifulSoup
 import requests
@@ -196,6 +196,17 @@ class Connection(metaclass=MetaSingleton):
     def make_login_request(self) -> requests.Response:
         return self.get(self.login_url)
 
+    def handle_maintenance_mode(self, status_code, reason) -> NoReturn:
+        """Handles the situation when the moodle is under maintenance.
+
+        Args:
+            status_code (int): status code of the server request.
+            reason (str): exact reason given by the server.
+        """
+
+        logger.critical("Moodle under maintenance (%d - %s)", status_code, reason)
+        sys.exit(-1)
+
     def _login(self):
         """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
 
@@ -209,12 +220,7 @@ class Connection(metaclass=MetaSingleton):
 
         if not response.ok:
             if "maintenance" in response.reason:
-                logger.critical(
-                    "Moodle under maintenance (%d - %s)",
-                    response.status_code,
-                    response.reason,
-                )
-                sys.exit(-1)
+                return self.handle_maintenance_mode(response.status_code, response.reason)
 
             logger.critical(
                 "Moodle error (%d - %s)", response.status_code, response.reason
