@@ -25,6 +25,7 @@ class Connection(metaclass=MetaSingleton):
     """Manages HTTP connection with the university's servers."""
 
     _logout_url_template = "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
+    _login_url_template = "https://campusvirtual.uva.es/login/index.php"
 
     def __init__(self):
         self._downloader = Downloader()
@@ -66,13 +67,23 @@ class Connection(metaclass=MetaSingleton):
 
     @property
     def logout_url(self) -> str:
-        """Returns the url of the api endpoint to log out.
+        """Returns the url of the API endpoint to log out.
 
         Returns:
             str: logout url.
         """
 
         return self._logout_url_template % self.sesskey
+
+    @property
+    def login_url(self) -> str:
+        """Returns the url of the API endpoint to log in.
+
+        Returns:
+            str: login url.
+        """
+
+        return self._login_url_template
 
     def __enter__(self):
         self.login()
@@ -135,7 +146,7 @@ class Connection(metaclass=MetaSingleton):
             LogoutError: if the server returns a 4xx or 5xx HTTP code.
             LogoutError: if logout was not successfull.
         """
-        
+
         try:
             self._logout_response = self.make_logout_request()
         except DownloaderError as exc:
@@ -181,35 +192,6 @@ class Connection(metaclass=MetaSingleton):
             raise LogoutError("Logout retries expired") from exception
 
         logger.info("Logged out")
-
-    def login(self):
-        """Wrapper of real loging function.
-
-        Raises:
-            LoginError: if login was unsuccessfull.
-        """
-
-        login_retries = settings.login_retries
-
-        while True:
-            try:
-                logger.debug("Logging in (%d retries left)", login_retries)
-                self._login()
-                logger.info("Logged in")
-                return
-            except Exception as exc:  # pylint: disable=broad-except
-                logger.warning("Needed to call again Connection.login() due to %r", exc)
-                login_retries -= 1
-
-                if login_retries <= 0:
-                    if self._login_response:
-                        save_crash_context(
-                            self._login_response, "login-error", "Login retries expired"
-                        )
-
-                    raise LoginError(
-                        f"{settings.login_retries} login attempts, unkwown error. See logs."
-                    ) from exc
 
     def _login(self):
         """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
@@ -276,6 +258,35 @@ class Connection(metaclass=MetaSingleton):
             raise LoginError
 
         self.find_sesskey_and_user_url(soup)
+
+    def login(self):
+        """Wrapper of real loging function.
+
+        Raises:
+            LoginError: if login was unsuccessfull.
+        """
+
+        login_retries = settings.login_retries
+
+        while True:
+            try:
+                logger.debug("Logging in (%d retries left)", login_retries)
+                self._login()
+                logger.info("Logged in")
+                return
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Needed to call again Connection.login() due to %r", exc)
+                login_retries -= 1
+
+                if login_retries <= 0:
+                    if self._login_response:
+                        save_crash_context(
+                            self._login_response, "login-error", "Login retries expired"
+                        )
+
+                    raise LoginError(
+                        f"{settings.login_retries} login attempts, unkwown error. See logs."
+                    ) from exc
 
     def find_sesskey_and_user_url(self, soup: BeautifulSoup):
         """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`.
