@@ -118,6 +118,15 @@ class Connection(metaclass=MetaSingleton):
 
         return self._downloader.delete(url, **kwargs)
 
+    def make_logout_request(self) -> requests.Response:
+        """Makes the logout HTTP request.
+
+        Returns:
+            requests.Response: response of the logout request.
+        """
+
+        return self.post(self.logout_url, data={"sesskey": self.sesskey},)
+
     def logout(self):
         """Logs out of the virtual campus web page.
 
@@ -129,11 +138,7 @@ class Connection(metaclass=MetaSingleton):
         logger.debug("Logging out (%d retries)", logout_retries)
 
         while True:
-            self._logout_response = self.post(
-                "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
-                % self.sesskey,
-                data={"sesskey": self.sesskey},
-            )
+            self._logout_response = self.make_logout_request()
             if not self._logout_response.ok:
                 logout_retries -= 1
 
