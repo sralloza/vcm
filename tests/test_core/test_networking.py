@@ -445,9 +445,75 @@ class TestConnection:
             (self.logger_name, 20, "Logging in with user '<username>'")
         ]
 
-    @pytest.mark.skip(reason="Not implemented")
-    def test_login(self):
-        assert 0, "Not implemented"
+    @mock.patch("vcm.core.networking.save_crash_context")
+    @mock.patch("vcm.core.networking.Connection.inner_login")
+    def test_login_ok(self, inner_login_m, scc_m, caplog):
+        caplog.set_level(10)
+
+        conn = Connection()
+        conn.login()
+
+        inner_login_m.assert_called_once_with()
+        scc_m.assert_not_called()
+
+        assert caplog.record_tuples == [
+            (self.logger_name, 10, "Logging in (10 retries left)"),
+            (self.logger_name, 20, "Logged in"),
+        ]
+
+    @pytest.mark.parametrize("nerrors", range(1, 10))
+    @mock.patch("vcm.core.networking.save_crash_context")
+    @mock.patch("vcm.core.networking.Connection.inner_login")
+    def test_login_some_errors(self, inner_login_m, scc_m, nerrors, caplog):
+        caplog.set_level(10)
+        inner_login_m.side_effect = [LoginError] * nerrors + [None]
+
+        conn = Connection()
+        conn.login()
+
+        assert inner_login_m.call_count == nerrors + 1
+        scc_m.assert_not_called()
+
+        expected = []
+        for i in range(nerrors + 1):
+            retries_left = self.login_retries - i
+            expected.append((10, "Logging in (%d retries left)" % (retries_left)))
+            if i != nerrors:
+                expected.append((30, "Trying to log again due to LoginError()"))
+
+        expected.append((20, "Logged in"))
+        expected = [(self.logger_name,) + x for x in expected]
+
+        assert caplog.record_tuples == expected
+
+    @pytest.mark.parametrize("has_login_response", [True, False])
+    @mock.patch("vcm.core.networking.save_crash_context")
+    @mock.patch("vcm.core.networking.Connection.inner_login")
+    def test_login_fatal_error(self, inner_login_m, scc_m, caplog, has_login_response):
+        caplog.set_level(10)
+        inner_login_m.side_effect = [LoginError] * self.login_retries + [None]
+
+        conn = Connection()
+        if has_login_response:
+            conn._login_response = mock.MagicMock()
+        with pytest.raises(LoginError, match="unknown error"):
+            conn.login()
+
+        assert inner_login_m.call_count == self.login_retries
+        if has_login_response:
+            scc_m.assert_called_once_with(conn._login_response, mock.ANY, mock.ANY)
+        else:
+            scc_m.assert_not_called()
+
+        expected = []
+        for i in range(self.login_retries):
+            retries_left = self.login_retries - i
+            expected.append((10, "Logging in (%d retries left)" % (retries_left)))
+            expected.append((30, "Trying to log again due to LoginError()"))
+
+        expected = [(self.logger_name,) + x for x in expected]
+
+        assert caplog.record_tuples == expected
 
     @pytest.mark.skip(reason="Web under maintenance, no example data")
     def test_find_sesskey_and_user_url(self):

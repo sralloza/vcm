@@ -339,7 +339,7 @@ class Connection(metaclass=MetaSingleton):
                 break
             except LoginError as exc:
                 exception = exc
-                logger.warning("Needed to call again Connection.login() due to %r", exc)
+                logger.warning("Trying to log again due to %r", exc)
                 login_retries -= 1
         else:
             if self._login_response:
@@ -348,7 +348,7 @@ class Connection(metaclass=MetaSingleton):
                 )
 
             raise LoginError(
-                f"{settings.login_retries} login attempts, unkwown error. See logs."
+                f"{settings.login_retries} login attempts, unknown error. See logs."
             ) from exception
 
         logger.info("Logged in")
