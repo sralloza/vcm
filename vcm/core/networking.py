@@ -98,6 +98,7 @@ class Connection(metaclass=MetaSingleton):
 
         Args:
             url (str): url of the request.
+            **kwargs: keyword arguments passed to requests.Session.request.
 
         Returns:
             request.Response: response.
@@ -111,6 +112,7 @@ class Connection(metaclass=MetaSingleton):
         Args:
             url (str): url of the request.
             data (dict, optional): data to send. Defaults to None.
+            **kwargs: keyword arguments passed to requests.Session.request.
 
         Returns:
             requests.Response: response.
@@ -123,6 +125,7 @@ class Connection(metaclass=MetaSingleton):
 
         Args:
             url (str): url of the request.
+            **kwargs: keyword arguments passed to requests.Session.request.
 
         Returns:
             requests.Response: response.
@@ -195,9 +198,24 @@ class Connection(metaclass=MetaSingleton):
 
     @lru_cache(maxsize=10)
     def get_login_page(self) -> requests.Response:
+        """Returns the server response of the login page.
+
+        Returns:
+            requests.Response: server response of the login page.
+        """
+
         return self.get(self.login_url)
 
     def make_login_request(self, login_token: str) -> requests.Response:
+        """Sends the request needed to log in.
+
+        Args:
+            login_token (str): login token.
+
+        Returns:
+            requests.Response: server's response.
+        """
+
         return self.post(
             self.login_url,
             data={
@@ -208,8 +226,8 @@ class Connection(metaclass=MetaSingleton):
             },
         )
 
-
-    def handle_maintenance_mode(self, status_code, reason) -> NoReturn:
+    @staticmethod
+    def handle_maintenance_mode(status_code, reason) -> NoReturn:
         """Handles the situation when the moodle is under maintenance.
 
         Args:
@@ -218,13 +236,22 @@ class Connection(metaclass=MetaSingleton):
         """
 
         logger.critical("Moodle under maintenance (%d - %s)", status_code, reason)
-        sys.exit(-1)
+        sys.exit(1)
 
     def check_already_logged_in(self) -> bool:
+        """Checks if the user is already logged in.
+
+        Raises:
+            MoodleError: if the server returns an error.
+
+        Returns:
+            bool: True if some user is logged in. False otherwise.
+        """
+
         response = self.get_login_page()
 
         if not response.ok:
-            if "maintenance" in response.reason:
+            if "maintenance" in response.reason.lower():
                 return self.handle_maintenance_mode(
                     response.status_code, response.reason
                 )
@@ -244,6 +271,15 @@ class Connection(metaclass=MetaSingleton):
         return False
 
     def get_login_token(self) -> str:
+        """Returns the login token.
+
+        Raises:
+            LoginError: if it can't fidn the login token.
+
+        Returns:
+            str: login token.
+        """
+
         response = self.get_login_page()
         soup = BeautifulSoup(response.text, "html.parser")
         login_token = soup.find("input", {"type": "hidden", "name": "logintoken"})
@@ -262,7 +298,12 @@ class Connection(metaclass=MetaSingleton):
         return login_token
 
     def inner_login(self):
-        # Logs into the webpage of the virtual campus. Needed to make HTTP requests.
+        """Logs into the webpage of the virtual campus. Needed to make HTTP requests.
+
+        Raises:
+            LoginError: if server returns an error.
+            LoginError: if login was unsuccessfull.
+        """
 
         if self.check_already_logged_in():
             return
@@ -273,7 +314,10 @@ class Connection(metaclass=MetaSingleton):
         self._login_response = self.make_login_request(login_token)
 
         if not self._login_response.ok:
-            raise LoginError("Server returned %s" % self._login_response.status_code)
+            raise LoginError(
+                "Server returned %s (%s)"
+                % (self._login_response.status_code, self._login_response.reason),
+            )
 
         if "Usted se ha identificado" not in self._login_response.text:
             raise LoginError("Unsuccessfull login")
@@ -310,11 +354,7 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logged in")
 
     def find_sesskey_and_user_url(self):
-        """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`.
-
-        Args:
-            soup (BeautifulSoup): HTTP response parsed with bs4.
-        """
+        """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`."""
 
         soup = BeautifulSoup(self.get_login_page(), "html.parser")
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
@@ -328,7 +368,12 @@ class Connection(metaclass=MetaSingleton):
 
 
 class Downloader(requests.Session):
-    """Downloader with retries control."""
+    """Downloader with retries control.
+
+        Args:
+            silenced (bool, optional): if True, only critical errors are logged.
+                Defaults to False.
+        """
 
     def __init__(self, silenced=False):
         self.logger = logging.getLogger(__name__)
@@ -346,6 +391,7 @@ class Downloader(requests.Session):
         Args:
             method (str): HTTP method of the request.
             url (str): url of the request.
+            **kwargs: keyword arguments passed to requests.Session.request.
 
         Raises:
             DownloaderError: if all retries failed.
