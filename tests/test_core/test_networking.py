@@ -201,19 +201,14 @@ class TestConnection:
         logout_m.assert_called()
         assert logout_m.call_count == nerrors + 1
 
-        records_expected: Any = [
-            (self.logger_name, 10, "Logging out (%s retries)" % self.logout_retries)
-        ]
+        records_expected: Any = [(10, "Logging out (%s retries)" % self.logout_retries)]
         for i in range(1, nerrors + 1):
+            retries_left = self.logout_retries - i
             records_expected.append(
-                (
-                    self.logger_name,
-                    30,
-                    "Error during logout [501], %d retries left"
-                    % (self.logout_retries - i),
-                )
+                (30, "Error during logout [501], %d retries left" % retries_left)
             )
-        records_expected.append((self.logger_name, 20, "Logged out"))
+        records_expected.append((20, "Logged out"))
+        records_expected = [(self.logger_name,) + x for x in records_expected]
         assert caplog.record_tuples == records_expected
 
     @mock.patch("vcm.core.networking.Connection.inner_logout")
@@ -228,19 +223,14 @@ class TestConnection:
         logout_m.assert_called()
         assert logout_m.call_count == self.logout_retries
 
-        records_expected: Any = [
-            (self.logger_name, 10, "Logging out (%s retries)" % self.logout_retries)
-        ]
+        records_expected: Any = [(10, "Logging out (%s retries)" % self.logout_retries)]
         for i in range(1, self.logout_retries + 1):
+            retries_left = self.logout_retries - i
             records_expected.append(
-                (
-                    self.logger_name,
-                    30,
-                    "Error during logout [501], %d retries left"
-                    % (self.logout_retries - i),
-                )
+                (30, "Error during logout [501], %d retries left" % retries_left)
             )
-        records_expected.append((self.logger_name, 50, "Logout retries expired"))
+        records_expected.append((50, "Logout retries expired"))
+        records_expected = [(self.logger_name,) + x for x in records_expected]
         assert caplog.record_tuples == records_expected
 
     def test_get_login_page(self):
@@ -647,17 +637,14 @@ class TestDownloader:
         assert self.request_m.call_count == self.retries
 
         excname = type(exception).__name__
-        records_expected: Any = [(self.logger_name, 10, "GET %r" % self.url)]
+        records_expected: Any = [(10, "GET %r" % self.url)]
 
-        for i in range(self.retries):
+        for i in range(1, self.retries + 1):
+            retries_left = self.retries - i
             records_expected.append(
-                (
-                    self.logger_name,
-                    30,
-                    "Catched %s in GET, retries=%d" % (excname, self.retries - i + 1),
-                ),
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
             )
 
-        records_expected.append(
-            (self.logger_name, 50, "Downloader error in GET %r" % self.url)
-        )
+        records_expected.append((50, "Download error in GET %r" % self.url))
+        records_expected = [(self.logger_name,) + x for x in records_expected]
+        assert caplog.record_tuples == records_expected
