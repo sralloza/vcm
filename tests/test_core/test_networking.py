@@ -175,7 +175,7 @@ class TestConnection:
             conn.inner_logout()
 
         mlr_m.assert_called_once_with()
-        self.scc_m.assert_called_once_with(response, mock.ANY, mock.ANY)
+        self.scc_m.assert_called_once_with(conn, mock.ANY, mock.ANY)
 
     @mock.patch("vcm.core.networking.Connection.inner_logout")
     def test_logout_ok(self, logout_m, caplog):
@@ -494,16 +494,13 @@ class TestConnection:
         inner_login_m.side_effect = [LoginError] * self.login_retries + [None]
 
         conn = Connection()
-        if has_login_response:
+        if has_login_response:  # For historical reasons.
             conn._login_response = mock.MagicMock()
         with pytest.raises(LoginError, match="unknown error"):
             conn.login()
 
         assert inner_login_m.call_count == self.login_retries
-        if has_login_response:
-            scc_m.assert_called_once_with(conn._login_response, mock.ANY, mock.ANY)
-        else:
-            scc_m.assert_not_called()
+        scc_m.assert_called_once_with(conn, mock.ANY, mock.ANY)
 
         expected = []
         for i in range(self.login_retries):

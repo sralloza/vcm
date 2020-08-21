@@ -162,9 +162,7 @@ class Connection(metaclass=MetaSingleton):
 
         # Really weird error, save context to try to fix it
         if "Usted no se ha identificado" not in self._logout_response.text:
-            save_crash_context(
-                self._logout_response, "logout-error", "unkown error happened"
-            )
+            save_crash_context(self, "logout-error", "unkown error happened")
             raise LogoutError("Unkown error during logout")
 
     def logout(self):
@@ -289,9 +287,8 @@ class Connection(metaclass=MetaSingleton):
             if not login_token:
                 raise ValueError
         except (AttributeError, ValueError):
-            save_crash_context(
-                response, "login-token-not-found", "Can't find login token"
-            )
+            setattr(self, "login-token-response", response)
+            save_crash_context(self, "login-token-not-found", "Can't find login token")
             raise LoginError("Can't find token")
 
         logger.debug("Login token: %s", login_token)
@@ -342,10 +339,7 @@ class Connection(metaclass=MetaSingleton):
                 logger.warning("Trying to log again due to %r", exc)
                 login_retries -= 1
         else:
-            if self._login_response:
-                save_crash_context(
-                    self._login_response, "login-error", "Login retries expired"
-                )
+            save_crash_context(self, "login-error", "Login retries expired")
 
             raise LoginError(
                 f"{settings.login_retries} login attempts, unknown error. See logs."
