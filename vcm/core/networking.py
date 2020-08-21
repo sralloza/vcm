@@ -187,8 +187,7 @@ class Connection(metaclass=MetaSingleton):
                     self._logout_response.status_code,
                     logout_retries,
                 )
-
-        if not logout_retries:
+        else:
             logger.critical("Logout retries expired")
             raise LogoutError("Logout retries expired") from exception
 
@@ -287,26 +286,28 @@ class Connection(metaclass=MetaSingleton):
         """
 
         login_retries = settings.login_retries
+        exception = None
 
-        while True:
+        while login_retries:
             try:
                 logger.debug("Logging in (%d retries left)", login_retries)
                 self.inner_login()
-                logger.info("Logged in")
-                return
-            except Exception as exc:  # pylint: disable=broad-except
+                break
+            except LoginError as exc:
+                exception = exc
                 logger.warning("Needed to call again Connection.login() due to %r", exc)
                 login_retries -= 1
+        else:
+            if self._login_response:
+                save_crash_context(
+                    self._login_response, "login-error", "Login retries expired"
+                )
 
-                if login_retries <= 0:
-                    if self._login_response:
-                        save_crash_context(
-                            self._login_response, "login-error", "Login retries expired"
-                        )
+            raise LoginError(
+                f"{settings.login_retries} login attempts, unkwown error. See logs."
+            ) from exception
 
-                    raise LoginError(
-                        f"{settings.login_retries} login attempts, unkwown error. See logs."
-                    ) from exc
+        logger.info("Logged in")
 
     def find_sesskey_and_user_url(self):
         """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`.
