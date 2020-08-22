@@ -369,8 +369,9 @@ class Downloader(requests.Session):
                 Defaults to False.
         """
 
-    def __init__(self, silenced=False):
+    def __init__(self, silenced=False, retries=None):
         self.logger = logging.getLogger(__name__)
+        self.retries = retries or settings.retries
 
         if silenced is True:
             self.logger.setLevel(logging.CRITICAL)
@@ -395,7 +396,7 @@ class Downloader(requests.Session):
         """
 
         self.logger.debug("%s %r", method, url)
-        retries = settings.retries
+        retries = self.retries
 
         while retries > 0:
             try:

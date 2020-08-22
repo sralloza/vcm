@@ -534,15 +534,22 @@ class TestDownloader:
         assert downloader_2 is not downloader_3
         assert downloader_3 is not downloader_1
 
+    @pytest.mark.parametrize("retries", [None, 5])
     @pytest.mark.parametrize("silenced", [True, False])
-    def test_init(self, silenced):
-        downloader = Downloader(silenced=silenced)
+    def test_init(self, silenced, retries):
+        downloader = Downloader(silenced=silenced, retries=retries)
 
         assert hasattr(downloader, "logger")
         if silenced:
             assert downloader.logger.level == 50
         else:
             assert downloader.logger.level == 0
+
+        assert hasattr(downloader, "retries")
+        if not retries:
+            assert downloader.retries == self.settings_m.retries
+        else:
+            assert downloader.retries == retries
 
         assert downloader.headers["user-agent"] == USER_AGENT
         self.request_m.assert_not_called()
@@ -615,16 +622,16 @@ class TestDownloader:
         assert self.request_m.call_count == nerrors + 1
 
         excname = type(exception).__name__
-        records_expected: Any = [(self.logger_name, 10, "GET %r" % self.url)]
+        records_expected: Any = [(10, "GET %r" % self.url)]
 
-        for i in range(nerrors):
+        for i in range(1, nerrors + 1):
+            retries_left = self.retries - i
             records_expected.append(
-                (
-                    self.logger_name,
-                    30,
-                    "Catched %s in GET, retries=%d" % (excname, self.retries - i + 1),
-                ),
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
             )
+
+        records_expected = [(self.logger_name,) + x for x in records_expected]
+        assert caplog.record_tuples == records_expected
 
     def test_request_fatal(self, exception, caplog):
         caplog.set_level(10)
