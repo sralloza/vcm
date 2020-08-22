@@ -633,6 +633,28 @@ class TestDownloader:
         records_expected = [(self.logger_name,) + x for x in records_expected]
         assert caplog.record_tuples == records_expected
 
+    @pytest.mark.parametrize("nerrors", range(1, 5))
+    def test_request_several_errors_no_fatal_override_retries(self, exception, caplog, nerrors):
+        caplog.set_level(10)
+        self.request_m.side_effect = [exception] * nerrors + [mock.DEFAULT]
+
+        Downloader().get(self.url, retries=5)
+
+        self.request_m.assert_called()
+        assert self.request_m.call_count == nerrors + 1
+
+        excname = type(exception).__name__
+        records_expected: Any = [(10, "GET %r" % self.url)]
+
+        for i in range(1, nerrors + 1):
+            retries_left = 5 - i
+            records_expected.append(
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+            )
+
+        records_expected = [(self.logger_name,) + x for x in records_expected]
+        assert caplog.record_tuples == records_expected
+
     def test_request_fatal(self, exception, caplog):
         caplog.set_level(10)
         self.request_m.side_effect = [exception] * self.retries + [mock.DEFAULT]

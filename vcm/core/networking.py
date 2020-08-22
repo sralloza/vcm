@@ -380,12 +380,13 @@ class Downloader(requests.Session):
         self.headers.update({"User-Agent": USER_AGENT})
 
     # pylint: disable=arguments-differ
-    def request(self, method, url, **kwargs) -> requests.Response:
+    def request(self, method, url, retries=None, **kwargs) -> requests.Response:
         """Makes an HTTP request.
 
         Args:
             method (str): HTTP method of the request.
             url (str): url of the request.
+            retries (int): override `Downloader.retries` for this request.
             **kwargs: keyword arguments passed to requests.Session.request.
 
         Raises:
@@ -396,7 +397,7 @@ class Downloader(requests.Session):
         """
 
         self.logger.debug("%s %r", method, url)
-        retries = self.retries
+        retries = retries or self.retries
 
         while retries > 0:
             try:
