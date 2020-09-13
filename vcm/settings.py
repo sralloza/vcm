@@ -9,16 +9,14 @@ from typing import Any, Dict, List
 
 from ruamel.yaml import YAML
 
-from vcm.core.exceptions import SettingsError
-from vcm.core.utils import handle_fatal_error_exit, str2bool
-
 from .core.exceptions import (
     AlreadyExcludedError,
     AlreadyIndexedError,
     NotExcludedError,
     NotIndexedError,
+    SettingsError,
 )
-from .core.utils import MetaSingleton, Patterns, str2bool
+from .core.utils import MetaSingleton, Patterns, handle_fatal_error_exit, str2bool
 
 
 def save_settings():
