@@ -270,7 +270,7 @@ def safe_exit(_func=_def, *, to_stderr=True, red=True):
     as a decorator.
 
     Notes:
-        It doens't catch SystemExit exceptions.
+        It doesn't catch SystemExit exceptions.
 
     Args:
         _func (function): function to control.
