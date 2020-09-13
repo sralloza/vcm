@@ -9,10 +9,11 @@ from threading import enumerate as enumerate_threads
 from time import time
 from typing import List
 
+import click
 from colorama import Fore
 
 from .time_operations import seconds_to_str
-from .utils import ErrorCounter, Printer, getch, open_http_status_server
+from .utils import ErrorCounter, Printer, open_http_status_server
 
 logger = getLogger(__name__)
 
@@ -233,8 +234,8 @@ class Killer(Worker):
         Printer.print("Killer ready")
         while True:
             try:
-                char = getch().key1
-                real = char.decode().lower()
+                char = click.getchar()
+                real = str(char).lower()
             except UnicodeError:
                 continue
 
