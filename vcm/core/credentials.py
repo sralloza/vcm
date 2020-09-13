@@ -72,7 +72,9 @@ class _Credentials:
             try:
                 return yaml.load(pointer)
             except ScannerError:
-                return handle_fatal_error_exit("Invalid YAML file: %r" % cls._path.as_posix())
+                return handle_fatal_error_exit(
+                    "Invalid YAML file: %r" % cls._path.as_posix()
+                )
 
     def load(self):
         """Loads the credentials settings."""

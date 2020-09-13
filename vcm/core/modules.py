@@ -8,7 +8,6 @@ class Modules(Enum):
     discover = "discover"
     settings = "settings"
 
-
     @classmethod
     def current(cls):
         return _Static.module

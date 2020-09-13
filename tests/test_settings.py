@@ -372,7 +372,6 @@ class TestSettings:
         assert "HELLO_WORLD" in settings
         assert "hElLo_WoRlD" in settings
 
-
     def test_setitem(self):
         settings = Settings()
         settings["hello-world"] = "yes"
