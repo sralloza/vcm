@@ -1,13 +1,11 @@
 """Main module, controls the execution."""
 
-from argparse import ArgumentParser, Namespace
-from enum import Enum
 import logging
-from typing import NoReturn
 
-from vcm.core.modules import Modules
+import click
 
 from . import __version__ as version
+from .core.modules import Modules
 from .core.utils import (
     Printer,
     check_updates,
@@ -27,304 +25,152 @@ from .settings import (
     un_section_index,
 )
 
-
-class Command(Enum):
-    """Represents valid CLI commands."""
-
-    notify = 1
-    download = 2
-    settings = 3
-    discover = 4
-    version = 5
-
-    def to_str(self) -> str:
-        """Returns the name of the command."""
-        return self.name
+logger = logging.getLogger(__name__)
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-class Parser:
-    """Wrapper for `argparse.ArgumentParser`."""
-
-    _parser = None
-
-    @classmethod
-    def init_parser(cls):
-        """Creates the parser."""
-
-        cls._parser = ArgumentParser(prog="vcm")
-        cls._parser.add_argument(
-            "-nss",
-            "--no-status-server",
-            action="store_true",
-            help="Disable Status Server",
-        )
-        cls._parser.add_argument(
-            "-v", "--version", action="store_true", dest="version", help="Show version"
-        )
-        cls._parser.add_argument(
-            "--check-updates", action="store_true", help="Check for updates"
-        )
-
-        subparsers = cls._parser.add_subparsers(title="commands", dest="command")
-
-        downloader_parser = subparsers.add_parser("download")
-        downloader_parser.add_argument("--nthreads", default=20, type=int)
-        downloader_parser.add_argument("--no-killer", action="store_true")
-        downloader_parser.add_argument("-d", "--debug", action="store_true")
-        downloader_parser.add_argument("-q", "--quiet", action="store_true")
-
-        notifier_parser = subparsers.add_parser("notify")
-        notifier_parser.add_argument("--nthreads", default=20, type=int)
-        notifier_parser.add_argument("--no-icons", action="store_true")
-
-        settings_parser = subparsers.add_parser("settings")
-        settings_subparser = settings_parser.add_subparsers(
-            title="settings-subcommand", dest="settings_subcommand"
-        )
-        settings_subparser.required = True
-
-        settings_subparser.add_parser("list")
-
-        set_sub_subparser = settings_subparser.add_parser("set")
-        set_sub_subparser.add_argument("key", help="settings key (section.key)")
-        set_sub_subparser.add_argument("value", help="new settings value")
-
-        show_sub_subparser = settings_subparser.add_parser("show")
-        show_sub_subparser.add_argument("key", help="settings key (section.key)")
-
-        exclude_sub_subparser = settings_subparser.add_parser("exclude")
-        exclude_sub_subparser.add_argument(
-            "subject_id", help="subject ID to exclude", type=int
-        )
-
-        include_sub_subparser = settings_subparser.add_parser("include")
-        include_sub_subparser.add_argument(
-            "subject_id", help="subject ID to include", type=int
-        )
-
-        section_index_subparser = settings_subparser.add_parser("index")
-        section_index_subparser.add_argument("subject_id", type=int)
-
-        un_section_index_subparser = settings_subparser.add_parser("unindex")
-        un_section_index_subparser.add_argument("subject_id", type=int)
-
-        settings_subparser.add_parser("keys")
-        settings_subparser.add_parser("check")
-
-        subparsers.add_parser("discover")
-        subparsers.add_parser("version")
-
-    @classmethod
-    def parse_args(cls) -> Namespace:
-        """Parses command line args.
-
-        Returns:
-            Namespace: namespace containing the arguments parsed.
-        """
-        if not cls._parser:
-            cls.init_parser()
-        return cls._parser.parse_args()
-
-    @classmethod
-    def error(cls, msg) -> NoReturn:
-        """Raises an error using ArgumentParser.error.
-
-        Args:
-            msg (str): error message.
-        """
-
-        cls._parser.error(msg)
-
-
-def get_command(command) -> Command:
-    """Returns the instance of Command class.
-
-    Args:
-        command (str): command as a string.
-
-    Returns:
-        Command: Command as an enumeration.
-    """
+@click.group(context_settings=CONTEXT_SETTINGS)
+@click.version_option(version=version, prog_name="vcm")
+@click.option("-nss", "--no-status-server", is_flag=True, help="Disable status server")
+@click.pass_context
+def main(ctx, no_status_server):
+    """Virtual Campus Manager"""
+    command = ctx.invoked_subcommand
 
     try:
-        real_command = Command(command)
+        Modules.set_current(command)
     except ValueError:
-        try:
-            real_command = Command[command]
-        except KeyError:
-            commands = list(Command)
-            commands.sort(key=lambda x: x.name)
-            commands = ", ".join([x.to_str() for x in commands])
-            Parser.error(
-                "Invalid command (%r). Valid commands: %s" % (command, commands)
-            )
-    return real_command
-
-
-def show_version():
-    """Prints the current version."""
-    print("Version: %s" % version)
-
-
-def execute_discover(opt):  # pylint: disable=W0613
-    """Executes command `discover`.
-
-    Args:
-        opt (Namespace): namespace returned by parser.
-    """
-
-    Printer.silence()
-    return download(nthreads=1, killer=False, status_server=False, discover_only=True)
-
-
-def execute_download(opt):
-    """Executes command `download`.
-
-    Args:
-        opt (Namespace): namespace returned by parser.
-    """
-
-    if opt.debug:
-        open_http_status_server()
-
-    return download(
-        nthreads=opt.nthreads,
-        killer=not opt.no_killer,
-        status_server=not opt.no_status_server,
-    )
-
-
-def execute_notify(opt):
-    """Executes command `notify`.
-
-    Args:
-        opt (Namespace): namespace returned by parser.
-    """
-
-    return notify(
-        send_to=settings.email,
-        use_icons=not opt.no_icons,
-        nthreads=opt.nthreads,
-        status_server=not opt.no_status_server,
-    )
-
-
-class NonKeyBasedSettingsSubcommand:
-    """Wrapper for settings subcommands."""
-
-    opt = None
-
-    @classmethod
-    def execute(cls, opt):
-        """Executes a settings subcommand that doesn't alter settings.
-
-        Args:
-            opt (Namespace): namespace returned by parser.
-        """
-
-        cls.opt = opt
-        return getattr(cls, opt.settings_subcommand)()
-
-    @classmethod
-    def list(cls):
-        """Print settings keys and values."""
-        print(settings_to_string())
-
-    @classmethod
-    def check(cls):
-        """Forces checks of settings."""
-        CheckSettings.check()
-        print("Checked")
-
-    @classmethod
-    def exclude(cls):
-        """Excludes a subject from parsing given its id."""
-        exclude(cls.opt.subject_id)
-
-    @classmethod
-    def include(cls):
-        """Includes a subject in parsing given its id."""
-        include(cls.opt.subject_id)
-
-    @classmethod
-    def index(cls):
-        """Makes a subject use section indexing given its id."""
-        section_index(cls.opt.subject_id)
-        Printer.print(
-            "Done. Remember removing alias entries for subject with id=%d."
-            % cls.opt.subject_id
-        )
-
-    @classmethod
-    def un_index(cls):
-        """Makes a subject not use section indexing given its id."""
-        un_section_index(cls.opt.subject_id)
-        Printer.print(
-            "Done. Remember removing alias entries for subject with id=%d."
-            % cls.opt.subject_id
-        )
-
-    @classmethod
-    def keys(cls):
-        """Prints the settings keys."""
-        for key in settings.keys():
-            print(" - " + key)
-
-
-def execute_settings(opt: Namespace):
-    """Executes command `settings`.
-
-    Args:
-        opt (Namespace): namespace returned by parser.
-    """
-
-    try:
-        # Try to execute settings command without the key
-        return NonKeyBasedSettingsSubcommand.execute(opt)
-    except AttributeError:
         pass
 
-    # Setting command needs the key
-
-    if opt.settings_subcommand == "set":
-        setattr(settings, opt.key, opt.value)
-    if opt.settings_subcommand == "show":
-        print("%s: %r" % (opt.key, getattr(settings, opt.key)))
-
-
-@safe_exit
-def main():
-    """Main function."""
-
-    logger = logging.getLogger(__name__)
-    opt = Parser.parse_args()
-
-    # Keyword arguments that make program exit
-    if opt.version:
-        return show_version()
-
-    if opt.check_updates:
-        return check_updates()
-
-    # Commands
-    command = get_command(opt.command)
-    Modules.set_current(command.name)
-
-    if command == Command.download and opt.quiet:
-        Printer.silence()
-
-    if command != Command.settings:
+    if command != "settings":
         # Command executed is not 'settings', so check settings
         setup_vcm()
         logger.info("vcm version: %s", version)
 
-    return instructions[command.to_str()](opt)
+
+@main.command("check-updates", help="Check for updates")
+def check_updates_command():
+    """Check for new releases"""
+    check_updates()
 
 
-instructions = {
-    "version": show_version,
-    "settings": execute_settings,
-    "discover": execute_discover,
-    "download": execute_download,
-    "notify": execute_notify,
-}
+@main.command("download")
+@click.option("--nthreads", default=20, type=int)
+@click.option("--no-killer", is_flag=True)
+@click.option("-d", "--debug", is_flag=True)
+@click.option("-q", "--quiet", is_flag=True)
+@click.pass_context
+def download_command(ctx, nthreads, no_killer, debug, quiet):
+    """Download all files found in the virtual campus"""
+    no_status_server = ctx.parent.params["no_status_server"]
+    if debug:
+        open_http_status_server()
+
+    if quiet:
+        Printer.silence()
+
+    return download(
+        nthreads=nthreads, killer=not no_killer, status_server=not no_status_server,
+    )
+
+
+@main.command("notify",)
+@click.option("--nthreads", default=20, type=int)
+@click.option("--no-icons", is_flag=True)
+@click.pass_context
+def notify_command(ctx, nthreads, no_icons):
+    """Sends an email with all the new files of the virtual campus"""
+    no_status_server = ctx.parent.params["no_status_server"]
+
+    return notify(
+        send_to=settings.email,
+        use_icons=not no_icons,
+        nthreads=nthreads,
+        status_server=not no_status_server,
+    )
+
+
+@main.command("discover")
+def discover():
+    """Only parse the subject names"""
+    Printer.silence()
+    return download(nthreads=1, killer=False, status_server=False, discover_only=True)
+
+
+@main.group("settings")
+def settings_command():
+    """Manage settings"""
+
+
+@settings_command.command("list")
+def list_settings():
+    """List settings keys and values"""
+    print(settings_to_string())
+
+
+@settings_command.command("set")
+@click.argument("key")
+@click.argument("value")
+def set_settings(key, value):
+    """Set a new value for a specific setting"""
+    # breakpoint()
+    settings[key] = value
+
+
+@settings_command.command("show")
+@click.argument("key")
+def show_settings(key):
+    """Show the value of a specific setting"""
+    print("%s: %r" % (key, settings[key]))
+
+
+@settings_command.command("exclude")
+@click.argument("subject_id", type=int)
+def exclude_subject(subject_id):
+    """Exclude a subject from parsing given its id"""
+    exclude(subject_id)
+
+
+@settings_command.command("include")
+@click.argument("subject_id", type=int)
+def include_subject(subject_id):
+    """Includes a subject in the parsing given its id"""
+    include(subject_id)
+
+
+@settings_command.command("index")
+@click.argument("subject_id", type=int)
+def index_subject(subject_id):
+    """Start using the subject's session to name files"""
+    section_index(subject_id)
+    click.echo(
+        "Done. Remember removing alias entries for subject with id=%d." % subject_id
+    )
+
+
+@settings_command.command("unindex")
+@click.argument("subject_id", type=int)
+def unindex_subject(subject_id):
+    """Stop using the subject's session to name files"""
+    un_section_index(subject_id)
+    click.echo(
+        "Done. Remember removing alias entries for subject with id=%d." % subject_id
+    )
+
+
+@settings_command.command("keys")
+def show_settings_keys():
+    """Displays the settings keys, but not the values"""
+    for key in settings.keys():
+        print(" - " + key)
+
+
+@settings_command.command("check")
+def check_settings():
+    """Checks the validity of the settings"""
+    CheckSettings.check()
+    click.secho("Checked", fg="green", bold=True)
+
+
+def cli():
+    return main(prog_name="vcm")
