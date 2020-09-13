@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any, Dict, List
+from urllib.parse import urljoin
 
 from ruamel.yaml import YAML
 
@@ -147,8 +148,6 @@ class Settings(dict, metaclass=MetaSingleton):
     settings_path = settings_folder.joinpath(_preffix + "vcm-settings.yaml")
     config = {}
 
-    _template = "https://campusvirtual.uva.es/course/view.php?id=%d"
-
     @classmethod
     def gen_subject_url(cls, subject_id: int) -> str:
         """Generates the subject's real url given its id.
@@ -160,7 +159,8 @@ class Settings(dict, metaclass=MetaSingleton):
             str: subject's real url.
         """
 
-        return cls._template % subject_id
+        template = urljoin(settings.base_url, "/course/view.php?id=%d")
+        return template % subject_id
 
     def exclude_subjects_ids_setter(self):  # pylint: disable=no-self-use
         """Setter for setting exclude-subjects-ids."""
@@ -280,6 +280,17 @@ class Settings(dict, metaclass=MetaSingleton):
         """
 
         return Path(self["root-folder"])
+
+    @property
+    def base_url(self) -> str:
+        """Base url of the virtual campus.
+
+        Returns:
+            str: base url.
+        """
+
+        return self["base-url"]
+
 
     @property
     def logging_level(self) -> str:
@@ -495,6 +506,19 @@ class CheckSettings:
         if settings["root-folder"] == "insert-root-folder":
             raise ValueError("Must set root-folder setting")
         settings.root_folder.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def check_base_url(cls):
+        """Base url checks.
+
+        Raises:
+            TypeError: if settings.base_url does not return Path.
+            TypeError: if settings["base-url"] does not return str.
+        """
+
+        if not isinstance(settings["base-url"], str):
+            raise TypeError("Setting base-url must be str")
+
 
     @classmethod
     def check_logs_folder(cls):

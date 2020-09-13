@@ -305,7 +305,7 @@ class BaseLink(_Notify):
     @staticmethod
     def ensure_origin(url: str) -> bool:
         """Returns True if the origin is the virtual campus."""
-        return "campusvirtual.uva.es" in url
+        return "uva.es" in url
 
 
 class Resource(BaseLink):
