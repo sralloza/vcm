@@ -525,10 +525,12 @@ class TestConfigureLogging:
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
+@mock.patch("vcm.settings.CheckSettings.check")
 @mock.patch("vcm.core.utils.configure_logging")
-def test_setup_vcm(cl_mock):
+def test_setup_vcm(cl_mock, check_settings_m):
     setup_vcm()
     cl_mock.assert_called_once_with()
+    check_settings_m.assert_called_once_with()
 
 
 class TestPrinter:

@@ -397,7 +397,10 @@ def configure_logging():
 
 
 def setup_vcm():
+    from vcm.settings import CheckSettings
+
     configure_logging()
+    CheckSettings.check()
 
 
 class Printer:
