@@ -1,5 +1,4 @@
 """Utils module."""
-
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
@@ -17,7 +16,7 @@ from typing import TypeVar, Union
 from warnings import warn
 from webbrowser import get as get_webbrowser
 
-from colorama import Fore
+import click
 from colorama import init as start_colorama
 from packaging import version
 from werkzeug.utils import (
@@ -268,28 +267,29 @@ def setup_vcm():
 
 
 class Printer:
-    _print = print
+    can_print = True
     _lock = Lock()
 
     @classmethod
     def reset(cls):
-        cls._print = print
+        cls.can_print = True
 
     @classmethod
     def silence(cls):
-        cls._print = cls.useless
+        cls.can_print = False
 
     @classmethod
-    def useless(cls, *args, **kwargs):
-        """Useless function used to avoid call to print."""
-
-    @classmethod
-    def print(cls, *args, **kwargs):
+    def print(cls, *args, color=None, **kwargs):
         if not Modules.should_print():
             return
 
+        if not cls.can_print:
+            return
+
         with cls._lock:
-            return cls._print(*args, **kwargs)
+            if color:
+                return click.secho(*args, fg=color, bold=True, **kwargs)
+            return click.secho(*args, **kwargs)
 
 
 def check_updates():

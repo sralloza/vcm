@@ -2,8 +2,8 @@ from pathlib import Path
 from threading import Lock
 from unittest import mock
 
+import click
 import pytest
-from colorama import Fore
 
 from vcm.core.results import Results
 
@@ -11,7 +11,7 @@ from vcm.core.results import Results
 class TestResults:
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.print_m = mock.patch("vcm.core.results.Printer.print", print).start()
+        self.print_m = mock.patch("vcm.core.results.Printer.print", click.echo).start()
         self.print_lock_p = mock.patch("vcm.core.results.Results.print_lock")
         self.file_lock_p = mock.patch("vcm.core.results.Results.file_lock")
         self.print_lock_m = self.print_lock_p.start()
@@ -40,12 +40,11 @@ class TestResults:
     def test_print_updated(self, atrf_m, capsys):
         Results.print_updated("/path/to/file")
         message = "[current-datetime] File updated: /path/to/file"
-        color_message = Fore.LIGHTYELLOW_EX + message + Fore.RESET
         self.dt_m.now.return_value.strftime.assert_called_once_with("%Y-%m-%d %H:%M:%S")
 
         atrf_m.assert_called_with(message)
         captured = capsys.readouterr()
-        assert captured.out == color_message + "\n"
+        assert captured.out == message + "\n"
         assert captured.err == ""
 
         self.print_lock_m.__enter__.assert_called_once()
@@ -55,12 +54,11 @@ class TestResults:
     def test_print_new(self, atrf_m, capsys):
         Results.print_new("/path/to/file")
         message = "[current-datetime] New file: /path/to/file"
-        color_message = Fore.LIGHTGREEN_EX + message + Fore.RESET
         self.dt_m.now.return_value.strftime.assert_called_once_with("%Y-%m-%d %H:%M:%S")
 
         atrf_m.assert_called_with(message)
         captured = capsys.readouterr()
-        assert captured.out == color_message + "\n"
+        assert captured.out == message + "\n"
         assert captured.err == ""
 
         self.print_lock_m.__enter__.assert_called_once()

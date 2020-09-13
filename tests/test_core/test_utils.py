@@ -4,7 +4,6 @@ import logging
 import os
 from unittest import mock
 
-from colorama.ansi import Fore
 import pytest
 from requests.exceptions import ConnectionError, ProxyError
 
@@ -476,17 +475,17 @@ class TestPrinter:
         Printer.reset()
 
     def test_reset(self):
-        assert Printer._print == print
-        Printer._print = 0.25
-        assert Printer._print == 0.25
+        assert Printer.can_print == True
+        Printer.can_print = 0.25
+        assert Printer.can_print == 0.25
 
         Printer.reset()
-        assert Printer._print == print
+        assert Printer.can_print == True
 
     def test_silence(self, capsys):
-        assert Printer._print == print
+        assert Printer.can_print == True
         Printer.silence()
-        assert Printer._print == Printer.useless
+        assert Printer.can_print == False
         Printer.print("hola")
 
         captured = capsys.readouterr()
@@ -497,7 +496,7 @@ class TestPrinter:
     @mock.patch("vcm.core.utils.Modules.should_print")
     def test_print(self, sp_m, should_print, capsys):
         sp_m.return_value = should_print
-        assert Printer._print == print
+        assert Printer.can_print == True
         Printer.print("hello")
 
         captured = capsys.readouterr()
@@ -507,12 +506,6 @@ class TestPrinter:
         else:
             assert captured.out == ""
 
-    def test_useless(self, capsys):
-        Printer.useless("a", 1, float=0.23, complex=1 + 2j)
-
-        captured = capsys.readouterr()
-        assert captured.err == ""
-        assert captured.out == ""
 
 
 class TestCheckUpdates:
@@ -756,13 +749,12 @@ class TestSaveCrashContent:
 @pytest.mark.parametrize("message", ("error", "real error", 4532))
 @pytest.mark.parametrize("exit_code", range(-3, 4))
 def test_handle_fatal_error_exit(capsys, message, exit_code):
-    real_message = Fore.RED + str(message) + Fore.RESET
     with pytest.raises(SystemExit, match=str(exit_code)):
-        handle_fatal_error_exit(message, exit_code=exit_code)
+        handle_fatal_error_exit(str(message), exit_code=exit_code)
 
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err.strip() == real_message
+    assert captured.err.strip() == str(message)
 
 
 @mock.patch("vcm.settings.settings")

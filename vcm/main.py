@@ -105,7 +105,7 @@ def settings_command():
 @settings_command.command("list")
 def list_settings():
     """List settings keys and values"""
-    print(settings_to_string())
+    click.echo(settings_to_string())
 
 
 @settings_command.command("set")
@@ -113,7 +113,6 @@ def list_settings():
 @click.argument("value")
 def set_settings(key, value):
     """Set a new value for a specific setting"""
-    # breakpoint()
     settings[key] = value
 
 
@@ -121,7 +120,7 @@ def set_settings(key, value):
 @click.argument("key")
 def show_settings(key):
     """Show the value of a specific setting"""
-    print("%s: %r" % (key, settings[key]))
+    click.echo("%s: %r" % (key, settings[key]))
 
 
 @settings_command.command("exclude")
@@ -162,7 +161,7 @@ def unindex_subject(subject_id):
 def show_settings_keys():
     """Displays the settings keys, but not the values"""
     for key in settings.keys():
-        print(" - " + key)
+        click.echo(" - " + key)
 
 
 @settings_command.command("check")

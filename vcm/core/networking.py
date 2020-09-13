@@ -1,6 +1,7 @@
 """Custom downloader with retries control."""
 
 import logging
+from urllib.parse import urljoin
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -21,6 +22,10 @@ USER_AGENT = (
 
 
 class Connection(metaclass=MetaSingleton):
+    base_url = settings.base_url
+    login_url = urljoin(base_url, "login/index.php")
+    logout_url = urljoin(base_url, "login/logout.php?sesskey=%s")
+
     def __init__(self):
         self._downloader = Downloader()
         self._logout_response: Optional[requests.Response] = None
@@ -59,9 +64,7 @@ class Connection(metaclass=MetaSingleton):
 
         while True:
             self._logout_response = self.post(
-                "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
-                % self.sesskey,
-                data={"sesskey": self.sesskey},
+                self.logout_url % self.sesskey, data={"sesskey": self.sesskey},
             )
             if 500 <= self._logout_response.status_code <= 599:
                 logout_retries -= 1
@@ -110,7 +113,7 @@ class Connection(metaclass=MetaSingleton):
                     ) from exc
 
     def _login(self):
-        response = self.get("https://campusvirtual.uva.es/login/index.php")
+        response = self.get(self.login_url)
 
         if not response.ok:
             if "maintenance" in response.reason:
@@ -134,7 +137,7 @@ class Connection(metaclass=MetaSingleton):
         # Detect if user is already logged in
         if "Usted ya está en el sistema" in response.text:
             logger.info("User already logged in")
-            response = self.get("https://campusvirtual.uva.es/my/")
+            response = self.get(self.login_url)
             self.find_sesskey_and_user_url(BeautifulSoup(response.text, "html.parser"))
             return
 
@@ -146,7 +149,7 @@ class Connection(metaclass=MetaSingleton):
         logger.info("Logging in with user %r", Credentials.VirtualCampus.username)
 
         self._login_response = self.post(
-            "https://campusvirtual.uva.es/login/index.php",
+            self.login_url,
             data={
                 "anchor": "",
                 "username": Credentials.VirtualCampus.username,

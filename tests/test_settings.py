@@ -3,7 +3,6 @@ from shutil import rmtree
 from typing import Optional
 from unittest import mock
 
-from colorama import Fore
 import pytest
 
 from vcm.core.exceptions import (
@@ -320,7 +319,6 @@ class TestSettings:
         assert hasattr(Settings, "credentials_path")
         assert hasattr(Settings, "settings_path")
         assert hasattr(Settings, "config")
-        assert hasattr(Settings, "_template")
 
     def test_exclude_subjects_ids_setter(self):
         settings = Settings()
@@ -420,9 +418,7 @@ class TestSettings:
             assert config
 
         captured = capsys.readouterr()
-        assert "Settings file does not exist" in captured.err
-        assert Fore.RED in captured.err
-        assert Fore.RESET in captured.err
+        assert captured.err == "Settings file does not exist\n"
         assert captured.out == ""
 
     @mock.patch("vcm.settings.YAML")
@@ -487,6 +483,10 @@ class TestSettingsAttributes:
     def test_root_folder(self):
         assert isinstance(self.settings.root_folder, Path)
         assert self.settings.root_folder.as_posix() == self.settings["root-folder"]
+
+    def test_base_url(self):
+        assert isinstance(self.settings.base_url, str)
+        assert self.settings.base_url == self.settings["base-url"]
 
     def test_logging_level(self):
         assert isinstance(self.settings.logging_level, str)
@@ -608,6 +608,7 @@ class TestCheckSettings:
 
     def test_check(self):
         checks = [
+            "base_url",
             "root_folder",
             "logs_folder",
             "logging_level",
@@ -660,6 +661,15 @@ class TestCheckSettings:
                 CheckSettings.check_root_folder()
             rf_m.assert_called_once_with()
         mkdir_m.assert_called_once_with(parents=True, exist_ok=True)
+
+    def test_check_base_url(self):
+        self.settings["base-url"] = "https://example.com"
+        CheckSettings.check_base_url()
+
+        self.settings["base-url"] = 65
+        with pytest.raises(TypeError):
+            CheckSettings.check_base_url()
+
 
     @mock.patch("pathlib.Path.mkdir")
     def test_check_logs_folder(self, mkdir_m):
