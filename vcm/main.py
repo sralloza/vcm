@@ -10,7 +10,6 @@ from .core.utils import (
     Printer,
     check_updates,
     open_http_status_server,
-    safe_exit,
     setup_vcm,
 )
 from .downloader import download

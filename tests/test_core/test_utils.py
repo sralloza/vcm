@@ -16,10 +16,8 @@ from vcm.core.utils import (
     Printer,
     check_updates,
     configure_logging,
-    exception_exit,
     handle_fatal_error_exit,
     open_http_status_server,
-    safe_exit,
     save_crash_context,
     secure_filename,
     setup_vcm,
@@ -108,127 +106,6 @@ class TestPatterns:
             assert match.group(0) == input_str
         else:
             assert match is None
-
-
-class TestExceptionExit:
-    exceptions = (
-        (ValueError, "Invalid path"),
-        (TypeError, ("Invalid type", "Expected int")),
-        (ImportError, "Module not found: math"),
-        (SystemExit, "exit program"),
-    )
-
-    @pytest.mark.parametrize("red", [True, False])
-    @pytest.mark.parametrize("to_stderr", [True, False])
-    @pytest.mark.parametrize("exception, args", exceptions)
-    def test_ok(self, exception, args, to_stderr, red, capsys):
-        if not isinstance(args, str):
-            message = ", ".join(args)
-        else:
-            message = args
-            args = (args,)
-
-        with pytest.raises(SystemExit):
-            exception_exit(exception(*args), to_stderr=to_stderr, red=red)
-
-        captured = capsys.readouterr()
-
-        if to_stderr:
-            assert message in captured.err
-
-            if red:
-                assert Fore.LIGHTRED_EX in captured.err
-                assert Fore.RESET in captured.err
-            else:
-                assert Fore.LIGHTRED_EX not in captured.err
-                assert Fore.RESET not in captured.err
-        else:
-            assert message in captured.out
-
-            if red:
-                assert Fore.LIGHTRED_EX in captured.out
-                assert Fore.RESET in captured.out
-            else:
-                assert Fore.LIGHTRED_EX not in captured.out
-                assert Fore.RESET not in captured.out
-
-    def test_error_1(self):
-        match = "exception's class must be a subclass of Exception"
-        with pytest.raises(TypeError, match=match):
-            exception_exit("hi")
-
-    def test_error_2(self):
-        class Dummy:
-            """Dummy class."""
-
-        match = "exception's class must be a subclass of Exception"
-        with pytest.raises(TypeError, match=match):
-            exception_exit(Dummy)
-
-    def test_error_3(self):
-        match = "exception must be an instance"
-        with pytest.raises(TypeError, match=match):
-            exception_exit(TypeError)
-
-
-class TestSafeExit:
-    @pytest.fixture(params=[True, False])
-    def to_stderr(self, request):
-        return request.param
-
-    @pytest.fixture(params=[True, False])
-    def red(self, request):
-        return request.param
-
-    @pytest.fixture(params=[ValueError, TypeError, AttributeError, SystemExit])
-    def exception(self, request):
-        return request.param
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_called(self, ee_m, red, to_stderr, exception):
-        exc = exception()
-        is_system_exit = isinstance(exc, SystemExit)
-
-        @safe_exit(to_stderr=to_stderr, red=red)
-        def custom_function():
-            raise exc
-
-        if is_system_exit:
-            with pytest.raises(SystemExit):
-                custom_function()
-        else:
-            custom_function()
-            ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_not_called(self, ee_m, exception):
-        exc = exception()
-        is_system_exit = isinstance(exc, SystemExit)
-
-        # Defaults: to_stder=True, red=True
-        @safe_exit
-        def custom_function():
-            raise exc
-
-        if is_system_exit:
-            with pytest.raises(SystemExit):
-                custom_function()
-        else:
-            custom_function()
-            ee_m.assert_called_with(exc, to_stderr=True, red=True)
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_called_mixed_args(self, ee_m, to_stderr, red):
-        msg = "Use keyword arguments in the safe_exit decorator"
-        with pytest.raises(ValueError, match=msg):
-
-            @safe_exit(to_stderr, red=red)
-            def custom_function():
-                """Dummy function."""
-
-        ee_m.assert_not_called()
-        with pytest.raises(UnboundLocalError):
-            custom_function()
 
 
 class TestTiming:
@@ -505,7 +382,6 @@ class TestPrinter:
             assert captured.out == "hello\n"
         else:
             assert captured.out == ""
-
 
 
 class TestCheckUpdates:
