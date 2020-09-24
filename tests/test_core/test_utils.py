@@ -369,12 +369,13 @@ class TestPrinter:
         assert captured.err == ""
         assert captured.out == ""
 
+    @pytest.mark.parametrize("color", [None, "red", "blue", "bright_red", "yellow"])
     @pytest.mark.parametrize("should_print", [False, True])
     @mock.patch("vcm.core.utils.Modules.should_print")
-    def test_print(self, sp_m, should_print, capsys):
+    def test_print(self, sp_m, should_print, capsys, color):
         sp_m.return_value = should_print
         assert Printer.can_print == True
-        Printer.print("hello")
+        Printer.print("hello", color=color)
 
         captured = capsys.readouterr()
         assert captured.err == ""

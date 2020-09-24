@@ -1,10 +1,11 @@
 """Custom downloader with retries control."""
 
 import logging
-from urllib.parse import urljoin
 from typing import Optional
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
+import click
 import requests
 
 from vcm.settings import settings
@@ -166,7 +167,7 @@ class Connection(metaclass=MetaSingleton):
         soup = BeautifulSoup(self._login_response.text, "html.parser")
 
         if "Usted se ha identificado" not in self._login_response.text:
-            raise LoginError
+            raise LoginError("Login successfull string not present in response")
 
         self.find_sesskey_and_user_url(soup)
 

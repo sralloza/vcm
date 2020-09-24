@@ -1,7 +1,9 @@
 """Exceptions and warnings for the VCM application."""
 
+import click
 
-class VcmError(Exception):
+
+class VcmError(click.ClickException):
     """Vcm error."""
 
 
