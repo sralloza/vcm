@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import gettempdir
 from typing import Any, Dict, List
 from urllib.parse import urljoin
+from click.exceptions import ClickException
 
 from ruamel.yaml import YAML
 
@@ -216,7 +217,7 @@ class Settings(dict, metaclass=MetaSingleton):
 
     def __setitem__(self, k, v) -> None:
         k = k.replace("_", "-").lower()
-        v = self.transforms[k](v)
+        v = self.transform(k, v)
         self.config[k] = v
         save_settings()
 
@@ -227,6 +228,14 @@ class Settings(dict, metaclass=MetaSingleton):
     def __contains__(self, k: str) -> bool:
         k = k.replace("_", "-").lower()
         return k in self.config
+
+    def transform(self, key, value):
+        try:
+            return self.transforms[key](value)
+        except ValueError as exc:
+            valid = type(settings[key]).__name__
+            msg = f"Invalid value for {key!r}: {value!r} (expected {valid})"
+            raise SettingsError(msg) from exc
 
     @classmethod
     def get_current_config(cls) -> Dict[str, Any]:
@@ -290,7 +299,6 @@ class Settings(dict, metaclass=MetaSingleton):
         """
 
         return self["base-url"]
-
 
     @property
     def logging_level(self) -> str:
@@ -518,7 +526,6 @@ class CheckSettings:
 
         if not isinstance(settings["base-url"], str):
             raise TypeError("Setting base-url must be str")
-
 
     @classmethod
     def check_logs_folder(cls):

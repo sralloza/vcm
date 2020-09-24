@@ -297,7 +297,7 @@ class TestSettings:
         self.save_m = mock.patch("vcm.settings.save_settings").start()
         self.transf_patcher = mock.patch("vcm.settings.Settings.transforms")
         self.transforms_m = self.transf_patcher.start()
-        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x  # noqa
         yield
         self.save_m.assert_not_called()
         mock.patch.stopall()
@@ -370,7 +370,10 @@ class TestSettings:
         assert "HELLO_WORLD" in settings
         assert "hElLo_WoRlD" in settings
 
-    def test_setitem(self):
+    @mock.patch("vcm.settings.Settings.transform")
+    def test_setitem(self, transform_m):
+        transform_m.side_effect = lambda key, value: value
+
         settings = Settings()
         settings["hello-world"] = "yes"
         assert settings["hello-world"] == "yes"
@@ -387,6 +390,28 @@ class TestSettings:
         self.save_m.assert_called()
         assert self.save_m.call_count == 4
         self.save_m.reset_mock()
+
+        transform_m.assert_any_call("hello-world", "yes")
+        assert transform_m.call_count == 4
+
+    def test_transform(self):
+        self.transf_patcher.stop()
+        new_transforms = {"key-a": int, "key-b": float}
+        mock.patch("vcm.settings.Settings.transforms", new_transforms).start()
+
+        settings = Settings()
+        settings["key-a"] = 1
+        settings["key-b"] = 0.5
+        self.save_m.reset_mock()
+
+        assert settings.transform("key-a", "25") == 25
+        assert settings.transform("key-b", "24.5") == 24.5
+
+        with pytest.raises(SettingsError, match="Invalid value for 'key-a'"):
+            settings.transform("key-a", "not-an-int")
+
+        with pytest.raises(SettingsError, match="Invalid value for 'key-b'"):
+            settings.transform("key-b", "not-a-float")
 
     @mock.patch("vcm.settings.Settings.create_example")
     @mock.patch("pathlib.Path.is_file")
@@ -669,7 +694,6 @@ class TestCheckSettings:
         self.settings["base-url"] = 65
         with pytest.raises(TypeError):
             CheckSettings.check_base_url()
-
 
     @mock.patch("pathlib.Path.mkdir")
     def test_check_logs_folder(self, mkdir_m):
