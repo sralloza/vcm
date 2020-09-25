@@ -1,4 +1,4 @@
-from vcm.main import main
+from vcm.main import cli
 
 if __name__ == "__main__":
-    main()
+    cli()

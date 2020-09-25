@@ -186,7 +186,7 @@ def test_set_settings(settings_m):
     my_map = defaultdict(str)
     settings_m.__getitem__ = lambda *x: my_map.__getitem__(x[-1])
     settings_m.__setitem__ = lambda *x: my_map.__setitem__(*x[-2:])
-    settings_m["key"] != "value"
+    assert settings_m["key"] != "value"
 
     runner = CliRunner()
     result = runner.invoke(main, ["settings", "set", "key", "value"])

@@ -33,6 +33,16 @@ test_credentials_path: Path = settings_folder / "test-vcm-credentials.yaml"
 test_root_folder = settings_folder / "vcm-test-data"
 
 
+@pytest.fixture
+def get_test_data():
+    data_path = Path(__file__).with_name("data")
+
+    def wrapper(name):
+        return data_path.joinpath(name).read_text(encoding="utf8")
+
+    return wrapper
+
+
 def pytest_configure():
     SETTINGS_DEFAULTS["root-folder"] = test_root_folder.as_posix()
     SETTINGS_DEFAULTS["email"] = "testing@example.com"

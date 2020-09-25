@@ -5,7 +5,7 @@ import os
 from unittest import mock
 
 import pytest
-from requests.exceptions import ConnectionError, ProxyError
+from requests.exceptions import ProxyError
 
 import vcm
 from vcm.core.exceptions import FilenameWarning
@@ -202,7 +202,7 @@ class TestTiming:
 
         assert caplog.record_tuples == expected_log_tuples
 
-    def test_decorate_not_called(self, name, level):
+    def test_decorate_not_called(self, name, level):  # pylint: disable=unused-argument
         # Defaults: name=None, level=None
         @timing
         def custom_function():
@@ -352,17 +352,17 @@ class TestPrinter:
         Printer.reset()
 
     def test_reset(self):
-        assert Printer.can_print == True
+        assert Printer.can_print is True
         Printer.can_print = 0.25
         assert Printer.can_print == 0.25
 
         Printer.reset()
-        assert Printer.can_print == True
+        assert Printer.can_print is True
 
     def test_silence(self, capsys):
-        assert Printer.can_print == True
+        assert Printer.can_print is True
         Printer.silence()
-        assert Printer.can_print == False
+        assert Printer.can_print is False
         Printer.print("hola")
 
         captured = capsys.readouterr()
@@ -374,7 +374,7 @@ class TestPrinter:
     @mock.patch("vcm.core.utils.Modules.should_print")
     def test_print(self, sp_m, should_print, capsys, color):
         sp_m.return_value = should_print
-        assert Printer.can_print == True
+        assert Printer.can_print is True
         Printer.print("hello", color=color)
 
         captured = capsys.readouterr()
@@ -566,6 +566,7 @@ class TestSaveCrashContent:
 
     @pytest.fixture(params=["class-instance", "normal-string"])
     def crash_object(self, request):
+        # pylint: disable=invalid-name
         if request.param != "class-instance":
             yield request.param
         else:
