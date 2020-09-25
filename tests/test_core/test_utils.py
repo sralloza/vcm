@@ -445,34 +445,67 @@ class TestCheckUpdates:
 class TestUpdate:
     @pytest.fixture(autouse=True)
     def mocks(self):
+        self.command = (
+            "python -m pip install --upgrade git+https://github.com/sralloza/vcm.git"
+        )
+        self.run_args = dict(capture_output=True, shell=True, check=True)
         self.cu_m = mock.patch("vcm.core.utils.check_updates").start()
         self.glv_m = mock.patch("vcm.core.utils.get_last_version").start()
+        self.glv_m.return_value = "<last-version>"
         self.confirm_m = mock.patch("click.confirm").start()
         self.run_m = mock.patch("vcm.core.utils.run").start()
+        self.get_versions_m = mock.patch("vcm._version.get_versions").start()
+        self.get_versions_m.return_value = {"version": "<current-version>"}
 
         yield
         mock.patch.stopall()
 
-    def test_update_do_not_update(self, capsys):
-        self.cu_m.return_value = False
+    def test_value_error(self):
+        with pytest.raises(ValueError, match="simultaneously"):
+            update(dev=True, version="v1.0.0")
 
-        update()
-
-        result = capsys.readouterr()
-        assert result.out == ""
-        assert result.err == ""
-
-        self.cu_m.assert_called_once_with()
+        self.cu_m.assert_not_called()
         self.glv_m.assert_not_called()
         self.confirm_m.assert_not_called()
         self.run_m.assert_not_called()
+        self.get_versions_m.assert_not_called()
 
-    def test_update_abort(self, capsys):
-        self.cu_m.return_value = True
-        self.glv_m.return_value = "v1.2.3"
+    @pytest.mark.parametrize("should_update", [True, False])
+    def test_no_args(self, should_update, capsys):
+        self.cu_m.return_value = should_update
+
+        update()
+        result = capsys.readouterr()
+
+        self.cu_m.assert_called_once_with()
+
+        if should_update:
+            self.glv_m.assert_called_once_with()
+            self.confirm_m.assert_called_once_with(
+                "Download last released version? (<last-version>)", abort=True
+            )
+            self.run_m.assert_called_once_with(self.command, **self.run_args)
+            self.get_versions_m.assert_called_once_with()
+            assert result.out == "Version '<current-version>' installed successfully\n"
+            assert result.err == ""
+        else:
+            self.glv_m.assert_not_called()
+            self.confirm_m.assert_not_called()
+            self.run_m.assert_not_called()
+            self.get_versions_m.assert_not_called()
+
+            assert result.out == ""
+            assert result.err == ""
+
+    @pytest.mark.parametrize("should_update", [True, False])
+    def test_no_args_not_confirmed(self, should_update, capsys):
+        self.cu_m.return_value = should_update
         self.confirm_m.side_effect = SystemExit
 
-        with pytest.raises(SystemExit):
+        if should_update:
+            with pytest.raises(SystemExit):
+                update()
+        else:
             update()
 
         result = capsys.readouterr()
@@ -480,50 +513,68 @@ class TestUpdate:
         assert result.err == ""
 
         self.cu_m.assert_called_once_with()
-        self.glv_m.assert_called_once_with()
-        self.confirm_m.assert_called_once_with(
-            "Download last version? (v1.2.3)", abort=True
-        )
-        self.run_m.assert_not_called()
 
-    def test_update_confirmed_ok(self, capsys):
-        self.cu_m.return_value = True
-        self.glv_m.return_value = "v1.2.3"
+        if should_update:
+            self.glv_m.assert_called_once_with()
+            self.confirm_m.assert_called_once_with(
+                "Download last released version? (<last-version>)", abort=True
+            )
+            self.run_m.assert_not_called()
+            self.get_versions_m.assert_not_called()
+        else:
+            self.glv_m.assert_not_called()
+            self.confirm_m.assert_not_called()
+            self.run_m.assert_not_called()
+            self.get_versions_m.assert_not_called()
 
-        update()
-
+    def test_dev(self, capsys):
+        update(dev=True)
         result = capsys.readouterr()
-        assert result.out == "Version 'v1.2.3' installed successfully\n"
+
+        self.cu_m.assert_not_called()
+        self.glv_m.assert_not_called()
+        self.confirm_m.assert_called_once_with("Download last dev version?", abort=True)
+
+        self.run_m.assert_called_once_with(self.command, **self.run_args)
+        self.get_versions_m.assert_called_once_with()
+
+        assert result.out == "Version '<current-version>' installed successfully\n"
         assert result.err == ""
 
-        self.cu_m.assert_called_once_with()
-        self.glv_m.assert_called_once_with()
-        self.confirm_m.assert_called_once_with(
-            "Download last version? (v1.2.3)", abort=True
-        )
-        command = "python -m pip install --upgrade git+https://github.com/sralloza/vcm.git@v1.2.3"
-        self.run_m.assert_called_once_with(command, capture_output=True, shell=True, check=True)
-
-    def test_update_confirmed_fail(self, capsys):
-        command = "python -m pip install --upgrade git+https://github.com/sralloza/vcm.git@v1.2.3"
-        self.cu_m.return_value = True
-        self.glv_m.return_value = "v1.2.3"
-        self.run_m.side_effect = CalledProcessError(123, command, output="<output>")
+    def test_dev_fail(self, capsys):
+        self.run_m.side_effect = CalledProcessError(123, "<cmd>", output="<output>")
 
         match = re.escape("Error in execution (123): <output>")
         with pytest.raises(UpdateError, match=match):
-            update()
+            update(dev=True)
 
         result = capsys.readouterr()
+
+        self.cu_m.assert_not_called()
+        self.glv_m.assert_not_called()
+        self.confirm_m.assert_called_once_with("Download last dev version?", abort=True)
+
+        self.run_m.assert_called_once_with(self.command, **self.run_args)
+        self.get_versions_m.assert_not_called()
+
         assert result.out == ""
         assert result.err == ""
 
-        self.cu_m.assert_called_once_with()
-        self.glv_m.assert_called_once_with()
+    def test_version(self, capsys):
+        update(version="v1.2.3")
+        result = capsys.readouterr()
+
+        self.cu_m.assert_not_called()
+        self.glv_m.assert_not_called()
         self.confirm_m.assert_called_once_with(
-            "Download last version? (v1.2.3)", abort=True
+            "Download selected version? (v1.2.3)", abort=True
         )
-        self.run_m.assert_called_once_with(command, capture_output=True, shell=True, check=True)
+
+        self.run_m.assert_called_once_with(self.command + "@v1.2.3", **self.run_args)
+        self.get_versions_m.assert_called_once_with()
+
+        assert result.out == "Version '<current-version>' installed successfully\n"
+        assert result.err == ""
 
 
 class TestMetaSingleton:

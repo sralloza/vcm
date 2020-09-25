@@ -18,7 +18,7 @@ from webbrowser import get as get_webbrowser
 
 import click
 from colorama import init as start_colorama
-from packaging import version
+from packaging.version import parse as parse_version
 from werkzeug.utils import _windows_device_files as WIN_DEVS
 from werkzeug.utils import secure_filename as _secure_filename
 
@@ -259,8 +259,8 @@ def check_updates() -> bool:
     # pylint: disable=import-outside-toplevel
     from vcm import __version__ as current_version
 
-    newer_version = version.parse(get_last_version())
-    current_version = version.parse(current_version)
+    newer_version = parse_version(get_last_version())
+    current_version = parse_version(current_version)
 
     if newer_version > current_version:
         click.echo(
@@ -276,19 +276,46 @@ def check_updates() -> bool:
     return False
 
 
-def update():
+def update(dev: bool = False, version: str = None):
     """Installs the newest version of this aplication.
+
+    Args:
+        dev (bool, optional): if True, the last development version
+            will be downloaded.
+        version(str, optional): if given, it will install that version.
 
     Raises:
         UpdateError: if the installation went wrong.
+        ValueError: if dev and version are set simultaneously.
     """
 
-    if not check_updates():
-        return
+    if version and dev:
+        raise ValueError("Can't use dev and version simultaneously")
 
-    last_version = get_last_version()
-    click.confirm(f"Download last version? ({last_version})", abort=True)
-    url = f"https://github.com/sralloza/vcm.git@{last_version}"
+    if not dev and not version:
+        if not check_updates():
+            return
+
+    if dev:
+        version_to_install = None
+        version_info = "last dev"
+    elif version:
+        version_to_install = version
+        version_info = "selected"
+    else:
+        version_to_install = get_last_version()
+        version_info = "last released"
+
+    msg = f"Download {version_info} version?"
+    if version_to_install:
+        msg += f" ({version_to_install})"
+
+    click.confirm(msg, abort=True)
+
+    url = "https://github.com/sralloza/vcm.git"
+    if version:
+        url += f"@{version_to_install}"
+
     command = f"python -m pip install --upgrade git+{url}"
 
     try:
@@ -297,7 +324,12 @@ def update():
         msg = f"Error in execution ({exc.returncode}): {exc.output}"
         raise UpdateError(msg)
 
-    click.secho("Version %r installed successfully" % last_version, fg="bright_green")
+    # pylint: disable=import-outside-toplevel
+    from vcm._version import get_versions
+
+    # breakpoint()
+    new_version = get_versions()["version"]
+    click.secho("Version %r installed successfully" % new_version, fg="bright_green")
 
 
 class MetaSingleton(type):  # pylint: disable=W9015,W9016
