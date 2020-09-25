@@ -4,11 +4,9 @@ from functools import lru_cache
 import logging
 import sys
 from typing import NoReturn, Optional
-from typing import Optional
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-import click
 import requests
 
 from vcm.settings import settings
@@ -28,11 +26,9 @@ USER_AGENT = (
 class Connection(metaclass=MetaSingleton):
     """Manages HTTP connection with the university's servers."""
 
-    _logout_url_template = "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
-    _login_url_template = "https://campusvirtual.uva.es/login/index.php"
     base_url = settings.base_url
-    login_url = urljoin(base_url, "login/index.php")
-    logout_url = urljoin(base_url, "login/logout.php?sesskey=%s")
+    _logout_url_template = urljoin(base_url, "login/logout.php?sesskey=%s")
+    _login_url_template = urljoin(base_url, "login/index.php")
 
     def __init__(self):
         self._downloader = Downloader()
@@ -295,6 +291,7 @@ class Connection(metaclass=MetaSingleton):
         except (AttributeError, ValueError):
             setattr(self, "login-token-response", response)
             save_crash_context(self, "login-token-not-found", "Can't find login token")
+            logger.critical("Can't find token")
             raise LoginError("Can't find token")
 
         logger.debug("Login token: %s", login_token)
@@ -356,7 +353,7 @@ class Connection(metaclass=MetaSingleton):
     def find_sesskey_and_user_url(self):
         """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`."""
 
-        soup = BeautifulSoup(self.get_login_page(), "html.parser")
+        soup = BeautifulSoup(self.get_login_page().text, "html.parser")
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
             "value"
         ]
@@ -373,6 +370,8 @@ class Downloader(requests.Session):
         Args:
             silenced (bool, optional): if True, only critical errors are logged.
                 Defaults to False.
+            retries (int, optional): number of retries for each request. If none,
+                it's set to settings.retries. Defaults to None.
         """
 
     def __init__(self, silenced=False, retries=None):

@@ -345,9 +345,41 @@ class TestConnection:
         hmm_m.assert_not_called()
         assert caplog.record_tuples == []
 
-    @pytest.mark.skip(reason="Web under maintenance, no example data")
-    def test_get_login_token(self):
-        assert 0, "Not implemented"
+    @pytest.mark.parametrize("data", ["ok", "fail-1", "fail-2", "fail-3", "null"])
+    @mock.patch("vcm.core.networking.save_crash_context")
+    @mock.patch("vcm.core.networking.Connection.get_login_page")
+    def test_get_login_token(self, glp_m, scc_m, data, get_test_data, caplog):
+        caplog.set_level(10)
+        is_ok = data == "ok"
+        real_token = "SCPBUp0HZE9nAvhdjfwzFxu8ESsZ0jtE"
+
+        if data == "null":
+            glp_m.return_value.text = ""
+        else:
+            glp_m.return_value.text = get_test_data(f"login-{data}.html.example")
+
+        connection = Connection()
+
+        if is_ok:
+            token = connection.get_login_token()
+            assert token == real_token
+            assert not hasattr(connection, "login-token-response")
+            scc_m.assert_not_called()
+            glp_m.assert_called_once_with()
+
+            assert caplog.record_tuples == [
+                ("vcm.core.networking", 10, f"Login token: {real_token}")
+            ]
+            return
+
+        with pytest.raises(LoginError, match="Can't find token"):
+            connection.get_login_token()
+
+        assert hasattr(connection, "login-token-response")
+        assert getattr(connection, "login-token-response") == glp_m.return_value
+        scc_m.assert_called_once_with(connection, mock.ANY, mock.ANY)
+
+        assert caplog.record_tuples == [("vcm.core.networking", 50, "Can't find token")]
 
     @mock.patch("vcm.core.networking.Connection.make_login_request")
     @mock.patch("vcm.core.networking.Connection.get_login_token")
@@ -506,9 +538,17 @@ class TestConnection:
 
         assert caplog.record_tuples == expected
 
-    @pytest.mark.skip(reason="Web under maintenance, no example data")
-    def test_find_sesskey_and_user_url(self):
-        assert 0, "Not implemented"
+    @mock.patch("vcm.core.networking.Connection.get_login_page")
+    def test_find_sesskey_and_user_url(self, clp_m, get_test_data):
+        clp_m.return_value.text = get_test_data("logged-in.html.example")
+        expected_url = (
+            "https://campusvirtual.uva.es/user/profile.php?id=6737&showallcourses=1"
+        )
+
+        connection = Connection()
+        connection.find_sesskey_and_user_url()
+        assert connection.sesskey == "1Yjk995Su9"
+        assert connection.user_url == expected_url
 
 
 class TestDownloader:
