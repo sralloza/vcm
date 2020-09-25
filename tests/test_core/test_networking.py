@@ -141,7 +141,7 @@ class TestConnection:
 
     @mock.patch("vcm.core.networking.Connection.make_logout_request")
     def test_inner_logout_exception(self, mlr_m):
-        mlr_m.side_effect = DownloaderError
+        mlr_m.side_effect = DownloaderError("message")
 
         conn = Connection()
         with pytest.raises(LogoutError, match="Logout request raised DownloaderError"):
@@ -193,7 +193,7 @@ class TestConnection:
     @mock.patch("vcm.core.networking.Connection.inner_logout")
     def test_logout_some_errors(self, logout_m, caplog, nerrors):
         caplog.set_level(10)
-        logout_m.side_effect = [LogoutError] * nerrors + [None]
+        logout_m.side_effect = [LogoutError("message")] * nerrors + [None]
         conn = Connection()
         conn._logout_response = mock.MagicMock(status_code=501, ok=False)
         conn.logout()
@@ -214,7 +214,7 @@ class TestConnection:
     @mock.patch("vcm.core.networking.Connection.inner_logout")
     def test_logout_fatal(self, logout_m, caplog):
         caplog.set_level(10)
-        logout_m.side_effect = [LogoutError] * self.logout_retries + [None]
+        logout_m.side_effect = [LogoutError("message")] * self.logout_retries + [None]
         conn = Connection()
         conn._logout_response = mock.MagicMock(status_code=501, ok=False)
         with pytest.raises(LogoutError, match="Logout retries expired"):
@@ -456,7 +456,7 @@ class TestConnection:
     @mock.patch("vcm.core.networking.Connection.inner_login")
     def test_login_some_errors(self, inner_login_m, scc_m, nerrors, caplog):
         caplog.set_level(10)
-        inner_login_m.side_effect = [LoginError] * nerrors + [None]
+        inner_login_m.side_effect = [LoginError("message")] * nerrors + [None]
 
         conn = Connection()
         conn.login()
@@ -469,7 +469,9 @@ class TestConnection:
             retries_left = self.login_retries - i
             expected.append((10, "Logging in (%d retries left)" % (retries_left)))
             if i != nerrors:
-                expected.append((30, "Trying to log again due to LoginError()"))
+                expected.append(
+                    (30, "Trying to log again due to LoginError('message')")
+                )
 
         expected.append((20, "Logged in"))
         expected = [(self.logger_name,) + x for x in expected]
@@ -481,7 +483,9 @@ class TestConnection:
     @mock.patch("vcm.core.networking.Connection.inner_login")
     def test_login_fatal_error(self, inner_login_m, scc_m, caplog, has_login_response):
         caplog.set_level(10)
-        inner_login_m.side_effect = [LoginError] * self.login_retries + [None]
+        inner_login_m.side_effect = [LoginError("message")] * self.login_retries + [
+            None
+        ]
 
         conn = Connection()
         if has_login_response:  # For historical reasons.
@@ -496,7 +500,7 @@ class TestConnection:
         for i in range(self.login_retries):
             retries_left = self.login_retries - i
             expected.append((10, "Logging in (%d retries left)" % (retries_left)))
-            expected.append((30, "Trying to log again due to LoginError()"))
+            expected.append((30, "Trying to log again due to LoginError('message')"))
 
         expected = [(self.logger_name,) + x for x in expected]
 
@@ -634,7 +638,9 @@ class TestDownloader:
         assert caplog.record_tuples == records_expected
 
     @pytest.mark.parametrize("nerrors", range(1, 5))
-    def test_request_several_errors_no_fatal_override_retries(self, exception, caplog, nerrors):
+    def test_request_several_errors_no_fatal_override_retries(
+        self, exception, caplog, nerrors
+    ):
         caplog.set_level(10)
         self.request_m.side_effect = [exception] * nerrors + [mock.DEFAULT]
 
