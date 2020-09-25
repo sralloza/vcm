@@ -153,9 +153,9 @@ class Connection(metaclass=MetaSingleton):
             self.login_url,
             data={
                 "anchor": "",
+                "logintoken": login_token,
                 "username": Credentials.VirtualCampus.username,
                 "password": Credentials.VirtualCampus.password,
-                "logintoken": login_token,
             },
         )
 
@@ -187,6 +187,7 @@ class Downloader(requests.Session):
 
     def __init__(self, silenced=False):
         self.logger = logging.getLogger(__name__)
+        self.timeout = settings.timeout
 
         if silenced is True:
             self.logger.setLevel(logging.CRITICAL)

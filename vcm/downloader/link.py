@@ -156,9 +156,7 @@ class BaseLink(_Notify):
 
         self.logger.debug("Making request")
 
-        self.response = self.connection.get(
-            self.redirect_url or self.url, timeout=settings.timeout
-        )
+        self.response = self.connection.get(self.redirect_url or self.url)
 
         self.logger.debug(
             "Response obtained [%d | %s]", self.response.status_code, self.content_type
@@ -462,9 +460,7 @@ class Folder(BaseLink):
         self.logger.debug("Making request")
 
         data = {"id": self.id, "sesskey": self.connection.sesskey}
-        self.response = self.connection.post(
-            self.url, timeout=settings.timeout, data=data
-        )
+        self.response = self.connection.post(self.url, data=data)
         self.logger.debug("Response obtained [%d]", self.response.status_code)
 
     def do_download(self):
