@@ -11,6 +11,7 @@ from .core.utils import (
     check_updates,
     open_http_status_server,
     setup_vcm,
+    update,
 )
 from .downloader import download
 from .notifier import notify
@@ -49,10 +50,17 @@ def main(ctx, no_status_server):
         logger.info("vcm version: %s", version)
 
 
-@main.command("check-updates", help="Check for updates")
+@main.command("check-updates")
 def check_updates_command():
     """Check for new releases"""
     check_updates()
+
+
+@main.command("update")
+def update_command():
+    """Download the last release."""
+
+    update()
 
 
 @main.command("download")

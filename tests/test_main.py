@@ -63,6 +63,17 @@ def test_check_updates(check_updates_m):
     universal_mocks.setup.assert_called_once_with()
 
 
+@mock.patch("vcm.main.update")
+def test_update_command(update_m):
+    runner = CliRunner()
+    result = runner.invoke(main, ["update"])
+
+    assert result.exit_code == 0
+    assert result.output == ""
+
+    update_m.assert_called_once_with()
+
+
 @pytest.mark.parametrize("nss", [True, False])
 @pytest.mark.parametrize("nthreads", [10, 20, 30, None])
 @pytest.mark.parametrize("no_killer", [True, False])
