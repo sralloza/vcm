@@ -4,8 +4,11 @@ from functools import lru_cache
 import logging
 import sys
 from typing import NoReturn, Optional
+from typing import Optional
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
+import click
 import requests
 
 from vcm.settings import settings
@@ -27,6 +30,9 @@ class Connection(metaclass=MetaSingleton):
 
     _logout_url_template = "https://campusvirtual.uva.es/login/logout.php?sesskey=%s"
     _login_url_template = "https://campusvirtual.uva.es/login/index.php"
+    base_url = settings.base_url
+    login_url = urljoin(base_url, "login/index.php")
+    logout_url = urljoin(base_url, "login/logout.php?sesskey=%s")
 
     def __init__(self):
         self._downloader = Downloader()
@@ -372,6 +378,7 @@ class Downloader(requests.Session):
     def __init__(self, silenced=False, retries=None):
         self.logger = logging.getLogger(__name__)
         self.retries = retries or settings.retries
+        self.timeout = settings.timeout
 
         if silenced is True:
             self.logger.setLevel(logging.CRITICAL)

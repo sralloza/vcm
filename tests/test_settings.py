@@ -3,7 +3,6 @@ from shutil import rmtree
 from typing import Optional
 from unittest import mock
 
-from colorama import Fore
 import pytest
 
 from vcm.core.exceptions import (
@@ -298,7 +297,7 @@ class TestSettings:
         self.save_m = mock.patch("vcm.settings.save_settings").start()
         self.transf_patcher = mock.patch("vcm.settings.Settings.transforms")
         self.transforms_m = self.transf_patcher.start()
-        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x
+        self.transforms_m.__getitem__.return_value.side_effect = lambda x: x  # noqa
         yield
         self.save_m.assert_not_called()
         mock.patch.stopall()
@@ -320,7 +319,6 @@ class TestSettings:
         assert hasattr(Settings, "credentials_path")
         assert hasattr(Settings, "settings_path")
         assert hasattr(Settings, "config")
-        assert hasattr(Settings, "_template")
 
     def test_exclude_subjects_ids_setter(self):
         settings = Settings()
@@ -372,8 +370,10 @@ class TestSettings:
         assert "HELLO_WORLD" in settings
         assert "hElLo_WoRlD" in settings
 
+    @mock.patch("vcm.settings.Settings.transform")
+    def test_setitem(self, transform_m):
+        transform_m.side_effect = lambda key, value: value
 
-    def test_setitem(self):
         settings = Settings()
         settings["hello-world"] = "yes"
         assert settings["hello-world"] == "yes"
@@ -390,6 +390,28 @@ class TestSettings:
         self.save_m.assert_called()
         assert self.save_m.call_count == 4
         self.save_m.reset_mock()
+
+        transform_m.assert_any_call("hello-world", "yes")
+        assert transform_m.call_count == 4
+
+    def test_transform(self):
+        self.transf_patcher.stop()
+        new_transforms = {"key-a": int, "key-b": float}
+        mock.patch("vcm.settings.Settings.transforms", new_transforms).start()
+
+        settings = Settings()
+        settings["key-a"] = 1
+        settings["key-b"] = 0.5
+        self.save_m.reset_mock()
+
+        assert settings.transform("key-a", "25") == 25
+        assert settings.transform("key-b", "24.5") == 24.5
+
+        with pytest.raises(SettingsError, match="Invalid value for 'key-a'"):
+            settings.transform("key-a", "not-an-int")
+
+        with pytest.raises(SettingsError, match="Invalid value for 'key-b'"):
+            settings.transform("key-b", "not-a-float")
 
     @mock.patch("vcm.settings.Settings.create_example")
     @mock.patch("pathlib.Path.is_file")
@@ -421,9 +443,7 @@ class TestSettings:
             assert config
 
         captured = capsys.readouterr()
-        assert "Settings file does not exist" in captured.err
-        assert Fore.RED in captured.err
-        assert Fore.RESET in captured.err
+        assert captured.err == "Settings file does not exist\n"
         assert captured.out == ""
 
     @mock.patch("vcm.settings.YAML")
@@ -488,6 +508,10 @@ class TestSettingsAttributes:
     def test_root_folder(self):
         assert isinstance(self.settings.root_folder, Path)
         assert self.settings.root_folder.as_posix() == self.settings["root-folder"]
+
+    def test_base_url(self):
+        assert isinstance(self.settings.base_url, str)
+        assert self.settings.base_url == self.settings["base-url"]
 
     def test_logging_level(self):
         assert isinstance(self.settings.logging_level, str)
@@ -609,6 +633,7 @@ class TestCheckSettings:
 
     def test_check(self):
         checks = [
+            "base_url",
             "root_folder",
             "logs_folder",
             "logging_level",
@@ -661,6 +686,14 @@ class TestCheckSettings:
                 CheckSettings.check_root_folder()
             rf_m.assert_called_once_with()
         mkdir_m.assert_called_once_with(parents=True, exist_ok=True)
+
+    def test_check_base_url(self):
+        self.settings["base-url"] = "https://example.com"
+        CheckSettings.check_base_url()
+
+        self.settings["base-url"] = 65
+        with pytest.raises(TypeError):
+            CheckSettings.check_base_url()
 
     @mock.patch("pathlib.Path.mkdir")
     def test_check_logs_folder(self, mkdir_m):

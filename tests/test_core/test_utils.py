@@ -4,7 +4,6 @@ import logging
 import os
 from unittest import mock
 
-from colorama.ansi import Fore
 import pytest
 from requests.exceptions import ConnectionError, ProxyError
 
@@ -12,86 +11,19 @@ import vcm
 from vcm.core.exceptions import FilenameWarning
 from vcm.core.utils import (
     ErrorCounter,
-    Key,
     MetaSingleton,
     Patterns,
     Printer,
     check_updates,
     configure_logging,
-    exception_exit,
     handle_fatal_error_exit,
     open_http_status_server,
-    safe_exit,
     save_crash_context,
     secure_filename,
     setup_vcm,
     str2bool,
     timing,
 )
-
-
-class TestKey:
-    def test_attributes(self):
-        assert Key(b"a", b"a").is_int is False
-        assert Key(b"a").is_int is False
-        assert Key(25).is_int is True
-        assert Key(15, 15).is_int is True
-
-        with pytest.raises(TypeError, match="key1 must be bytes or int"):
-            Key(None)
-
-        with pytest.raises(TypeError, match="key1 must be bytes or int"):
-            Key(1 + 2j)
-
-        with pytest.raises(TypeError, match="key2 must be bytes or int"):
-            Key(1, 1 + 5j)
-
-        with pytest.raises(ValueError, match="key1 must have only one byte"):
-            Key(b"11")
-
-        with pytest.raises(ValueError, match="key2 must have only one byte"):
-            Key(b"1", b"11")
-
-        with pytest.raises(TypeError, match="key1 and key2 must be of the same type"):
-            Key(b"1", 5)
-
-    def test_string(self):
-        assert str(Key(b"r")) == "Key(key1=b'r', key2=None)"
-        assert str(Key(b"a", b"b")) == "Key(key1=b'a', key2=b'b')"
-        assert str(Key(22)) == "Key(key1=22, key2=None)"
-        assert str(Key(23, 26)) == "Key(key1=23, key2=26)"
-
-    def test_repr(self):
-        key = Key(12, 21)
-        assert repr(key) == str(key)
-
-    def test_eq(self):
-        kn1 = Key(1, 2)
-        kn2 = Key(1, 2)
-        kb1 = Key(b"1", b"2")
-        kb2 = Key(b"1", b"2")
-
-        assert kn1 != kb1
-        assert kn2 != kb2
-
-        assert kn1 == kn2
-        assert kb1 == kb2
-
-    def test_to_int(self):
-        with pytest.raises(ValueError, match="Key is already in int mode"):
-            Key(1, 1).to_int()
-
-        assert Key(b"\x01", b"\x01").to_int() == Key(1, 1)
-        assert Key(b"\x31", b"\x31").to_int() == Key(49, 49)
-        assert Key(b"1", b"1").to_int() == Key(49, 49)
-
-    def test_to_char(self):
-        with pytest.raises(ValueError, match="Key is already in char mode"):
-            Key(b"\x01", b"\x01").to_char()
-
-        assert Key(1, 1).to_char() == Key(b"\x01", b"\x01")
-        assert Key(49, 49).to_char() == Key(b"\x31", b"\x31")
-        assert Key(49, 49).to_char() == Key(b"1", b"1")
 
 
 class TestSecureFilename:
@@ -174,127 +106,6 @@ class TestPatterns:
             assert match.group(0) == input_str
         else:
             assert match is None
-
-
-class TestExceptionExit:
-    exceptions = (
-        (ValueError, "Invalid path"),
-        (TypeError, ("Invalid type", "Expected int")),
-        (ImportError, "Module not found: math"),
-        (SystemExit, "exit program"),
-    )
-
-    @pytest.mark.parametrize("red", [True, False])
-    @pytest.mark.parametrize("to_stderr", [True, False])
-    @pytest.mark.parametrize("exception, args", exceptions)
-    def test_ok(self, exception, args, to_stderr, red, capsys):
-        if not isinstance(args, str):
-            message = ", ".join(args)
-        else:
-            message = args
-            args = (args,)
-
-        with pytest.raises(SystemExit):
-            exception_exit(exception(*args), to_stderr=to_stderr, red=red)
-
-        captured = capsys.readouterr()
-
-        if to_stderr:
-            assert message in captured.err
-
-            if red:
-                assert Fore.LIGHTRED_EX in captured.err
-                assert Fore.RESET in captured.err
-            else:
-                assert Fore.LIGHTRED_EX not in captured.err
-                assert Fore.RESET not in captured.err
-        else:
-            assert message in captured.out
-
-            if red:
-                assert Fore.LIGHTRED_EX in captured.out
-                assert Fore.RESET in captured.out
-            else:
-                assert Fore.LIGHTRED_EX not in captured.out
-                assert Fore.RESET not in captured.out
-
-    def test_error_1(self):
-        match = "exception's class must be a subclass of Exception"
-        with pytest.raises(TypeError, match=match):
-            exception_exit("hi")
-
-    def test_error_2(self):
-        class Dummy:
-            """Dummy class."""
-
-        match = "exception's class must be a subclass of Exception"
-        with pytest.raises(TypeError, match=match):
-            exception_exit(Dummy)
-
-    def test_error_3(self):
-        match = "exception must be an instance"
-        with pytest.raises(TypeError, match=match):
-            exception_exit(TypeError)
-
-
-class TestSafeExit:
-    @pytest.fixture(params=[True, False])
-    def to_stderr(self, request):
-        return request.param
-
-    @pytest.fixture(params=[True, False])
-    def red(self, request):
-        return request.param
-
-    @pytest.fixture(params=[ValueError, TypeError, AttributeError, SystemExit])
-    def exception(self, request):
-        return request.param
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_called(self, ee_m, red, to_stderr, exception):
-        exc = exception()
-        is_system_exit = isinstance(exc, SystemExit)
-
-        @safe_exit(to_stderr=to_stderr, red=red)
-        def custom_function():
-            raise exc
-
-        if is_system_exit:
-            with pytest.raises(SystemExit):
-                custom_function()
-        else:
-            custom_function()
-            ee_m.assert_called_with(exc, to_stderr=to_stderr, red=red)
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_not_called(self, ee_m, exception):
-        exc = exception()
-        is_system_exit = isinstance(exc, SystemExit)
-
-        # Defaults: to_stder=True, red=True
-        @safe_exit
-        def custom_function():
-            raise exc
-
-        if is_system_exit:
-            with pytest.raises(SystemExit):
-                custom_function()
-        else:
-            custom_function()
-            ee_m.assert_called_with(exc, to_stderr=True, red=True)
-
-    @mock.patch("vcm.core.utils.exception_exit")
-    def test_decorate_called_mixed_args(self, ee_m, to_stderr, red):
-        msg = "Use keyword arguments in the safe_exit decorator"
-        with pytest.raises(ValueError, match=msg):
-
-            @safe_exit(to_stderr, red=red)
-            def custom_function():
-                """Dummy function."""
-
-        ee_m.assert_not_called()
-        with pytest.raises(UnboundLocalError):
-            custom_function()
 
 
 class TestTiming:
@@ -525,10 +336,12 @@ class TestConfigureLogging:
         self.lgl_m.return_value.setLevel.assert_called_once_with(40)
 
 
+@mock.patch("vcm.settings.CheckSettings.check")
 @mock.patch("vcm.core.utils.configure_logging")
-def test_setup_vcm(cl_mock):
+def test_setup_vcm(cl_mock, check_settings_m):
     setup_vcm()
     cl_mock.assert_called_once_with()
+    check_settings_m.assert_called_once_with()
 
 
 class TestPrinter:
@@ -539,29 +352,30 @@ class TestPrinter:
         Printer.reset()
 
     def test_reset(self):
-        assert Printer._print == print
-        Printer._print = 0.25
-        assert Printer._print == 0.25
+        assert Printer.can_print == True
+        Printer.can_print = 0.25
+        assert Printer.can_print == 0.25
 
         Printer.reset()
-        assert Printer._print == print
+        assert Printer.can_print == True
 
     def test_silence(self, capsys):
-        assert Printer._print == print
+        assert Printer.can_print == True
         Printer.silence()
-        assert Printer._print == Printer.useless
+        assert Printer.can_print == False
         Printer.print("hola")
 
         captured = capsys.readouterr()
         assert captured.err == ""
         assert captured.out == ""
 
+    @pytest.mark.parametrize("color", [None, "red", "blue", "bright_red", "yellow"])
     @pytest.mark.parametrize("should_print", [False, True])
     @mock.patch("vcm.core.utils.Modules.should_print")
-    def test_print(self, sp_m, should_print, capsys):
+    def test_print(self, sp_m, should_print, capsys, color):
         sp_m.return_value = should_print
-        assert Printer._print == print
-        Printer.print("hello")
+        assert Printer.can_print == True
+        Printer.print("hello", color=color)
 
         captured = capsys.readouterr()
         assert captured.err == ""
@@ -569,13 +383,6 @@ class TestPrinter:
             assert captured.out == "hello\n"
         else:
             assert captured.out == ""
-
-    def test_useless(self, capsys):
-        Printer.useless("a", 1, float=0.23, complex=1 + 2j)
-
-        captured = capsys.readouterr()
-        assert captured.err == ""
-        assert captured.out == ""
 
 
 class TestCheckUpdates:
@@ -819,13 +626,12 @@ class TestSaveCrashContent:
 @pytest.mark.parametrize("message", ("error", "real error", 4532))
 @pytest.mark.parametrize("exit_code", range(-3, 4))
 def test_handle_fatal_error_exit(capsys, message, exit_code):
-    real_message = Fore.RED + str(message) + Fore.RESET
     with pytest.raises(SystemExit, match=str(exit_code)):
-        handle_fatal_error_exit(message, exit_code=exit_code)
+        handle_fatal_error_exit(str(message), exit_code=exit_code)
 
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err.strip() == real_message
+    assert captured.err.strip() == str(message)
 
 
 @mock.patch("vcm.settings.settings")

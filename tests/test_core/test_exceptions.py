@@ -1,5 +1,6 @@
 import warnings
 
+from click.exceptions import ClickException
 import pytest
 
 from vcm.core.exceptions import (
@@ -32,233 +33,233 @@ from vcm.core.exceptions import (
 
 class TestVcmError:
     def test_inheritance(self):
-        exc = VcmError()
+        exc = VcmError("message")
         assert isinstance(exc, VcmError)
-        assert isinstance(exc, Exception)
+        assert isinstance(exc, ClickException)
 
     def test_raises(self):
         with pytest.raises(VcmError):
-            raise VcmError
+            raise VcmError("message")
 
 
 class TestLoginError:
     def test_inheritance(self):
-        exc = LoginError()
+        exc = LoginError("message")
         assert isinstance(exc, LoginError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(LoginError):
-            raise LoginError
+            raise LoginError("message")
 
 
 class TestLogoutError:
     def test_inheritance(self):
-        exc = LogoutError()
+        exc = LogoutError("message")
         assert isinstance(exc, LogoutError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(LogoutError):
-            raise LogoutError
+            raise LogoutError("message")
 
 
 class TestDownloaderError:
     def test_inheritance(self):
-        exc = DownloaderError()
+        exc = DownloaderError("message")
         assert isinstance(exc, DownloaderError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(DownloaderError):
-            raise DownloaderError
+            raise DownloaderError("message")
 
 
 class TestCredentialError:
     def test_inheritance(self):
-        exc = CredentialError()
+        exc = CredentialError("message")
         assert isinstance(exc, CredentialError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(CredentialError):
-            raise CredentialError
+            raise CredentialError("message")
 
 
 class TestNoCredentialsFoundError:
     def test_inheritance(self):
-        exc = NoCredentialsFoundError()
+        exc = NoCredentialsFoundError("message")
         assert isinstance(exc, NoCredentialsFoundError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(NoCredentialsFoundError):
-            raise NoCredentialsFoundError
+            raise NoCredentialsFoundError("message")
 
 
 class TestIdError:
     def test_inheritance(self):
-        exc = IdError()
+        exc = IdError("message")
         assert isinstance(exc, IdError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(IdError):
-            raise IdError
+            raise IdError("message")
 
 
 class TestAliasNotFoundError:
     def test_inheritance(self):
-        exc = AliasNotFoundError()
+        exc = AliasNotFoundError("message")
         assert isinstance(exc, AliasNotFoundError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(AliasNotFoundError):
-            raise AliasNotFoundError
+            raise AliasNotFoundError("message")
 
 
 class TestAliasFatalError:
     def test_inheritance(self):
-        exc = AliasFatalError()
+        exc = AliasFatalError("message")
         assert isinstance(exc, AliasFatalError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(AliasFatalError):
-            raise AliasFatalError
+            raise AliasFatalError("message")
 
 
 class TestFileCacheError:
     def test_inheritance(self):
-        exc = FileCacheError()
+        exc = FileCacheError("message")
         assert isinstance(exc, FileCacheError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(FileCacheError):
-            raise FileCacheError
+            raise FileCacheError("message")
 
 
 class TestInvalidLanguageError:
     def test_inheritance(self):
-        exc = InvalidLanguageError()
+        exc = InvalidLanguageError("message")
         assert isinstance(exc, InvalidLanguageError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(InvalidLanguageError):
-            raise InvalidLanguageError
+            raise InvalidLanguageError("message")
 
 
 class TestOptionError:
     def test_inheritance(self):
-        exc = OptionError()
+        exc = OptionError("message")
         assert isinstance(exc, OptionError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(OptionError):
-            raise OptionError
+            raise OptionError("message")
 
 
 class TestInvalidStateError:
     def test_inheritance(self):
-        exc = InvalidStateError()
+        exc = InvalidStateError("message")
         assert isinstance(exc, InvalidStateError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(InvalidStateError):
-            raise InvalidStateError
+            raise InvalidStateError("message")
 
 
 class TestInvalidSettingsFileError:
     def test_inheritance(self):
-        exc = InvalidSettingsFileError()
+        exc = InvalidSettingsFileError("message")
         assert isinstance(exc, InvalidSettingsFileError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(InvalidSettingsFileError):
-            raise InvalidSettingsFileError
+            raise InvalidSettingsFileError("message")
 
 
 class TestSettingsError:
     def test_inheritance(self):
-        exc = SettingsError()
+        exc = SettingsError("message")
         assert isinstance(exc, SettingsError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(SettingsError):
-            raise SettingsError
+            raise SettingsError("message")
 
 
 class TestAlreadyExcludedError:
     def test_inheritance(self):
-        exc = AlreadyExcludedError()
+        exc = AlreadyExcludedError("message")
         assert isinstance(exc, AlreadyExcludedError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(AlreadyExcludedError):
-            raise AlreadyExcludedError
+            raise AlreadyExcludedError("message")
 
 
 class TestNotExcludedError:
     def test_inheritance(self):
-        exc = NotExcludedError()
+        exc = NotExcludedError("message")
         assert isinstance(exc, NotExcludedError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(NotExcludedError):
-            raise NotExcludedError
+            raise NotExcludedError("message")
 
 
 class TestAlreadyIndexedError:
     def test_inheritance(self):
-        exc = AlreadyIndexedError()
+        exc = AlreadyIndexedError("message")
         assert isinstance(exc, AlreadyIndexedError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(AlreadyIndexedError):
-            raise AlreadyIndexedError
+            raise AlreadyIndexedError("message")
 
 
 class TestNotIndexedError:
     def test_inheritance(self):
-        exc = NotIndexedError()
+        exc = NotIndexedError("message")
         assert isinstance(exc, NotIndexedError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(NotIndexedError):
-            raise NotIndexedError
+            raise NotIndexedError("message")
 
 
 class TestMoodleError:
     def test_inheritance(self):
-        exc = MoodleError()
+        exc = MoodleError("message")
         assert isinstance(exc, MoodleError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(MoodleError):
-            raise MoodleError
+            raise MoodleError("message")
 
 
 class TestResponseError:
     def test_inheritance(self):
-        exc = ResponseError()
+        exc = ResponseError("message")
         assert isinstance(exc, ResponseError)
         assert isinstance(exc, VcmError)
 
     def test_raises(self):
         with pytest.raises(ResponseError):
-            raise ResponseError
+            raise ResponseError("message")
 
 
 # WARNINGS
@@ -266,7 +267,7 @@ class TestResponseError:
 
 class TestVcmWarning:
     def test_inheritance(self):
-        warn = VcmWarning()
+        warn = VcmWarning("message")
         assert isinstance(warn, VcmWarning)
         assert isinstance(warn, Warning)
 
@@ -277,7 +278,7 @@ class TestVcmWarning:
 
 class TestUnkownIconWarning:
     def test_inheritance(self):
-        warn = UnkownIconWarning()
+        warn = UnkownIconWarning("message")
         assert isinstance(warn, UnkownIconWarning)
         assert isinstance(warn, VcmWarning)
 
@@ -288,7 +289,7 @@ class TestUnkownIconWarning:
 
 class TestFilenameWarning:
     def test_inheritance(self):
-        warn = FilenameWarning()
+        warn = FilenameWarning("message")
         assert isinstance(warn, FilenameWarning)
         assert isinstance(warn, VcmWarning)
 

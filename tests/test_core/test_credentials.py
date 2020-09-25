@@ -257,6 +257,7 @@ class TestHiddenCredentials:
         assert "gmail" in _Credentials.Email.smtp_server
 
         save_m.assert_called_once()
+        mock.patch.stopall()
 
 
 class TestGlobalImports:
