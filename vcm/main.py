@@ -24,6 +24,8 @@ from .settings import (
     un_section_index,
 )
 
+# pylint: disable=W0613,W9015,W9016
+
 logger = logging.getLogger(__name__)
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -171,4 +173,6 @@ def check_settings():
 
 
 def cli():
+    """Main cli."""
+    # pylint: disable=no-value-for-parameter,unexpected-keyword-arg
     return main(prog_name="vcm")

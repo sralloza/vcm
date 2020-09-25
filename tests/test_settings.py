@@ -431,6 +431,8 @@ class TestSettings:
         assert captured.out == ""
         assert captured.err == ""
 
+        example_m.assert_not_called()
+
     @mock.patch("vcm.settings.Settings.create_example")
     @mock.patch("pathlib.Path.is_file")
     def test_get_current_config_fail(self, is_file_m, example_m, capsys):
@@ -445,6 +447,8 @@ class TestSettings:
         captured = capsys.readouterr()
         assert captured.err == "Settings file does not exist\n"
         assert captured.out == ""
+
+        example_m.assert_called_once_with()
 
     @mock.patch("vcm.settings.YAML")
     @mock.patch("vcm.settings.Settings.get_defaults")
