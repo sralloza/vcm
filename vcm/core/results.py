@@ -2,8 +2,6 @@
 from datetime import datetime
 from threading import Lock
 
-from colorama import Fore
-
 from vcm.settings import settings
 
 from .utils import Printer
@@ -23,7 +21,7 @@ class Results:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = "[%s] File updated: %s" % (timestamp, filepath)
         with Results.print_lock:
-            Printer.print(Fore.LIGHTYELLOW_EX + message + Fore.RESET)
+            Printer.print(message, color="bright_yellow")
 
         Results.add_to_result_file(message)
 
@@ -33,7 +31,7 @@ class Results:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = "[%s] New file: %s" % (timestamp, filepath)
         with Results.print_lock:
-            Printer.print(Fore.LIGHTGREEN_EX + message + Fore.RESET)
+            Printer.print(message, color="bright_green")
 
         Results.add_to_result_file(message)
 

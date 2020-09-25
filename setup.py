@@ -39,7 +39,7 @@ setup(
     description="File scanner and downloader of campusvirtual.uva.es",
     version=version,
     author="Diego Alloza",
-    entry_points={"console_scripts": ["vcm=vcm.main:main"]},
+    entry_points={"console_scripts": ["vcm=vcm.main:cli"]},
     include_package_data=True,
     author_email="vcm@sralloza.es",
     packages=find_packages(),

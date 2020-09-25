@@ -1,5 +1,4 @@
 """Utils module."""
-
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
@@ -17,7 +16,7 @@ from typing import TypeVar, Union
 from warnings import warn
 from webbrowser import get as get_webbrowser
 
-from colorama import Fore
+import click
 from colorama import init as start_colorama
 from packaging import version
 from werkzeug.utils import (
@@ -35,142 +34,6 @@ start_colorama()
 
 
 _def = bytes(1)
-
-# TODO: remove class in future versions
-class MetaGetch(type):
-    _instances = {}
-
-    def __init__(cls, name, bases, attrs, **kwargs):
-        super().__init__(name, bases, attrs, **kwargs)
-        cls.__new__ = cls._getch
-
-
-# TODO: remove class in future versions
-class Key:
-    def __init__(self, key1, key2=None, is_int=None):
-        if not isinstance(key1, (bytes, int)):
-            raise TypeError("key1 must be bytes or int, not %r" % type(key1).__name__)
-
-        if not isinstance(key2, (bytes, int)) and key2 is not None:
-            raise TypeError("key2 must be bytes or int, not %r" % type(key1).__name__)
-
-        if isinstance(key1, bytes):
-            if len(key1) != 1:
-                raise ValueError("key1 must have only one byte, not %d" % len(key1))
-
-        if isinstance(key2, bytes):
-            if len(key2) != 1:
-                raise ValueError("key2 must have only one byte, not %d" % len(key2))
-
-        if key2:
-            if type(key1) != type(key2):
-                raise TypeError(
-                    "key1 and key2 must be of the same type (%r - %r)"
-                    % (type(key1).__name__, type(key2).__name__)
-                )
-
-        self.is_int = is_int
-        if self.is_int is None:
-            key1_bytes = isinstance(key1, bytes)
-            key2_bytes = key2 is None or isinstance(key2, bytes)
-
-            key1_int = isinstance(key1, int)
-            key2_int = key2 is None or isinstance(key2, int)
-
-            if key1_bytes and key2_bytes:
-                self.is_int = False
-            elif key1_int and key2_int:
-                self.is_int = True
-
-        assert self.is_int is not None, "is_int can't be None here"
-
-        self.key1 = int(key1) if is_int and key1 else key1
-        self.key2 = int(key2) if is_int and key2 else key2
-
-    def __str__(self):
-        return "Key(key1=%r, key2=%r)" % (self.key1, self.key2)
-
-    def __repr__(self):
-        return str(self)
-
-    def __eq__(self, other):
-        return self.key1 == other.key1 and self.key2 == other.key2
-
-    def to_int(self):
-        if self.is_int:
-            raise ValueError("Key is already in int mode")
-
-        key1 = ord(self.key1)
-        key2 = ord(self.key2) if self.key2 else self.key2
-        return type(self)(key1=key1, key2=key2, is_int=True)
-
-    def to_char(self):
-        if not self.is_int:
-            raise ValueError("Key is already in char mode")
-
-        key1 = chr(self.key1).encode("utf-8")
-        key2 = chr(self.key2).encode("utf-8") if self.key2 else self.key2
-        return type(self)(key1=key1, key2=key2, is_int=False)
-
-
-# TODO: remove class in future versions
-class getch(metaclass=MetaGetch):
-    key1: Union[bytes, int]
-    key2: Union[bytes, int, None]
-
-    def _getch(self, to_int=False, *args, **kwargs):
-        result = getch._Getch()()
-
-        if result == b"\x00":
-            key = Key(result, getch._Getch()())
-        else:
-            key = Key(result)
-
-        if to_int:
-            key = key.to_int()
-
-        return key
-
-    def to_int(self):
-        """Only for intellisense."""
-
-    class _Getch:
-        """Gets a single character from standard input.  Does not echo to the
-    screen."""
-
-        def __init__(self):
-            try:
-                self.impl = self._GetchWindows()
-            except ImportError:
-                self.impl = self._GetchUnix()
-
-        def __call__(self):
-            return self.impl()
-
-        class _GetchUnix:
-            def __init__(self):
-                import tty, sys
-
-            def __call__(self):
-                import sys, tty, termios
-
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    tty.setraw(sys.stdin.fileno())
-                    ch = sys.stdin.read(1)
-                finally:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                return ch
-
-        class _GetchWindows:
-            def __init__(self):
-                import msvcrt
-
-            def __call__(self):
-                import msvcrt
-
-                return msvcrt.getch()
 
 
 def secure_filename(input_filename: str, spaces=True) -> str:
@@ -212,92 +75,6 @@ class Patterns:
         r"-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f"
         r"])+)\])"
     )
-
-
-def exception_exit(exception, to_stderr=True, red=True):
-    """Exists the progam showing an exception.
-
-    Args:
-        exception: Exception to show. Must be an instance,
-            not a class. Must hinherit `Exception`.
-        to_stderr (bool, optional): if True, it will print the error to
-            stderr instead of stdout. Defaults to True.
-        red (bool, optional): if True, the error will be printed in red.
-            Defaults to True.
-
-    Raises:
-        TypeError: if exception is not a subclass of Exception.
-        TypeError: if exception is not an instance of a raisable Exception.
-    """
-
-    raise_exception = False
-
-    try:
-        if not issubclass(exception, Exception):
-            raise_exception = True
-    except TypeError:
-        # Check for SytemExit (inherints from BaseException, not Exception)
-        if not isinstance(exception, BaseException):
-            raise_exception = True
-
-    if raise_exception:
-        raise TypeError("exception's class must be a subclass of Exception")
-
-    if not isinstance(exception, BaseException):
-        raise TypeError("exception must be an instance")
-
-    exc_str = ", ".join((str(x) for x in exception.args))
-    message = "%s: %s" % (exception.__class__.__name__, exc_str)
-    message += "\n" + format_exc()
-
-    logger = logging.getLogger(__name__)
-    if Modules.current() != Modules.settings:
-        logger.error("Exception catched:\n%s", message)
-
-    if red:
-        message = Fore.LIGHTRED_EX + message + Fore.RESET
-
-    if to_stderr:
-        print(message, file=sys.stderr)
-        sys.exit(-1)
-
-    print(message)
-    sys.exit(-1)
-
-
-def safe_exit(_func=_def, *, to_stderr=True, red=True):
-    """Catches any exception and prints the traceback. Designed to work
-    as a decorator.
-
-    Notes:
-        It doens't catch SystemExit exceptions.
-
-    Args:
-        _func (function): function to control.
-        to_stderr (bool, optional): If true, the traceback will be printed
-            in sys.stderr, otherwise it will be printed in sys.stdout.
-            Defaults to True.
-        red (bool, optional): If true, the traceback will be printed in red.
-            Defaults to True.
-    """
-
-    if _func is not _def and not callable(_func):
-        raise ValueError("Use keyword arguments in the safe_exit decorator")
-
-    def outer_wrapper(func):
-        @wraps(func)
-        def inner_wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception as exc:
-                return exception_exit(exc, to_stderr=to_stderr, red=red)
-
-        return inner_wrapper
-
-    if _func is _def:
-        return outer_wrapper
-    else:
-        return outer_wrapper(_func)
 
 
 def timing(_func=_def, *, name=None, level=None, report=True):
@@ -397,32 +174,36 @@ def configure_logging():
 
 
 def setup_vcm():
+    from vcm.settings import CheckSettings
+
     configure_logging()
+    CheckSettings.check()
 
 
 class Printer:
-    _print = print
+    can_print = True
     _lock = Lock()
 
     @classmethod
     def reset(cls):
-        cls._print = print
+        cls.can_print = True
 
     @classmethod
     def silence(cls):
-        cls._print = cls.useless
+        cls.can_print = False
 
     @classmethod
-    def useless(cls, *args, **kwargs):
-        """Useless function used to avoid call to print."""
-
-    @classmethod
-    def print(cls, *args, **kwargs):
+    def print(cls, *args, color=None, **kwargs):
         if not Modules.should_print():
             return
 
+        if not cls.can_print:
+            return
+
         with cls._lock:
-            return cls._print(*args, **kwargs)
+            if color:
+                return click.secho(*args, fg=color, bold=True, **kwargs)
+            return click.secho(*args, **kwargs)
 
 
 def check_updates():
@@ -548,7 +329,7 @@ def handle_fatal_error_exit(exit_message, exit_code=-1):
         exit_code (int, optional): exit code. Defaults to -1.
     """
 
-    print(Fore.RED + str(exit_message) + Fore.RESET, file=sys.stderr)
+    click.secho(exit_message, err=True, fg="red", bold=True)
     sys.exit(exit_code)
 
 

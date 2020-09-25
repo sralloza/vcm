@@ -1,4 +1,5 @@
 {
+  "base-url": "https://campusvirtual.uva.es",
   "email": "insert-email",
   "exclude-subjects-ids": [],
   "forum-subfolders": true,
