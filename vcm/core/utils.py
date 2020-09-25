@@ -2,29 +2,27 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from functools import wraps
+from functools import lru_cache, wraps
 import logging
 from logging.handlers import RotatingFileHandler
 import os
 import pickle
 import re
+from subprocess import CalledProcessError, run
 import sys
 from threading import Lock, current_thread
 from time import time
-from traceback import format_exc
-from typing import TypeVar, Union
+from typing import TypeVar
 from warnings import warn
 from webbrowser import get as get_webbrowser
 
 import click
 from colorama import init as start_colorama
 from packaging import version
-from werkzeug.utils import (
-    _windows_device_files as WIN_DEVS,
-    secure_filename as _secure_filename,
-)
+from werkzeug.utils import _windows_device_files as WIN_DEVS
+from werkzeug.utils import secure_filename as _secure_filename
 
-from .exceptions import FilenameWarning
+from .exceptions import FilenameWarning, UpdateError
 from .modules import Modules
 from .time_operations import seconds_to_str
 
@@ -40,7 +38,7 @@ def secure_filename(input_filename: str, spaces=True) -> str:
     """Ensures that `input_filename` is a valid filename.
 
     Args:
-        filenainput_filenameme (str): filename to parse.
+        input_filename (str): filename to parse.
         spaces (bool, optional): if False, all spaces are replaced with
             underscores. Defaults to True.
 
@@ -77,7 +75,16 @@ class Patterns:
     )
 
 
-def timing(_func=_def, *, name=None, level=None, report=True):
+def timing(
+    _func=_def, *, name=None, level=None, report=True
+):  # pylint: disable=W9015,W9016,W9011,W9012
+    """Decorator that logs the execution time of a function.
+
+    Raises:
+        ValueError: if arguments are passed as positional arguments
+            instead of keyword arguments.
+    """
+
     if _func is not _def and not callable(_func):
         raise ValueError("Use keyword arguments in the timing decorator")
 
@@ -86,7 +93,7 @@ def timing(_func=_def, *, name=None, level=None, report=True):
         def inner_wrapper(*args, **kwargs):
             _name = name or func.__name__
             _level = level or logging.INFO
-            t0 = time()
+            start_time = time()
             exception = None
             result = None
 
@@ -95,13 +102,13 @@ def timing(_func=_def, *, name=None, level=None, report=True):
                 result = func(*args, **kwargs)
             except SystemExit as exc:
                 exception = exc
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 exception = exc
             finally:
                 if report and ErrorCounter.has_errors():
                     logger.warning(ErrorCounter.report())
 
-            eta = seconds_to_str(time() - t0)  # elapsed time
+            eta = seconds_to_str(time() - start_time)  # elapsed time
             logger.log(_level, "%r executed in %s [%r]", _name, eta, result)
 
             if exception:
@@ -112,8 +119,7 @@ def timing(_func=_def, *, name=None, level=None, report=True):
 
     if _func is _def:
         return outer_wrapper
-    else:
-        return outer_wrapper(_func)
+    return outer_wrapper(_func)
 
 
 def str2bool(value):
@@ -148,6 +154,9 @@ def str2bool(value):
 
 
 def configure_logging():
+    """Configures logging."""
+
+    # pylint: disable=import-outside-toplevel
     from vcm.settings import settings
 
     if not os.environ.get("TESTING", False):
@@ -174,6 +183,9 @@ def configure_logging():
 
 
 def setup_vcm():
+    """Calls the setup functions of the aplication."""
+
+    # pylint: disable=import-outside-toplevel
     from vcm.settings import CheckSettings
 
     configure_logging()
@@ -181,19 +193,33 @@ def setup_vcm():
 
 
 class Printer:
+    """Manager for writing data to stdout."""
+
     can_print = True
     _lock = Lock()
 
     @classmethod
     def reset(cls):
+        """Enables stdout writing."""
+
         cls.can_print = True
 
     @classmethod
     def silence(cls):
+        """Disables stdout writing."""
+
         cls.can_print = False
 
     @classmethod
     def print(cls, *args, color=None, **kwargs):
+        """Writes data to stdout.
+
+        Args:
+            color (str, optional): terminal color.
+            args: positional arguments passed to click.secho.
+            kwargs: keyword arguments passed to click.secho.
+        """
+
         if not Modules.should_print():
             return
 
@@ -202,37 +228,82 @@ class Printer:
 
         with cls._lock:
             if color:
-                return click.secho(*args, fg=color, bold=True, **kwargs)
-            return click.secho(*args, **kwargs)
+                click.secho(*args, fg=color, bold=True, **kwargs)
+            else:
+                click.secho(*args, **kwargs)
 
 
-def check_updates():
-    from vcm import __version__ as current_version
+@lru_cache(maxsize=10)
+def get_last_version() -> str:
+    """Returns the last tagged version in github of this aplication.
+
+    Returns:
+        str: last tagged version.
+    """
+
+    # pylint: disable=import-outside-toplevel
     from .networking import connection
 
     url = "https://api.github.com/repos/sralloza/vcm/tags"
     response = connection.get(url)
-    newer_version = version.parse(response.json()[0]["name"])
+    return response.json()[0]["name"]
+
+
+def check_updates() -> bool:
+    """Checks if there is any new update posted on GitHub.
+
+    Returns:
+        bool: True if there is, False otherwise.
+    """
+
+    # pylint: disable=import-outside-toplevel
+    from vcm import __version__ as current_version
+
+    newer_version = version.parse(get_last_version())
     current_version = version.parse(current_version)
 
     if newer_version > current_version:
-        Printer.print(
+        click.echo(
             "Newer version available: %s (current version: %s)"
             % (newer_version, current_version)
         )
         return True
 
-    Printer.print(
+    click.echo(
         "No updates available (current version: %s, last version: %s)"
         % (current_version, newer_version)
     )
     return False
 
 
-class MetaSingleton(type):
+def update():
+    """Installs the newest version of this aplication.
+
+    Raises:
+        UpdateError: if the installation went wrong.
+    """
+
+    if not check_updates():
+        return
+
+    last_version = get_last_version()
+    click.confirm(f"Download last version? ({last_version})", abort=True)
+    url = f"https://github.com/sralloza/vcm.git@{last_version}"
+    command = f"python -m pip install --upgrade git+{url}"
+
+    try:
+        run(command, capture_output=True, shell=True, check=True)
+    except CalledProcessError as exc:
+        msg = f"Error in execution ({exc.returncode}): {exc.output}"
+        raise UpdateError(msg)
+
+    click.secho("Version %r installed successfully" % last_version, fg="bright_green")
+
+
+class MetaSingleton(type):  # pylint: disable=W9015,W9016
     """Metaclass to always make class return the same instance."""
 
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls, name, bases, attrs):  # pylint: disable=W9015,W9016
         super(MetaSingleton, cls).__init__(name, bases, attrs)
         cls._instance = None
 
@@ -263,10 +334,22 @@ class ErrorCounter:
 
     @classmethod
     def record_error(cls, exc: Exception):
+        """Records an error.
+
+        Args:
+            exc (Exception): error.
+        """
+
         cls.error_map[exc.__class__] += 1
 
     @classmethod
     def report(cls) -> str:
+        """Generates the error report.
+
+        Returns:
+            str: error report.
+        """
+
         message = f"{sum(cls.error_map.values())} errors found "
         errors = list(cls.error_map.items())
         errors.sort(key=lambda x: x[1], reverse=True)
@@ -288,6 +371,7 @@ def save_crash_context(crash_object, object_name, reason=None):
         reason (str, optional): reason of the crash. Defaults to None.
     """
 
+    # pylint: disable=import-outside-toplevel
     from vcm.settings import settings
 
     now = datetime.now()
@@ -338,6 +422,7 @@ def open_http_status_server():
     chrome windows.
     """
 
+    # pylint: disable=import-outside-toplevel
     from vcm.settings import settings
 
     Printer.print("Opening state server")

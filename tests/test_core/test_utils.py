@@ -2,13 +2,15 @@ from collections import defaultdict
 from copy import deepcopy
 import logging
 import os
+import re
+from subprocess import CalledProcessError
 from unittest import mock
 
 import pytest
 from requests.exceptions import ProxyError
 
 import vcm
-from vcm.core.exceptions import FilenameWarning
+from vcm.core.exceptions import FilenameWarning, UpdateError
 from vcm.core.utils import (
     ErrorCounter,
     MetaSingleton,
@@ -16,6 +18,7 @@ from vcm.core.utils import (
     Printer,
     check_updates,
     configure_logging,
+    get_last_version,
     handle_fatal_error_exit,
     open_http_status_server,
     save_crash_context,
@@ -23,6 +26,7 @@ from vcm.core.utils import (
     setup_vcm,
     str2bool,
     timing,
+    update,
 )
 
 
@@ -385,6 +389,23 @@ class TestPrinter:
             assert captured.out == ""
 
 
+@mock.patch("vcm.core.networking.connection")
+def test_get_last_version(con_m):
+    version = "v1.2.3"
+    response_mock = mock.MagicMock()
+    response_mock.json.return_value = [
+        {"name": version},
+    ]
+    con_m.get.return_value = response_mock
+
+    assert get_last_version() == version
+    con_m.get.assert_called_once()
+
+    # LRU cache
+    assert get_last_version() == version
+    con_m.get.assert_called_once()
+
+
 class TestCheckUpdates:
     version_data = (
         ("3.0.1", "3.0.2", True),
@@ -398,32 +419,111 @@ class TestCheckUpdates:
 
     @pytest.fixture(autouse=True)
     def mocks(self):
-        self.con_m = mock.patch("vcm.core.networking.connection").start()
-        self.print_m = mock.patch("vcm.core.utils.Printer.print").start()
+        self.glv_m = mock.patch("vcm.core.utils.get_last_version").start()
 
         yield
 
         mock.patch.stopall()
 
     @pytest.mark.parametrize("version1, version2, new_update", version_data)
-    def test_check_updates(self, version1, version2, new_update):
-        response_mock = mock.MagicMock()
-        response_mock.json.return_value = [
-            {"name": version2},
-        ]
-        self.con_m.get.return_value = response_mock
+    def test_check_updates(self, version1, version2, new_update, capsys):
+        self.glv_m.return_value = version2
 
         vcm.__version__ = version1
 
-        result = check_updates()
+        update_result = check_updates()
+        assert update_result == new_update
 
-        assert result == new_update
-        self.print_m.assert_called_once()
+        result = capsys.readouterr()
 
         if new_update:
-            assert "Newer version available" in self.print_m.call_args[0][0]
+            assert "Newer version available" in result.out
         else:
-            assert "No updates available" in self.print_m.call_args[0][0]
+            assert "No updates available" in result.out
+
+
+class TestUpdate:
+    @pytest.fixture(autouse=True)
+    def mocks(self):
+        self.cu_m = mock.patch("vcm.core.utils.check_updates").start()
+        self.glv_m = mock.patch("vcm.core.utils.get_last_version").start()
+        self.confirm_m = mock.patch("click.confirm").start()
+        self.run_m = mock.patch("vcm.core.utils.run").start()
+
+        yield
+        mock.patch.stopall()
+
+    def test_update_do_not_update(self, capsys):
+        self.cu_m.return_value = False
+
+        update()
+
+        result = capsys.readouterr()
+        assert result.out == ""
+        assert result.err == ""
+
+        self.cu_m.assert_called_once_with()
+        self.glv_m.assert_not_called()
+        self.confirm_m.assert_not_called()
+        self.run_m.assert_not_called()
+
+    def test_update_abort(self, capsys):
+        self.cu_m.return_value = True
+        self.glv_m.return_value = "v1.2.3"
+        self.confirm_m.side_effect = SystemExit
+
+        with pytest.raises(SystemExit):
+            update()
+
+        result = capsys.readouterr()
+        assert result.out == ""
+        assert result.err == ""
+
+        self.cu_m.assert_called_once_with()
+        self.glv_m.assert_called_once_with()
+        self.confirm_m.assert_called_once_with(
+            "Download last version? (v1.2.3)", abort=True
+        )
+        self.run_m.assert_not_called()
+
+    def test_update_confirmed_ok(self, capsys):
+        self.cu_m.return_value = True
+        self.glv_m.return_value = "v1.2.3"
+
+        update()
+
+        result = capsys.readouterr()
+        assert result.out == "Version 'v1.2.3' installed successfully\n"
+        assert result.err == ""
+
+        self.cu_m.assert_called_once_with()
+        self.glv_m.assert_called_once_with()
+        self.confirm_m.assert_called_once_with(
+            "Download last version? (v1.2.3)", abort=True
+        )
+        command = "python -m pip install --upgrade git+https://github.com/sralloza/vcm.git@v1.2.3"
+        self.run_m.assert_called_once_with(command, capture_output=True, shell=True, check=True)
+
+    def test_update_confirmed_fail(self, capsys):
+        command = "python -m pip install --upgrade git+https://github.com/sralloza/vcm.git@v1.2.3"
+        self.cu_m.return_value = True
+        self.glv_m.return_value = "v1.2.3"
+        self.run_m.side_effect = CalledProcessError(123, command, output="<output>")
+
+        match = re.escape("Error in execution (123): <output>")
+        with pytest.raises(UpdateError, match=match):
+            update()
+
+        result = capsys.readouterr()
+        assert result.out == ""
+        assert result.err == ""
+
+        self.cu_m.assert_called_once_with()
+        self.glv_m.assert_called_once_with()
+        self.confirm_m.assert_called_once_with(
+            "Download last version? (v1.2.3)", abort=True
+        )
+        self.run_m.assert_called_once_with(command, capture_output=True, shell=True, check=True)
 
 
 class TestMetaSingleton:
