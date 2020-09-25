@@ -142,7 +142,7 @@ class Connection(metaclass=MetaSingleton):
             requests.Response: response of the logout request.
         """
 
-        return self.post(self.logout_url, data={"sesskey": self.sesskey},)
+        return self.post(self.logout_url, data={"sesskey": self.sesskey})
 
     def inner_logout(self):
         """Logs out of the virtual campus.
@@ -367,12 +367,12 @@ class Connection(metaclass=MetaSingleton):
 class Downloader(requests.Session):
     """Downloader with retries control.
 
-        Args:
-            silenced (bool, optional): if True, only critical errors are logged.
-                Defaults to False.
-            retries (int, optional): number of retries for each request. If none,
-                it's set to settings.retries. Defaults to None.
-        """
+    Args:
+        silenced (bool, optional): if True, only critical errors are logged.
+            Defaults to False.
+        retries (int, optional): number of retries for each request. If none,
+            it's set to settings.retries. Defaults to None.
+    """
 
     def __init__(self, silenced=False, retries=None):
         self.logger = logging.getLogger(__name__)

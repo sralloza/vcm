@@ -423,7 +423,7 @@ class Resource(BaseLink):
             self.set_resource_type("html")
 
             self.logger.debug(
-                "Created forum discussion from forum list: %r, %s", self.name, self.url,
+                "Created forum discussion from forum list: %r, %s", self.name, self.url
             )
             self.subject.add_link(
                 Html(
@@ -757,7 +757,7 @@ class Html(BaseLink):
         self.logger.error("HTML ALGORITHM FAILURE")
 
         save_crash_context(
-            self.response, "html-algorithm-failure", "html algorithm failure",
+            self.response, "html-algorithm-failure", "html algorithm failure"
         )
 
         raise AlgorithmFailureError
