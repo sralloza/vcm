@@ -91,6 +91,10 @@ class AlgorithmFailureError(VcmError):
     """Algorihm failure error."""
 
 
+class UpdateError(VcmError):
+    """Update error."""
+
+
 class VcmWarning(Warning):
     """Base class for warnings."""
 

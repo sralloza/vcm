@@ -1,9 +1,9 @@
 import warnings
 
-from click.exceptions import ClickException
 import pytest
-
+from click.exceptions import ClickException
 from vcm.core.exceptions import (
+    AlgorithmFailureError,
     AliasFatalError,
     AliasNotFoundError,
     AlreadyExcludedError,
@@ -26,6 +26,7 @@ from vcm.core.exceptions import (
     ResponseError,
     SettingsError,
     UnkownIconWarning,
+    UpdateError,
     VcmError,
     VcmWarning,
 )
@@ -251,6 +252,17 @@ class TestMoodleError:
             raise MoodleError("message")
 
 
+class TestAlgorithmFailureError:
+    def test_inheritance(self):
+        exc = AlgorithmFailureError("message")
+        assert isinstance(exc, AlgorithmFailureError)
+        assert isinstance(exc, VcmError)
+
+    def test_raises(self):
+        with pytest.raises(AlgorithmFailureError):
+            raise AlgorithmFailureError("message")
+
+
 class TestResponseError:
     def test_inheritance(self):
         exc = ResponseError("message")
@@ -260,6 +272,17 @@ class TestResponseError:
     def test_raises(self):
         with pytest.raises(ResponseError):
             raise ResponseError("message")
+
+
+class TestUpdateError:
+    def test_inheritance(self):
+        exc = UpdateError("message")
+        assert isinstance(exc, UpdateError)
+        assert isinstance(exc, VcmError)
+
+    def test_raises(self):
+        with pytest.raises(UpdateError):
+            raise UpdateError("message")
 
 
 # WARNINGS
