@@ -4,7 +4,7 @@ import logging
 
 import click
 
-from . import __version__ as version
+from . import __version__
 from .core.modules import Modules
 from .core.utils import (
     Printer,
@@ -32,7 +32,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-@click.version_option(version=version, prog_name="vcm")
+@click.version_option(version=__version__, prog_name="vcm")
 @click.option("-nss", "--no-status-server", is_flag=True, help="Disable status server")
 @click.pass_context
 def main(ctx, no_status_server):
@@ -47,20 +47,23 @@ def main(ctx, no_status_server):
     if command != "settings":
         # Command executed is not 'settings', so check settings
         setup_vcm()
-        logger.info("vcm version: %s", version)
+        logger.info("vcm version: %s", __version__)
 
 
 @main.command("check-updates")
 def check_updates_command():
     """Check for new releases"""
+
     check_updates()
 
 
 @main.command("update")
-def update_command():
+@click.option("--dev", is_flag=True)
+@click.option("--version", required=False)
+def update_command(dev, version):
     """Download the last release."""
 
-    update()
+    update(dev=dev, version=version)
 
 
 @main.command("download")
@@ -79,11 +82,11 @@ def download_command(ctx, nthreads, no_killer, debug, quiet):
         Printer.silence()
 
     return download(
-        nthreads=nthreads, killer=not no_killer, status_server=not no_status_server,
+        nthreads=nthreads, killer=not no_killer, status_server=not no_status_server
     )
 
 
-@main.command("notify",)
+@main.command("notify")
 @click.option("--nthreads", default=20, type=int)
 @click.option("--no-icons", is_flag=True)
 @click.pass_context

@@ -671,7 +671,7 @@ class TestDownloader:
         for i in range(1, nerrors + 1):
             retries_left = self.retries - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left)),
             )
 
         records_expected = [(self.logger_name,) + x for x in records_expected]
@@ -695,7 +695,7 @@ class TestDownloader:
         for i in range(1, nerrors + 1):
             retries_left = 5 - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left)),
             )
 
         records_expected = [(self.logger_name,) + x for x in records_expected]
@@ -717,7 +717,7 @@ class TestDownloader:
         for i in range(1, self.retries + 1):
             retries_left = self.retries - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (30, "Catched %s in GET, retries=%d" % (excname, retries_left)),
             )
 
         records_expected.append((50, "Download error in GET %r" % self.url))

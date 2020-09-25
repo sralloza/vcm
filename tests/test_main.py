@@ -63,15 +63,24 @@ def test_check_updates(check_updates_m):
     universal_mocks.setup.assert_called_once_with()
 
 
+@pytest.mark.parametrize("dev", [True, False])
+@pytest.mark.parametrize("version", ["v1.2.3", None])
 @mock.patch("vcm.main.update")
-def test_update_command(update_m):
+def test_update_command(update_m, dev, version):
+    args = ["update"]
+    if dev:
+        args.append("--dev")
+    if version:
+        args.append("--version")
+        args.append(version)
+
     runner = CliRunner()
-    result = runner.invoke(main, ["update"])
+    result = runner.invoke(main, args)
 
     assert result.exit_code == 0
     assert result.output == ""
 
-    update_m.assert_called_once_with()
+    update_m.assert_called_once_with(dev=dev, version=version)
 
 
 @pytest.mark.parametrize("nss", [True, False])
