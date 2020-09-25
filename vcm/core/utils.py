@@ -329,7 +329,7 @@ def handle_fatal_error_exit(exit_message, exit_code=-1):
         exit_code (int, optional): exit code. Defaults to -1.
     """
 
-    print(Fore.RED + str(exit_message) + Fore.RESET, file=sys.stderr)
+    click.secho(exit_message, err=True, fg="red", bold=True)
     sys.exit(exit_code)
 
 
