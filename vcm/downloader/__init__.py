@@ -30,7 +30,7 @@ def get_subjects(queue):
     for li in lis:
         course_id = int(re.search(r"course=(\d+)", li.a["href"]).group(1))
         subject_url = "https://campusvirtual.uva.es/course/view.php?id=%d" % course_id
-        name = re.search(r"^([\w\s]+?)\s?\(", li.text).group(1)
+        name = re.search(r"^([\w\/\sáéíóúÁÉÍÓÚ]+?)\s?\(", li.text).group(1)
 
         if course_id in settings.exclude_subjects_ids:
             logger.info("Excluding subject %s (%d)", name, course_id)
