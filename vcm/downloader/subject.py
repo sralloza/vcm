@@ -40,7 +40,7 @@ class Subject:
             queue (Queue): queue to controll threads.
         """
 
-        name = name.capitalize().strip()
+        name = name.capitalize().replace("\\", "").replace("/", "").strip()
 
         self.name = Alias.id_to_alias(
             sha1(url.encode()).hexdigest(), settings.root_folder / name
