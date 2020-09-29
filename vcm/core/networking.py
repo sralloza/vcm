@@ -142,7 +142,10 @@ class Connection(metaclass=MetaSingleton):
             requests.Response: response of the logout request.
         """
 
-        return self.post(self.logout_url, data={"sesskey": self.sesskey},)
+        return self.post(
+            self.logout_url,
+            data={"sesskey": self.sesskey},
+        )
 
     def inner_logout(self):
         """Logs out of the virtual campus.
@@ -322,6 +325,8 @@ class Connection(metaclass=MetaSingleton):
         if "Usted se ha identificado" not in self._login_response.text:
             raise LoginError("Unsuccessfull login")
 
+        self.get_login_page.cache_clear()
+
     def login(self):
         """Wrapper of real loging function.
 
@@ -336,6 +341,7 @@ class Connection(metaclass=MetaSingleton):
             try:
                 logger.debug("Logging in (%d retries left)", login_retries)
                 self.inner_login()
+                self.find_sesskey_and_user_url()
                 break
             except LoginError as exc:
                 exception = exc
@@ -353,7 +359,7 @@ class Connection(metaclass=MetaSingleton):
     def find_sesskey_and_user_url(self):
         """Given a `BeautifulSoup` object parses the `user_url` and the `sesskey`."""
 
-        soup = BeautifulSoup(self.get_login_page().text, "html.parser")
+        soup = BeautifulSoup(self._login_response.text, "html.parser")
         self._sesskey = soup.find("input", {"type": "hidden", "name": "sesskey"})[
             "value"
         ]
@@ -367,12 +373,12 @@ class Connection(metaclass=MetaSingleton):
 class Downloader(requests.Session):
     """Downloader with retries control.
 
-        Args:
-            silenced (bool, optional): if True, only critical errors are logged.
-                Defaults to False.
-            retries (int, optional): number of retries for each request. If none,
-                it's set to settings.retries. Defaults to None.
-        """
+    Args:
+        silenced (bool, optional): if True, only critical errors are logged.
+            Defaults to False.
+        retries (int, optional): number of retries for each request. If none,
+            it's set to settings.retries. Defaults to None.
+    """
 
     def __init__(self, silenced=False, retries=None):
         self.logger = logging.getLogger(__name__)
