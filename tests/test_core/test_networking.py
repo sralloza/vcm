@@ -396,10 +396,11 @@ class TestConnection:
         mlr_m.assert_not_called()
         assert caplog.record_tuples == []
 
+    @mock.patch("vcm.core.networking.Connection.find_sesskey_and_user_url")
     @mock.patch("vcm.core.networking.Connection.make_login_request")
     @mock.patch("vcm.core.networking.Connection.get_login_token")
     @mock.patch("vcm.core.networking.Connection.check_already_logged_in")
-    def test_inner_login_server_error(self, cali_m, glt_m, mlr_m, caplog):
+    def test_inner_login_server_error(self, cali_m, glt_m, mlr_m, fsauu_m, caplog):
         caplog.set_level(10)
         cali_m.return_value = False
         glt_m.return_value = "<token>"
@@ -413,6 +414,8 @@ class TestConnection:
         cali_m.assert_called_once_with()
         glt_m.assert_called_once_with()
         mlr_m.assert_called_once_with("<token>")
+        mlr_m.cache_clear.assert_not_called()
+        fsauu_m.assert_not_called()
         assert caplog.record_tuples == [
             (self.logger_name, 20, "Logging in with user '<username>'")
         ]
@@ -467,9 +470,10 @@ class TestConnection:
             (self.logger_name, 20, "Logging in with user '<username>'")
         ]
 
+    @mock.patch("vcm.core.networking.Connection.find_sesskey_and_user_url")
     @mock.patch("vcm.core.networking.save_crash_context")
     @mock.patch("vcm.core.networking.Connection.inner_login")
-    def test_login_ok(self, inner_login_m, scc_m, caplog):
+    def test_login_ok(self, inner_login_m, scc_m, fsauu_m, caplog):
         caplog.set_level(10)
 
         conn = Connection()
@@ -478,15 +482,18 @@ class TestConnection:
         inner_login_m.assert_called_once_with()
         scc_m.assert_not_called()
 
+        fsauu_m.assert_called_once_with()
+
         assert caplog.record_tuples == [
             (self.logger_name, 10, "Logging in (10 retries left)"),
             (self.logger_name, 20, "Logged in"),
         ]
 
+    @mock.patch("vcm.core.networking.Connection.find_sesskey_and_user_url")
     @pytest.mark.parametrize("nerrors", range(1, 10))
     @mock.patch("vcm.core.networking.save_crash_context")
     @mock.patch("vcm.core.networking.Connection.inner_login")
-    def test_login_some_errors(self, inner_login_m, scc_m, nerrors, caplog):
+    def test_login_some_errors(self, inner_login_m, scc_m, fsauu_m, nerrors, caplog):
         caplog.set_level(10)
         inner_login_m.side_effect = [LoginError("message")] * nerrors + [None]
 
@@ -495,6 +502,7 @@ class TestConnection:
 
         assert inner_login_m.call_count == nerrors + 1
         scc_m.assert_not_called()
+        fsauu_m.assert_called_once_with()
 
         expected = []
         for i in range(nerrors + 1):
@@ -510,23 +518,25 @@ class TestConnection:
 
         assert caplog.record_tuples == expected
 
-    @pytest.mark.parametrize("has_login_response", [True, False])
+    @mock.patch("vcm.core.networking.Connection.find_sesskey_and_user_url")
+    @pytest.mark.parametrize("has_lr", [True, False])
     @mock.patch("vcm.core.networking.save_crash_context")
     @mock.patch("vcm.core.networking.Connection.inner_login")
-    def test_login_fatal_error(self, inner_login_m, scc_m, caplog, has_login_response):
+    def test_login_fatal_error(self, inner_login_m, scc_m, fssauu_m, caplog, has_lr):
         caplog.set_level(10)
         inner_login_m.side_effect = [LoginError("message")] * self.login_retries + [
             None
         ]
 
         conn = Connection()
-        if has_login_response:  # For historical reasons.
+        if has_lr:  # For historical reasons.
             conn._login_response = mock.MagicMock()
         with pytest.raises(LoginError, match="unknown error"):
             conn.login()
 
         assert inner_login_m.call_count == self.login_retries
         scc_m.assert_called_once_with(conn, mock.ANY, mock.ANY)
+        fssauu_m.assert_not_called()
 
         expected = []
         for i in range(self.login_retries):
@@ -538,14 +548,15 @@ class TestConnection:
 
         assert caplog.record_tuples == expected
 
-    @mock.patch("vcm.core.networking.Connection.get_login_page")
-    def test_find_sesskey_and_user_url(self, clp_m, get_test_data):
-        clp_m.return_value.text = get_test_data("logged-in.html.example")
+    def test_find_sesskey_and_user_url(self, get_test_data):
+        login_response = mock.MagicMock()
+        login_response.text = get_test_data("logged-in.html.example")
         expected_url = (
             "https://campusvirtual.uva.es/user/profile.php?id=6737&showallcourses=1"
         )
 
         connection = Connection()
+        connection._login_response = login_response
         connection.find_sesskey_and_user_url()
         assert connection.sesskey == "1Yjk995Su9"
         assert connection.user_url == expected_url
@@ -671,7 +682,10 @@ class TestDownloader:
         for i in range(1, nerrors + 1):
             retries_left = self.retries - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (
+                    30,
+                    "Catched %s in GET, retries=%d" % (excname, retries_left),
+                ),
             )
 
         records_expected = [(self.logger_name,) + x for x in records_expected]
@@ -695,7 +709,10 @@ class TestDownloader:
         for i in range(1, nerrors + 1):
             retries_left = 5 - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (
+                    30,
+                    "Catched %s in GET, retries=%d" % (excname, retries_left),
+                ),
             )
 
         records_expected = [(self.logger_name,) + x for x in records_expected]
@@ -717,7 +734,10 @@ class TestDownloader:
         for i in range(1, self.retries + 1):
             retries_left = self.retries - i
             records_expected.append(
-                (30, "Catched %s in GET, retries=%d" % (excname, retries_left),),
+                (
+                    30,
+                    "Catched %s in GET, retries=%d" % (excname, retries_left),
+                ),
             )
 
         records_expected.append((50, "Download error in GET %r" % self.url))

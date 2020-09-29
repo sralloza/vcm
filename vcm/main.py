@@ -71,11 +71,15 @@ def download_command(ctx, nthreads, no_killer, debug, quiet):
         Printer.silence()
 
     return download(
-        nthreads=nthreads, killer=not no_killer, status_server=not no_status_server,
+        nthreads=nthreads,
+        killer=not no_killer,
+        status_server=not no_status_server,
     )
 
 
-@main.command("notify",)
+@main.command(
+    "notify",
+)
 @click.option("--nthreads", default=20, type=int)
 @click.option("--no-icons", is_flag=True)
 @click.pass_context
